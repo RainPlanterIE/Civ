@@ -110,7 +110,7 @@ function initialEncounters(){
 function unitHP(u){return Math.max(0,u.hp??unitDef(u.type)?.hp??6);}
 function unitAttack(u){return Math.max(1,(u.strength||unitDef(u.type)?.strength||1)+1+Math.floor((u.xp||0)/3));}
 function unitDefense(u){return Math.max(1,Math.ceil((u.strength||1)/2)+1+(u.type==="spearman"?2:0));}
-function cityDefense(c){return 3+Math.ceil(c.pop/2)+Math.floor((c.army||0)/3)+4*upgrade(c,"walls")+upgrade(c,"lookout")+state.units.filter(u=>u.owner==="player"&&fighter(u)&&distance(u.x,u.y,c.x,c.y)<=1).reduce((n,u)=>n+Math.ceil(unitDefense(u)/2),0);}
+function cityDefense(c){return 3+Math.ceil(c.pop/2)+Math.floor((c.army||0)/3)+4*upgrade(c,"walls")+upgrade(c,"lookout")+(c.owner==="player"?state.units.filter(u=>u.owner==="player"&&fighter(u)&&distance(u.x,u.y,c.x,c.y)<=1).reduce((n,u)=>n+Math.ceil(unitDefense(u)/2),0):0);}
 function cityAttack(c){return 1+Math.floor(c.pop/4)+upgrade(c,"barracks")+upgrade(c,"training");}
 function encounterAt(x,y){return (state.encounters||[]).find(e=>e.x===x&&e.y===y&&e.hp>0);}
 function eventRng(seed){return dice(seed*17+state.year*11,seed*31+state.year*19);}
@@ -251,7 +251,7 @@ function fresh(){
  return {version:3,year:1,tech:["foraging","forestry"],research:0,knowledge:0,culture:0,faith:0,military:0,
  resources:{food:24,wood:14,stone:6,ore:0,metal:0,animals:0},
  cities:rivals.map(r=>({...r,buildings:{},growth:0,captives:0,unrest:0})),
- units:[{id:"u1",type:"settler",x:15,y:15,moved:false,owner:"player",strength:1}],
+ units:[{id:"u1",type:"settler",x:15,y:15,moved:false,owner:"player",strength:1,hp:6,xp:0}],
  works:{},builders:{},extracted:{},explored:{},encounters:initialEncounters(),nextEncounterId:1000,path:null,project:null,researchProject:null,stage:"move",stageYear:1,events:["A lone settler enters the valley."],nextId:2,victory:null};
 }
 let inGame=false;
@@ -305,7 +305,7 @@ function constructionRate(c,kind){
  if(!c)return 1;
  const labor=Math.min(6,builderCount(c)),materials=state.resources.wood>=12&&state.resources.stone>=7?1:0;
  const focus=state.path==="science"||state.path&&buildings[kind]?.path===state.path?1:0;
- return 1+labor+materials+focus+upgrade(c,"workshop");
+ return 1+labor+Math.min(2,c.captives||0)+materials+focus+upgrade(c,"workshop");
 }
 function estimateWork(left,rate){return Math.max(1,Math.ceil(left/Math.max(1,rate)));}
 function eligible(stage){
@@ -569,7 +569,7 @@ function progressBuilding(){
  if(p.left===0){
   if(unitDef(p.kind)){
    const d=unitDef(p.kind);
-   state.units.push({id:"u"+state.nextId++,type:p.kind,x:c.x,y:c.y,moved:true,owner:"player",strength:d.strength+upgrade(c,"training")+(p.kind==="archer"?upgrade(c,"range"):0)});
+   state.units.push({id:"u"+state.nextId++,type:p.kind,x:c.x,y:c.y,moved:true,owner:"player",hp:6+Math.max(0,d.strength-2),xp:0,strength:d.strength+upgrade(c,"training")+(p.kind==="archer"?upgrade(c,"range"):0)});
    updateFog();
   }else{
    c.buildings[p.kind]=(c.buildings[p.kind]||0)+1;
@@ -578,14 +578,27 @@ function progressBuilding(){
   record((buildings[p.kind]?.name||unitDef(p.kind)?.name||p.kind)+" completed at "+c.name+".");state.project=null;
  }
 }
-function changePopulation(){
+function growthGoal(c){return Math.ceil((16+c.pop*3)*(state.path==="arts"?.8:1));}
+function changePopulation(foodGained=0,foodBefore=0){
  for(const c of state.cities){
-  if(c.owner!=="player"){if(state.year%8===0)c.pop=Math.min(30,c.pop+1);continue;}
-  if(state.resources.food===0){if(state.year%3===0)c.pop=Math.max(1,c.pop-1);continue;}
-  const interval=state.path==="arts"?2:3;
-  if(state.year%interval===0&&c.pop<populationCap(c)&&state.resources.food>=c.pop+5){
-   const before=influenceRadius(c);c.pop++;
-   if(influenceRadius(c)>before)record(c.name+" grows; its borders expand to radius "+influenceRadius(c)+".");
+  c.growth??=0;
+  if(c.owner!=="player"){if(state.year%17===0)c.pop=Math.min(30,c.pop+1);continue;}
+  if(state.resources.food===0){
+   c.growth=Math.max(0,c.growth-2);
+   if(state.year%6===0&&c.pop>1){c.pop--;record(c.name+" loses a citizen to food shortages.");}
+   continue;
+  }
+  if(c.pop>=populationCap(c)){c.growth=Math.min(c.growth,growthGoal(c)-1);continue;}
+  // Growth needs stable reserves and actual yearly food production.
+  // No more automatic +1 citizens every 3 years just because the storehouse has food.
+  const reserve=state.resources.food>=c.pop*3+10;
+  const surplus=foodGained>=Math.ceil(c.pop*.8);
+  if(!reserve||!surplus){c.growth=Math.max(0,c.growth-.35);continue;}
+  c.growth+=1+(foodGained>=c.pop*2+3&&state.resources.food>=c.pop*5+16?.45:0)+upgrade(c,"granary")*.25;
+  if(c.growth>=growthGoal(c)){
+   c.growth=0;const before=influenceRadius(c);c.pop++;
+   record(c.name+" grows to "+c.pop+" citizens after years of sustained food production.");
+   if(influenceRadius(c)>before)record(c.name+"'s influence border expands to radius "+influenceRadius(c)+".");
   }
  }
 }
@@ -611,9 +624,9 @@ function pathGrowth(){
 }
 function endYear(){
  syncStage(); // End Year is the only irreversible yearly action.
- state.year++;state.units.forEach(u=>u.moved=false);
+ state.year++;
  if(myCities().length){
-  harvestResources();
+  const beforeFood=state.resources.food,production=harvestResources();
   state.resources.food=Math.max(0,state.resources.food-citizens());
   const scienceGained=researchRate();state.research+=scienceGained;state.knowledge+=scienceGained;
   if(state.researchProject){
@@ -628,9 +641,11 @@ function endYear(){
   state.culture+=myCities().reduce((n,c)=>n+5*upgrade(c,"theatre"),0)+(state.path==="arts"?1:0);
   state.faith+=myCities().reduce((n,c)=>n+5*upgrade(c,"temple"),0)+(state.path==="faith"?1:0);
   state.military+=myCities().reduce((n,c)=>n+2*upgrade(c,"barracks"),0);
-  changePopulation();for(const city of myCities())balanceCityLabor(city);progressBuilding();pathGrowth();
+  changePopulation(production.food,beforeFood);for(const city of myCities())balanceCityLabor(city);progressBuilding();pathGrowth();
   if(state.resources.food===0)record("Food shortages: work more forage or fertile tiles.");
  }
+ villageYearlyEffects();roamEnemies();spawnEncounters();
+ state.units.forEach(u=>u.moved=false);
  recalcBorders();state.stageYear=state.year;state.stage=availableFrom("move");menu="";save();renderUI();toast("Year "+state.year+" · Units can move again.");
 }
 function startConstruction(kind,cityId){
@@ -687,12 +702,20 @@ function move(x,y){
 function attack(rivalId){
  syncStage();
  const u=activeUnit(),c=getCity(rivalId);
- if(!fighter(u)||u.moved||state.path!=="war"||!c||c.owner!=="rival")return toast("Select a ready army and a hostile city.");
+ if(!fighter(u)||u.moved||state.path!=="war"||!c||c.owner!=="rival"||!currentlyVisible(c.x,c.y))return toast("Select a ready army and a hostile city.");
  if(distance(u.x,u.y,c.x,c.y)>1)return toast("Move an army next to the rival city.");
- const offense=u.strength+Math.floor(state.military/15)+myCities().reduce((n,t)=>n+2*upgrade(t,"barracks"),0);
- const defense=c.army+Math.floor(c.pop/6);u.moved=true;
- if(offense>=defense){c.owner="player";c.name+=" · Captured";c.buildings={};c.army=2;u.strength=Math.max(1,u.strength-1);record("You conquer "+c.name+".");}
- else{u.strength--;c.army=Math.max(1,c.army-1);record("Your army is repelled by "+c.name+".");if(u.strength<=0){state.units=state.units.filter(z=>z.id!==u.id);moving=null;}}
+ const offense=unitAttack(u)+Math.floor(state.military/18)+myCities().reduce((n,t)=>n+2*upgrade(t,"barracks"),0);
+ const defense=cityDefense(c);u.moved=true;
+ if(offense+Math.floor(eventRng(c.x+c.y*13)*3)>=defense){
+  c.owner="player";c.name+=" · Captured";c.buildings={};c.army=2;u.xp=(u.xp||0)+3;
+  record("You conquer "+c.name+" (attack "+offense+" vs defence "+defense+").");
+ }else{
+  const damage=Math.max(1,cityAttack(c)+Math.ceil(defense/5)-unitDefense(u));
+  u.hp=Math.max(0,unitHP(u)-damage);
+  c.army=Math.max(1,(c.army||1)-1);
+  record("Your attack ("+offense+") fails against "+c.name+"'s defence ("+defense+"). "+unitTitle(u)+" takes "+damage+" damage.");
+  if(u.hp<=0)dropUnit(u,unitTitle(u)+" falls in the siege.");
+ }
  recalcBorders();pathGrowth();autoAdvance("move");save();renderUI();
 }
 function htmlSafe(str){return String(str).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
