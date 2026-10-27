@@ -255,7 +255,8 @@ function adjacentUnit(e,ready=false,fighting=false){
 function rewardSupplies(e,multiplier=1){
  const d=wildTypes[e.type],extra=known("hunting")&&e.type!=="raider"&&e.type!=="village"?2:0,earned={food:0,wood:0,stone:0};
  for(const res of ["food","wood","stone"]){
-  const n=Math.floor((d[res]||0)*multiplier)+(res==="food"?extra:0);
+  const amount=e.type==="village"?(d[res]||0):Math.ceil((d[res]||0)/3);
+  const n=Math.floor(amount*multiplier)+(res==="food"?extra:0);
   if(n){state.resources[res]=(state.resources[res]||0)+n;earned[res]=n;}
  }
  return earned;
@@ -384,7 +385,7 @@ function villageYearlyEffects(){
  for(const c of myCities()){
   if((c.captives||0)>0){
    // Captives are not citizens: they speed construction, consume food and create unrest.
-   state.resources.food=Math.max(0,state.resources.food-c.captives);
+   // Captive upkeep is already charged in payUpkeep().
    c.unrest=(c.unrest||0)+1;
    if(c.unrest>=15&&state.year%5===0){
     c.captives--;c.unrest=Math.max(0,c.unrest-5);record("A captive escapes from "+c.name+" amid unrest.");
@@ -1224,6 +1225,7 @@ function payUpkeep(){
 function progressBuilding(){
  const p=state.project;if(!p)return;
  const c=getCity(p.city);if(!c||c.owner!=="player"){state.project=null;return;}
+ if(p.stalledYear===state.year){p.rate=0;return;}
  const progress=constructionRate(c,p.kind);
  p.left=Math.max(0,p.left-progress);p.rate=progress;
  if(p.left===0){
@@ -1243,7 +1245,7 @@ function progressBuilding(){
  }
 }
 function growthGoal(c){return Math.ceil((12+c.pop*2)*(state.path==="arts"?.85:1));}
-function changePopulation(foodGained=0,foodBefore=0){
+function changePopulation(foodGained=0,foodBefore=0,foodUpkeep=0){
  for(const c of state.cities){
   c.growth??=0;
   if(c.owner!=="player"){if(state.year%17===0)c.pop=Math.min(30,c.pop+1);continue;}
@@ -1255,10 +1257,10 @@ function changePopulation(foodGained=0,foodBefore=0){
   if(c.pop>=populationCap(c)){c.growth=Math.min(c.growth,growthGoal(c)-1);continue;}
   // Growth needs stable reserves and actual yearly food production.
   // No more automatic +1 citizens every 3 years just because the storehouse has food.
-  const reserve=state.resources.food>=c.pop*3+10;
-  const surplus=foodGained>=Math.ceil(c.pop*.8);
+  const reserve=state.resources.food>=c.pop*2+6;
+  const surplus=foodGained>=Math.ceil(c.pop/2)&&foodGained>foodUpkeep;
   if(!reserve||!surplus){c.growth=Math.max(0,c.growth-.35);continue;}
-  c.growth+=1+(foodGained>=c.pop*2+3&&state.resources.food>=c.pop*5+16?.45:0)+upgrade(c,"granary")*.25;
+  c.growth+=1+(foodGained>=foodUpkeep+3&&state.resources.food>=c.pop*4+10?.35:0)+upgrade(c,"granary")*.2;
   if(c.growth>=growthGoal(c)){
    c.growth=0;const before=influenceRadius(c);c.pop++;
    record(c.name+" grows to "+c.pop+" citizens after years of sustained food production.");
@@ -1294,7 +1296,8 @@ function endYear(){
  state.year++;
  if(myCities().length){
   const beforeFood=state.resources.food,production=harvestResources();
-  state.resources.food=Math.max(0,state.resources.food-citizens());
+  state.economyHarvest=production;
+  const costs=payUpkeep();
   const scienceGained=researchRate();state.research+=scienceGained;state.knowledge+=scienceGained;
   if(state.researchProject){
    const rp=state.researchProject;rp.progress=Math.min(rp.total,rp.progress+scienceGained);rp.rate=scienceGained;
@@ -1308,7 +1311,7 @@ function endYear(){
   state.culture+=myCities().reduce((n,c)=>n+5*upgrade(c,"theatre"),0)+(state.path==="arts"?1:0);
   state.faith+=myCities().reduce((n,c)=>n+5*upgrade(c,"temple"),0)+(state.path==="faith"?1:0);
   state.military+=myCities().reduce((n,c)=>n+2*upgrade(c,"barracks"),0);
-  changePopulation(production.food,beforeFood);for(const city of myCities())balanceCityLabor(city);progressBuilding();pathGrowth();
+  changePopulation(production.food,beforeFood,costs.upkeep.food);for(const city of myCities())balanceCityLabor(city);progressBuilding();pathGrowth();
   if(state.resources.food===0)record("Food shortages: work more forage or fertile tiles.");
  }
  villageYearlyEffects();roamEnemies();spawnEncounters();
@@ -1483,12 +1486,12 @@ function panelContents(){
  if(menu==="workers"){
   const free=unassignedWorkers(),assigned=assignedWorkers();
   output='<div class="worker-counter"><span class="worker-number">'+free+'</span><span><strong>Workers remaining</strong><small>'+assigned+' assigned / '+citizens()+' citizens</small></span></div>';
-  output+='<p class="hint">Assign people to resource tiles or construction. Construction is slower now: a few builders help, but additional builders have diminishing returns. 1 builder adds +1 work/year, 3 add +2, and 5 add +3. Builders cannot gather resources at the same time. Reassign before End Year.</p>';
+  output+='<p class="hint">Each unimproved worker gathers 1 resource/year. Every 3 assigned citizens consume 1 food/year, and every warrior or ship crew uses 1 more. Construction uses timber and sometimes stone for tools. Keep enough food workers to support your army.</p>';
   output+=item("🌾 Assign all resource workers","Automatically balances food, timber, stone and other visible resources. Keep citizens free if you want them building.",btn("Assign all resource workers","assignAll",!myCities().some(c=>freeWorkers(c)>0&&availableWorkTiles(c).length>0),"primary"));
   let shown=0;
   for(const c of myCities()){
    const builders=builderCount(c),speed=constructionRate(c,state.project?.kind||"house");
-   output+=item("🏗 Builders — "+htmlSafe(c.name),"Builders: "+builders+" · "+cityWork(c)+" resource workers · "+freeWorkers(c)+" unassigned. Construction speed: "+speed+" work/year. "+
+   output+=item("🏗 Builders — "+htmlSafe(c.name),"Builders: "+builders+" · "+cityWork(c)+" resource workers · "+freeWorkers(c)+" unassigned. Construction speed: "+speed+" work/year (plus supplies every few years). "+
     (state.project&&state.project.city===c.id?estimateWork(state.project.left,speed)+" years left.":"Start a project in the City panel."),
     btn("− Remove builder","builder:"+c.id+":-1",builders===0)+btn("＋ Assign builder","builder:"+c.id+":1",freeWorkers(c)<1,"primary"));
    for(let y=Math.max(0,c.y-influenceRadius(c));y<=Math.min(MAP_H-1,c.y+influenceRadius(c));y++)
@@ -1497,7 +1500,7 @@ function panelContents(){
      const d=deposit(x,y),working=state.works[pos(x,y)];
      if(!d||!known(d.tech)||(!working&&remaining(x,y)===0)||shown>=24)continue;
      const jobLabel=(working?"✓ ":"")+d.icon+" "+d.type+" · "+x+","+y;
-     output+=item(jobLabel,d.type==="fish"?"Renewable fishing grounds · "+(4+2*upgrade(c,"fishingHut")+upgrade(c,"smokehouse")+upgrade(c,"harbor")+(known("netmaking")?2:0)+(known("engineering")?1:0))+" food/year.":d.type==="food"||d.type==="animals"?"Renewable after research.":remaining(x,y)+" units remaining.",
+     output+=item(jobLabel,d.type==="fish"?"Renewable fishing grounds · "+workedYield(c,d)+" food/year.":d.type==="food"||d.type==="animals"?"Renewable · "+workedYield(c,d)+" food/year.":workedYield(c,d)+" per year · "+remaining(x,y)+" remaining.",
       btn(working?"− Remove worker":"＋ Assign worker","work:"+x+":"+y,!working&&freeWorkers(c)===0,working?"secondary":"primary"));
      shown++;
     }
