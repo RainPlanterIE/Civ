@@ -1100,14 +1100,15 @@ function tree(x,y){
 }
 function structure(x,y,c){
  const z=scale,high=39*z,w=30*z,h=15*z;
- const roof=c.owner==="player"?"#a87c51":c.owner==="ally"?"#73a59e":"#975f54";
+ const nationColour=c.colour||PALETTE[c.owner]||"#975f54";
+ const roof=c.owner==="player"?"#a87c51":c.owner==="ally"?"#73a59e":nationColour;
  polygon([[x-w,y],[x,y+h],[x,y+h-high],[x-w,y-high]],"#cbb187","#5e4d3a");
  polygon([[x,y+h],[x+w,y],[x+w,y-high],[x,y+h-high]],"#987e67","#5e4d3a");
  polygon([[x-w,y-high],[x,y-h-high],[x+w,y-high],[x,y+h-high]],roof,"#654b40");
  const count=Object.values(c.buildings).reduce((a,b)=>a+b,0);
  if(count){ctx.fillStyle="#e9ce96";ctx.fillRect(x-22*z,y-12*z,9*z,10*z);ctx.fillRect(x+13*z,y-14*z,8*z,10*z);}
- ctx.fillStyle=PALETTE[c.owner];ctx.fillRect(x-3*z,y-high-24*z,3*z,24*z);
- polygon([[x,y-high-23*z],[x+18*z,y-high-17*z],[x,y-high-12*z]],PALETTE[c.owner]);
+ ctx.fillStyle=nationColour;ctx.fillRect(x-3*z,y-high-24*z,3*z,24*z);
+ polygon([[x,y-high-23*z],[x+18*z,y-high-17*z],[x,y-high-12*z]],nationColour);
  ctx.font="bold "+Math.max(11,14*z)+"px Georgia";ctx.textAlign="center";ctx.fillStyle="#fff4d6";
  ctx.shadowColor="#0a2416";ctx.shadowBlur=5;ctx.fillText(c.name,x,y-high-33*z);ctx.shadowBlur=0;ctx.textAlign="left";
 }
@@ -1284,7 +1285,7 @@ function drawWorldOverview(){
  for(const c of state.cities){
   if(c.owner!=="player"&&!currentlyVisible(c.x,c.y))continue;
   ctx2.beginPath();ctx2.arc(c.x,c.y,c.owner==="player"?3.5:2.3,0,Math.PI*2);
-  ctx2.fillStyle=c.owner==="player"?"#ffde91":c.owner==="ally"?"#80d5b0":"#e78473";ctx2.fill();
+  ctx2.fillStyle=c.owner==="player"?"#ffde91":c.owner==="ally"?"#80d5b0":(c.colour||"#e78473");ctx2.fill();
   ctx2.strokeStyle="#152622";ctx2.lineWidth=1;ctx2.stroke();
  }
  for(const u of state.units){
