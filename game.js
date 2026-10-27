@@ -1,7 +1,7 @@
 (()=>{
 "use strict";
 const canvas=document.getElementById("world"),ctx=canvas.getContext("2d"),get=id=>document.getElementById(id);
-const SIZE=32,TW=86,TH=43,STORE="civ-influence-v3";
+const MAP_W=CIV_WORLD.W,MAP_H=CIV_WORLD.H,SIZE=MAP_W,TW=86,TH=43,STORE="civ-earth-v4",LEGACY_STORE="civ-influence-v3";
 const PALETTE={player:"#f2ca7e",rival:"#d7796c",ally:"#8cd2c8",contested:"#ede0ac"};
 let width=0,height=0,dpr=1,scale=1,camera={x:0,y:0},selected=null,menu="",moving=null,pointer=null,toastUntil=0;
 const paths={science:"🔬 Science",arts:"🎭 Arts",faith:"⛪ Faith",war:"⚔ War"};
@@ -55,32 +55,13 @@ const bonusText=id=>{
  const map={agriculture:"Fertile fields",geology:"Stone quarries",writing:"Libraries and markets",husbandry:"Pastures and stables",metalworking:"Ore veins, forges and swordsmen",engineering:"More resources per tile",hunting:"Hunting Lodges",scouting:"Scouts and Lookout Towers",toolmaking:"Workshops",archery:"Archers and Archery Ranges",drill:"Spearmen and Training Grounds",masonry:"City Walls"};
  return map[id]||"New discoveries";
 };
-const rivals=[
- {id:"r1",x:5,y:5,name:"Ashen Hold",pop:7,owner:"rival",army:7,culture:0,faith:0,buildings:{}},
- {id:"r2",x:26,y:7,name:"Riverwatch",pop:7,owner:"rival",army:7,culture:0,faith:0,buildings:{}},
- {id:"r3",x:24,y:26,name:"Greenhaven",pop:7,owner:"rival",army:7,culture:0,faith:0,buildings:{}}
-];
-const dice=(x,y)=>{const v=Math.sin(x*127.1+y*311.7+42.9)*43758.5453;return v-Math.floor(v);};
-const inMap=(x,y)=>x>=0&&x<SIZE&&y>=0&&y<SIZE;
+const dice=(x,y)=>CIV_WORLD.noise(x,y,42);
+const inMap=(x,y)=>CIV_WORLD.valid(x,y);
 const pos=(x,y)=>x+","+y;
 const decode=str=>str.split(",").map(Number);
 const distance=(x,y,a,b)=>Math.max(Math.abs(x-a),Math.abs(y-b));
-function terrain(x,y){
- if(!inMap(x,y))return "water";
- const water=Math.sin(x*.37+y*.055)+Math.cos(y*.32-x*.09);
- if(water>1.72)return "water";
- const value=dice(Math.floor(x/2),Math.floor(y/2))*.56+dice(x,y)*.44;
- return value>.73?"forest":value<.18?"hill":"grass";
-}
-function deposit(x,y){
- const t=terrain(x,y),r=dice(x+17,y+31);
- if(t==="forest")return {type:"wood",max:35+Math.floor(r*45),tech:"forestry",icon:"🌲"};
- if(t==="hill")return r>.70?{type:"ore",max:14+Math.floor(r*30),tech:"metalworking",icon:"⚒"}:{type:"stone",max:25+Math.floor(r*45),tech:"geology",icon:"🪨"};
- if(t==="grass"&&r>.84)return {type:"animals",max:5+Math.floor(r*8),tech:"husbandry",icon:"🐂"};
- if(t==="grass"&&r>.43)return {type:"food",max:18+Math.floor(r*26),tech:"agriculture",icon:"🌾"};
- if(t==="grass")return {type:"forage",max:20+Math.floor(r*20),tech:"foraging",icon:"🍓"};
- return null;
-}
+const terrain=(x,y)=>CIV_WORLD.climate(x,y);
+const deposit=(x,y)=>CIV_WORLD.deposit(x,y);
 
 const wildTypes={
  deer:{name:"Deer",icon:"🦌",hp:3,attack:1,defense:1,food:7,description:"A shy animal. Hunting yields food."},
@@ -93,17 +74,33 @@ function makeEncounter(type,x,y,id){
  const d=wildTypes[type];
  return {id,type,x,y,hp:d.hp,attack:d.attack,defense:d.defense,status:"neutral",learned:false,lastGift:0};
 }
-function initialEncounters(){
- const result=[],occupied=new Set(rivals.map(c=>pos(c.x,c.y)));
- const accepted=(x,y,min=2)=>inMap(x,y)&&terrain(x,y)!=="water"&&!occupied.has(pos(x,y))&&distance(x,y,15,15)>min&&!result.some(e=>distance(x,y,e.x,e.y)<(e.type==="village"?4:2))&&!rivals.some(c=>distance(c.x,c.y,x,y)<=2);
- const add=(type,x,y)=>{if(!accepted(x,y,type==="village"?4:2))return false;result.push(makeEncounter(type,x,y,"e"+(result.length+1)));occupied.add(pos(x,y));return true;};
- // One early village within an achievable few turns of the starting settlement.
- const nearby=[];for(let y=8;y<=22;y++)for(let x=8;x<=22;x++)if(distance(15,15,x,y)>=5&&distance(15,15,x,y)<=8)nearby.push({x,y,score:dice(x+99,y+67)});
- nearby.sort((a,b)=>b.score-a.score);for(const p of nearby)if(add("village",p.x,p.y))break;
- for(const [type,number] of [["village",7],["deer",10],["boar",7],["wolf",4],["raider",5]]){
-  const candidates=[];for(let y=1;y<SIZE-1;y++)for(let x=1;x<SIZE-1;x++)candidates.push({x,y,score:dice(x+number*91,y+number*73)+dice(x+3,y+number*9)*.2});
-  candidates.sort((a,b)=>b.score-a.score);
-  let count=0;for(const p of candidates){if(count>=number)break;if(add(type,p.x,p.y))count++;}
+function initialEncounters(scenario){
+ const sites=[scenario.player,...scenario.rivals],result=[],ids=new Set(sites.map(c=>pos(c.x,c.y)));
+ const add=(type,x,y)=>{
+  if(!inMap(x,y)||terrain(x,y)==="water"||ids.has(pos(x,y)))return false;
+  if(sites.some(c=>distance(c.x,c.y,x,y)<4))return false;
+  if(result.some(e=>distance(e.x,e.y,x,y)<(e.type==="village"||type==="village"?5:2)))return false;
+  result.push(makeEncounter(type,x,y,"e"+(result.length+1)));
+  ids.add(pos(x,y));return true;
+ };
+ const tryNear=(type,site,min,max,iteration)=>{
+  for(let j=0;j<130;j++){
+   const angle=2*Math.PI*CIV_WORLD.noise(site.x+j*7,site.y+iteration*71+j,scenario.seed%901);
+   const radius=min+Math.floor(CIV_WORLD.noise(site.x+iteration*29+j*3,site.y+j*11,23)*Math.max(1,max-min+1));
+   const x=site.x+Math.round(Math.cos(angle)*radius),y=site.y+Math.round(Math.sin(angle)*radius);
+   if(add(type,x,y))return true;
+  }return false;
+ };
+ for(let i=0;i<sites.length;i++){
+  const site=sites[i];
+  for(let n=0;n<(i===0?3:2);n++)tryNear("village",site,7,18,n+i*7);
+  for(let n=0;n<6;n++){
+   const ox=site.x+Math.floor((CIV_WORLD.noise(i,n*21,scenario.seed%617)-.5)*24);
+   const oy=site.y+Math.floor((CIV_WORLD.noise(i*23,n*9,scenario.seed%613)-.5)*24);
+   const fauna=CIV_WORLD.wildlife(ox,oy);
+   tryNear(fauna||"deer",site,5,21,n+i*31);
+  }
+  if(i%2===0)tryNear("raider",site,12,22,i+100);
  }
  return result;
 }
@@ -259,12 +256,16 @@ function villageYearlyEffects(){
   }else c.unrest=Math.max(0,(c.unrest||0)-1);
  }
 }
-function fresh(){
- return {version:3,year:1,tech:["foraging","forestry"],research:0,knowledge:0,culture:0,faith:0,military:0,
- resources:{food:24,wood:14,stone:6,ore:0,metal:0,animals:0},
- cities:rivals.map(r=>({...r,buildings:{},growth:0,captives:0,unrest:0})),
- units:[{id:"u1",type:"settler",x:15,y:15,moved:false,owner:"player",strength:1,hp:6,xp:0}],
- works:{},builders:{},extracted:{},explored:{},encounters:initialEncounters(),nextEncounterId:1000,path:null,project:null,researchProject:null,stage:"move",stageYear:1,events:["A lone settler enters the valley."],nextId:2,victory:null};
+function fresh(scenario=CIV_WORLD.scenario()){
+ const leader=scenario.player;
+ return {version:4,world:"earth",worldSeed:scenario.seed,leader:{...leader},year:1,
+ tech:["foraging","forestry"],research:0,knowledge:0,culture:0,faith:0,military:0,
+ resources:{food:32,wood:24,stone:14,ore:0,metal:0,animals:0},
+ cities:scenario.rivals.map((c,i)=>({id:"r"+(i+1),x:c.x,y:c.y,name:c.capital,civId:c.id,civilisation:c.name,leader:c.leader,colour:c.color,pop:7,owner:"rival",army:6,culture:0,faith:0,buildings:{},growth:0,captives:0,unrest:0})),
+ units:[{id:"u1",type:"settler",x:leader.x,y:leader.y,moved:false,owner:"player",strength:1,hp:6,xp:0}],
+ works:{},builders:{},extracted:{},explored:{},encounters:initialEncounters(scenario),nextEncounterId:1000,
+ path:null,project:null,researchProject:null,stage:"move",stageYear:1,
+ events:[leader.leader+" leads "+leader.name+" from "+leader.capital+"."],nextId:2,victory:null};
 }
 let inGame=false;
 let state;
@@ -287,8 +288,8 @@ function explored(x,y){return !!state.explored?.[pos(x,y)];}
 function updateFog(){
  visible=new Set();
  const reveal=(x,y,r)=>{
-  for(let j=Math.max(0,y-r);j<=Math.min(SIZE-1,y+r);j++)
-   for(let i=Math.max(0,x-r);i<=Math.min(SIZE-1,x+r);i++){
+  for(let j=Math.max(0,y-r);j<=Math.min(MAP_H-1,y+r);j++)
+   for(let i=Math.max(0,x-r);i<=Math.min(MAP_W-1,x+r);i++){
     if(distance(x,y,i,j)>r)continue;
     const key=pos(i,j);visible.add(key);state.explored[key]=1;
    }
@@ -439,8 +440,8 @@ function balanceCityLabor(c){
 }
 function availableWorkTiles(c){
  const radius=influenceRadius(c),tiles=[];
- for(let y=Math.max(0,c.y-radius);y<=Math.min(SIZE-1,c.y+radius);y++)
-  for(let x=Math.max(0,c.x-radius);x<=Math.min(SIZE-1,c.x+radius);x++){
+ for(let y=Math.max(0,c.y-radius);y<=Math.min(MAP_H-1,c.y+radius);y++)
+  for(let x=Math.max(0,c.x-radius);x<=Math.min(MAP_W-1,c.x+radius);x++){
    const key=pos(x,y),d=deposit(x,y);
    if(borders.get(key)!==c.id||cityAt(x,y)||state.works[key]||!d||!known(d.tech))continue;
    if(remaining(x,y)===0&&d.type!=="food"&&d.type!=="animals")continue;
@@ -810,8 +811,8 @@ function panelContents(){
    output+=item("🏗 Builders — "+htmlSafe(c.name),"Builders: "+builders+" · "+cityWork(c)+" resource workers · "+freeWorkers(c)+" unassigned. Construction speed: "+speed+" work/year. "+
     (state.project&&state.project.city===c.id?estimateWork(state.project.left,speed)+" years left.":"Start a project in the City panel."),
     btn("− Remove builder","builder:"+c.id+":-1",builders===0)+btn("＋ Assign builder","builder:"+c.id+":1",freeWorkers(c)<1,"primary"));
-   for(let y=Math.max(0,c.y-influenceRadius(c));y<=Math.min(SIZE-1,c.y+influenceRadius(c));y++)
-    for(let x=Math.max(0,c.x-influenceRadius(c));x<=Math.min(SIZE-1,c.x+influenceRadius(c));x++){
+   for(let y=Math.max(0,c.y-influenceRadius(c));y<=Math.min(MAP_H-1,c.y+influenceRadius(c));y++)
+    for(let x=Math.max(0,c.x-influenceRadius(c));x<=Math.min(MAP_W-1,c.x+influenceRadius(c));x++){
      if(borders.get(pos(x,y))!==c.id||cityAt(x,y))continue;
      const d=deposit(x,y),working=state.works[pos(x,y)];
      if(!d||!known(d.tech)||(!working&&remaining(x,y)===0)||shown>=24)continue;
