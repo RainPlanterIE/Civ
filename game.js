@@ -81,12 +81,178 @@ function deposit(x,y){
  if(t==="grass")return {type:"forage",max:20+Math.floor(r*20),tech:"foraging",icon:"🍓"};
  return null;
 }
+
+const wildTypes={
+ deer:{name:"Deer",icon:"🦌",hp:3,attack:1,defense:1,food:7,description:"A shy animal. Hunting yields food."},
+ boar:{name:"Wild boar",icon:"🐗",hp:5,attack:3,defense:2,food:10,description:"Dangerous wild game; may injure a hunter."},
+ wolf:{name:"Wolf",icon:"🐺",hp:5,attack:4,defense:2,food:4,description:"A dangerous predator that may attack nearby units."},
+ raider:{name:"Rival warrior",icon:"⚔️",hp:6,attack:4,defense:3,food:4,wood:5,description:"An armed wanderer who can raid travellers and cities."},
+ village:{name:"Independent village",icon:"🏘️",hp:8,attack:3,defense:4,food:8,wood:8,stone:3,description:"An independent community. Trade, learn, befriend or raid it."}
+};
+function makeEncounter(type,x,y,id){
+ const d=wildTypes[type];
+ return {id,type,x,y,hp:d.hp,attack:d.attack,defense:d.defense,status:"neutral",learned:false,lastGift:0};
+}
+function initialEncounters(){
+ const result=[],occupied=new Set(rivals.map(c=>pos(c.x,c.y)));
+ const accepted=(x,y,min=2)=>inMap(x,y)&&terrain(x,y)!=="water"&&!occupied.has(pos(x,y))&&distance(x,y,15,15)>min&&!result.some(e=>distance(x,y,e.x,e.y)<(e.type==="village"?4:2))&&!rivals.some(c=>distance(c.x,c.y,x,y)<=2);
+ const add=(type,x,y)=>{if(!accepted(x,y,type==="village"?4:2))return false;result.push(makeEncounter(type,x,y,"e"+(result.length+1)));occupied.add(pos(x,y));return true;};
+ // One early village within an achievable few turns of the starting settlement.
+ const nearby=[];for(let y=8;y<=22;y++)for(let x=8;x<=22;x++)if(distance(15,15,x,y)>=5&&distance(15,15,x,y)<=8)nearby.push({x,y,score:dice(x+99,y+67)});
+ nearby.sort((a,b)=>b.score-a.score);for(const p of nearby)if(add("village",p.x,p.y))break;
+ for(const [type,number] of [["village",7],["deer",10],["boar",7],["wolf",4],["raider",5]]){
+  const candidates=[];for(let y=1;y<SIZE-1;y++)for(let x=1;x<SIZE-1;x++)candidates.push({x,y,score:dice(x+number*91,y+number*73)+dice(x+3,y+number*9)*.2});
+  candidates.sort((a,b)=>b.score-a.score);
+  let count=0;for(const p of candidates){if(count>=number)break;if(add(type,p.x,p.y))count++;}
+ }
+ return result;
+}
+function unitHP(u){return Math.max(0,u.hp??unitDef(u.type)?.hp??6);}
+function unitAttack(u){return Math.max(1,(u.strength||unitDef(u.type)?.strength||1)+1+Math.floor((u.xp||0)/3));}
+function unitDefense(u){return Math.max(1,Math.ceil((u.strength||1)/2)+1+(u.type==="spearman"?2:0));}
+function cityDefense(c){return 3+Math.ceil(c.pop/2)+Math.floor((c.army||0)/3)+4*upgrade(c,"walls")+upgrade(c,"lookout")+state.units.filter(u=>u.owner==="player"&&fighter(u)&&distance(u.x,u.y,c.x,c.y)<=1).reduce((n,u)=>n+Math.ceil(unitDefense(u)/2),0);}
+function cityAttack(c){return 1+Math.floor(c.pop/4)+upgrade(c,"barracks")+upgrade(c,"training");}
+function encounterAt(x,y){return (state.encounters||[]).find(e=>e.x===x&&e.y===y&&e.hp>0);}
+function eventRng(seed){return dice(seed*17+state.year*11,seed*31+state.year*19);}
+function closestCity(x,y){return myCities().sort((a,b)=>distance(a.x,a.y,x,y)-distance(b.x,b.y,x,y))[0];}
+function adjacentUnit(e,ready=false,fighting=false){
+ return state.units.filter(u=>u.owner==="player"&&distance(u.x,u.y,e.x,e.y)<=1&&(!ready||!u.moved)&&(!fighting||fighter(u)))
+  .sort((a,b)=>unitAttack(b)-unitAttack(a))[0];
+}
+function rewardSupplies(e,multiplier=1){
+ const d=wildTypes[e.type],extra=known("hunting")&&["deer","boar","wolf"].includes(e.type)?2:0;
+ for(const res of ["food","wood","stone"]){const n=(d[res]||0)*multiplier+(res==="food"?extra:0);if(n)state.resources[res]=(state.resources[res]||0)+n;}
+}
+function dropUnit(u,msg){
+ state.units=state.units.filter(a=>a.id!==u.id);if(moving===u.id)moving=null;record(msg);
+}
+function grantVillageKnowledge(n){
+ state.research+=n;state.knowledge+=n;
+ if(state.researchProject){
+  const p=state.researchProject;p.progress=Math.min(p.total,p.progress+n);
+  if(p.progress>=p.total){if(!known(p.id))state.tech.push(p.id);record(techs[p.id].name+" discovered through village knowledge.");state.researchProject=null;}
+ }
+}
+function encounterAction(id,action){
+ const e=(state.encounters||[]).find(o=>o.id===id&&o.hp>0);if(!e||!currentlyVisible(e.x,e.y))return toast("This encounter is no longer in sight.");
+ const ready=adjacentUnit(e,true,action==="fight"||action==="raid"),any=adjacentUnit(e,false,action==="fight"||action==="raid");
+ if(!ready){return toast(any?"That unit has already acted. End Year to act again.":"Move a "+(action==="fight"||action==="raid"?"fighter":"unit")+" next to the encounter first.");}
+ if(action==="learn"){
+  if(e.type!=="village"||e.learned||e.status==="raided")return toast("No new knowledge is available here.");
+  e.learned=true;ready.moved=true;grantVillageKnowledge(6);record("Your envoy learns local traditions: +6 research."); 
+ }else if(action==="befriend"){
+  if(e.type!=="village"||e.status!=="neutral")return toast("This village cannot form another pact.");
+  e.status="friendly";ready.moved=true;rewardSupplies(e,.5);e.lastGift=state.year;
+  state.culture+=4;record("You befriend a village: +4 culture and gifts of food and timber.");
+ }else if(action==="trade"){
+  if(e.type!=="village"||e.status!=="friendly"||state.year-e.lastGift<5)return toast("The village has no supplies ready to trade yet.");
+  ready.moved=true;e.lastGift=state.year;rewardSupplies(e,.65);record("Friendly villagers exchange food and wood with your travellers.");
+ }else if(action==="fight"||action==="raid"){
+  if(action==="raid"&&e.type!=="village")return;
+  if(action==="fight"&&e.type==="village")return toast("Choose raid if you wish to attack a village.");
+  if(e.type==="village"&&e.status==="friendly"){state.culture=Math.max(0,state.culture-12);}
+  ready.moved=true;
+  const strike=unitAttack(ready)+Math.floor(eventRng(Number(id.replace(/\D/g,""))||1)*3);
+  const inflicted=Math.max(1,strike-e.defense+2);
+  e.hp-=inflicted;
+  const retaliation=Math.max(0,e.attack+Math.floor(eventRng(ready.x*71+ready.y*13)*2)-unitDefense(ready));
+  ready.hp=Math.max(0,unitHP(ready)-retaliation);
+  if(e.hp<=0){
+   if(e.type==="village"){
+    e.status="raided";e.hp=0;
+    rewardSupplies(e,1);
+    const c=closestCity(e.x,e.y);
+    if(c){
+     c.captives=(c.captives||0)+2;
+     c.unrest=(c.unrest||0)+6;
+     state.culture=Math.max(0,state.culture-8);
+     record("The village is seized. Two captives are taken for forced construction labour; unrest rises and culture falls.");
+    }else record("The village is raided for supplies.");
+   }else{rewardSupplies(e);record(unitTitle(ready)+" defeats "+wildTypes[e.type].name+". Supplies recovered.");}
+   ready.xp=(ready.xp||0)+2;
+   state.encounters=state.encounters.filter(item=>item.id!==id);
+  }else record(unitTitle(ready)+" strikes "+wildTypes[e.type].name+" for "+inflicted+" damage. "+e.hp+" health remains.");
+  if(ready.hp<=0)dropUnit(ready,unitTitle(ready)+" falls in combat.");
+ }
+ autoAdvance("move");updateFog();menu="";save();renderUI();
+}
+function spawnEncounters(){
+ if(!state.encounters)state.encounters=[];
+ const types=["deer","boar","wolf","raider"];
+ let counts={};for(const e of state.encounters)counts[e.type]=(counts[e.type]||0)+1;
+ for(let i=0;i<2;i++){
+  if(state.year%3!==0&&i>0)continue;
+  const chance=eventRng(i*83+41);
+  const type=chance>.88?"raider":chance>.73?"wolf":chance>.45?"boar":"deer";
+  if((counts[type]||0)>=(type==="raider"?7:12))continue;
+  for(let t=0;t<36;t++){
+   const seed=state.year*389+i*37+t*19;
+   const x=1+Math.floor(eventRng(seed)*30),y=1+Math.floor(eventRng(seed+333)*30);
+   if(terrain(x,y)==="water"||cityAt(x,y)||encounterAt(x,y)||state.units.some(u=>u.x===x&&u.y===y))continue;
+   if(state.encounters.some(e=>e.type==="village"&&distance(e.x,e.y,x,y)<=2))continue;
+   if(type==="raider"&&myCities().some(c=>distance(c.x,c.y,x,y)<4))continue;
+   state.encounters.push(makeEncounter(type,x,y,"e"+state.nextEncounterId++));counts[type]=(counts[type]||0)+1;break;
+  }
+ }
+}
+function roamEnemies(){
+ // Each year, hostile warriors and predators may approach the player's units.
+ for(const e of state.encounters||[]){
+  if(!["raider","wolf","boar"].includes(e.type))continue;
+  const victim=state.units.filter(u=>u.owner==="player"&&distance(u.x,u.y,e.x,e.y)<=1).sort((a,b)=>unitHP(a)-unitHP(b))[0];
+  if(victim&&eventRng(e.x*7+e.y*11)>(e.type==="raider"?.32:.72)){
+   const damage=Math.max(1,e.attack-unitDefense(victim)+Math.floor(eventRng(e.x*11)*2));
+   victim.hp=Math.max(0,unitHP(victim)-damage);
+   if(victim.hp<=0)dropUnit(victim,unitTitle(victim)+" was defeated by "+wildTypes[e.type].name+".");
+   else record(wildTypes[e.type].name+" attacks "+unitTitle(victim)+" for "+damage+" damage.");
+   continue;
+  }
+  if(e.type==="raider"&&state.year%3===0){
+   const c=myCities().find(c=>distance(c.x,c.y,e.x,e.y)<=1);
+   if(c){
+    const roll=e.attack+Math.floor(eventRng(e.x*17+e.y*19)*5);
+    if(roll>cityDefense(c)){const stolen=Math.min(state.resources.food,2+e.attack);state.resources.food-=stolen;record("Raiders breach "+c.name+"'s defences and steal "+stolen+" food.");}
+    else record(c.name+" repels marauders (defence "+cityDefense(c)+").");
+    continue;
+   }
+  }
+  // Move some hostile encounters occasionally, but not onto a unit, village or city.
+  if(state.year%3!==0||eventRng(e.x*53+e.y*29)<.45)continue;
+  let x=e.x,y=e.y,city=closestCity(x,y);
+  if(e.type==="raider"&&city&&distance(x,y,city.x,city.y)<7){
+   x+=Math.sign(city.x-x);y+=Math.sign(city.y-y);
+  }else{
+   const a=Math.floor(eventRng(e.x*9+e.y*5)*8);
+   x+=[1,1,0,-1,-1,-1,0,1][a];y+=[0,1,1,1,0,-1,-1,-1][a];
+  }
+  if(inMap(x,y)&&terrain(x,y)!=="water"&&!cityAt(x,y)&&!encounterAt(x,y)&&!state.units.some(u=>u.x===x&&u.y===y)){e.x=x;e.y=y;}
+ }
+}
+function villageYearlyEffects(){
+ for(const e of state.encounters||[]){
+  if(e.type!=="village"||e.status!=="friendly")continue;
+  if(state.year-e.lastGift>=6&&myCities().some(c=>distance(c.x,c.y,e.x,e.y)<=10)){
+   rewardSupplies(e,.4);e.lastGift=state.year;
+   record("A friendly village sends a small gift of supplies.");
+  }
+ }
+ for(const c of myCities()){
+  if((c.captives||0)>0){
+   // Captives are not citizens: they speed construction, consume food and create unrest.
+   state.resources.food=Math.max(0,state.resources.food-c.captives);
+   c.unrest=(c.unrest||0)+1;
+   if(c.unrest>=15&&state.year%5===0){
+    c.captives--;c.unrest=Math.max(0,c.unrest-5);record("A captive escapes from "+c.name+" amid unrest.");
+   }
+  }else c.unrest=Math.max(0,(c.unrest||0)-1);
+ }
+}
 function fresh(){
  return {version:3,year:1,tech:["foraging","forestry"],research:0,knowledge:0,culture:0,faith:0,military:0,
  resources:{food:24,wood:14,stone:6,ore:0,metal:0,animals:0},
- cities:rivals.map(r=>({...r,buildings:{}})),
+ cities:rivals.map(r=>({...r,buildings:{},growth:0,captives:0,unrest:0})),
  units:[{id:"u1",type:"settler",x:15,y:15,moved:false,owner:"player",strength:1}],
- works:{},builders:{},extracted:{},explored:{},path:null,project:null,researchProject:null,stage:"move",stageYear:1,events:["A lone settler enters the valley."],nextId:2,victory:null};
+ works:{},builders:{},extracted:{},explored:{},encounters:initialEncounters(),nextEncounterId:1000,path:null,project:null,researchProject:null,stage:"move",stageYear:1,events:["A lone settler enters the valley."],nextId:2,victory:null};
 }
 let inGame=false;
 let state;
@@ -95,6 +261,11 @@ state.knowledge??=state.research;
 state.builders??={};
 state.explored??={};
 state.researchProject??=null;
+state.encounters??=initialEncounters();
+state.nextEncounterId??=1000;
+for(const c of state.cities){c.growth??=0;c.captives??=0;c.unrest??=0;}
+for(const u of state.units){u.hp??=6;u.xp??=0;}
+
 if(state.project&&!state.project.total)state.project.total=state.project.left;
 if(state.researchProject&&!state.researchProject.total)state.researchProject.total=techs[state.researchProject.id]?.cost||state.researchProject.left||1;
 let borders=new Map(),visible=new Set();
