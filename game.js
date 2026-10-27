@@ -568,7 +568,7 @@ function renderUI(){
  const index=STAGES.indexOf(state.stage),stepLabel=(index+1)+' / 5 · '+stageNames[state.stage];
  const endButton=btn("End Year →","endYear",false,"primary");
  const nextButton=state.stage==="end"?"":btn("Next","nextStage");
- const stageAction=state.stage==="end"?"":btn(state.stage==="move"?"🚶 Units ("+state.units.filter(u=>u.owner==="player"&&!u.moved).length+")":state.stage==="workers"?"👥 Workers ("+unassignedWorkers()+")":state.stage==="construction"?"🏗 Build":"🔬 Tech","stageAction");
+ const stageAction=state.stage==="end"?"":btn(state.stage==="move"?"🚶 Units":state.stage==="workers"?"👥 Work":state.stage==="construction"?"🏗 Build":"🔬 Tech","stageAction");
  actions.innerHTML='<button class="stage-label" data-action="turnMenu" title="Revisit any turn step">☰ '+stepLabel+' ▾</button><div class="stage-buttons">'+stageAction+nextButton+endButton+'</div>';
  const panel=get("panel");panel.classList.toggle("open",!!menu);
  panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game",turn:"This year"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
