@@ -1766,6 +1766,7 @@ function projectRequirements(c,id,ignoreBusy=false){
  return {ready:!missing.length,missing,reason:missing.join(" · ")};
 }
 
+let inspectedDevelopment=null;
 function panelContents(){
  let output="";
  if(menu==="turn"){
@@ -1833,56 +1834,64 @@ function panelContents(){
  if(menu==="city"){
   const c=viewedCity();
   if(!c)return "<p class='hint'>Found a city first.</p>";
-  const speed=constructionRate(c,state.project?.kind||"house");
-  output='<div class="worker-counter"><span class="worker-number">'+freeWorkers(c)+'</span><span><strong>Free citizens in '+htmlSafe(c.name)+'</strong><small>'+cityWork(c)+' on resources · '+builderCount(c)+' building · '+c.pop+' population</small></span></div>';
-  output+='<div class="combat-stats"><span>⚔ City attack '+cityAttack(c)+'</span><span>🛡 Defence '+cityDefense(c)+'</span><span>📈 Growth '+Math.floor(c.growth||0)+'/'+growthGoal(c)+'</span></div>';
-  if(c.captives)output+='<p class="hint">Captive labour: '+c.captives+' · +'+(c.captives>0?1:0)+' construction work/year · Unrest '+(c.unrest||0)+' (escape risk and food upkeep). Captives are not citizens.</p>';
-  output+='<p class="hint">All developments are built inside this city tile. Buildings now take several years even with builders. Extra builders help less after the first few, so keep some citizens gathering food and materials. Only one project runs across your civilisation.</p>';
-  output+=item("🏗 Current project",projectLabel()+" · Current speed "+speed+" work/year",btn("👷 Assign builders","workers",false,"primary"));
-  const balance=economyForecast(state.year+1);
-  output+=item("📊 Resource balance next year","Food "+(balance.net.food>0?"+":"")+balance.net.food+" · Wood "+(balance.net.wood>0?"+":"")+balance.net.wood+" · Stone "+(balance.net.stone>0?"+":"")+balance.net.stone+" (includes ongoing upkeep).",btn("See details","economy"));
-  // Caravans are a later commercial institution, not a Year 1 shortcut.
+  output='<div class="compact-city-head"><strong>🏛 '+htmlSafe(c.name)+'</strong><span>👥 '+c.pop+' people · '+freeWorkers(c)+' free</span></div>';
+  output+='<div class="city-short-stats"><span>⚔ '+cityAttack(c)+' attack</span><span>🛡 '+cityDefense(c)+' defence</span><span>📈 '+Math.floor(c.growth||0)+'/'+growthGoal(c)+' growth</span></div>';
+  output+='<div class="production-slots">'+
+   '<div class="production-slot"><strong>🏗 Buildings</strong><span>'+htmlSafe(projectLabel())+'</span>'+btn("View buildings","buildings",false,"primary")+'</div>'+
+   '<div class="production-slot"><strong>⚔ Units</strong><span>'+htmlSafe(projectLabel("unitProject"))+'</span>'+btn("Train units","training",false,"primary")+'</div></div>';
+  if(Object.values(c.damagedBuildings||{}).some(n=>n>0))
+   output+='<p class="repair-alert">⚠ A building is damaged. Open Buildings to arrange repairs; damaged improvements lose their benefits.</p>';
+  output+='<div class="compact-city-links">'+btn("👥 Workers","workers")+btn("📊 Economy","economy")+btn("👑 Court","court")+'</div>';
   if(!caravanAccess()){
-   const timberFood=upgrade(c,"market")?9:13,timberWood=upgrade(c,"market")?8:6;
-   const tradeWait=Math.max(0,5-(state.year-(c.lastTimberTrade||-100)));
-   const shortage=state.resources.food<timberFood;
-   const tradeDesc="Import timber: "+timberFood+" food → "+timberWood+" wood. "+(tradeWait?"Caravan next available in "+tradeWait+" years.":shortage?"Need "+(timberFood-state.resources.food)+" more food.":"Caravan available now.");
-   output+=item("🐫 Timber caravan",tradeDesc,btn(tradeWait?"Caravan returning ("+tradeWait+"y)":shortage?"Need more food":"Trade food for wood","tradeWood:"+c.id,false,!tradeWait&&!shortage?"primary":"secondary"));
+   const food=upgrade(c,"market")?9:13,wood=upgrade(c,"market")?8:6,wait=Math.max(0,5-(state.year-(c.lastTimberTrade||-100)));
+   output+='<div class="compact-trade">🐫 Timber caravan: '+food+' food → '+wood+' wood. '+btn(wait?"Returning ("+wait+"y)":"Trade","tradeWood:"+c.id,wait>0||state.resources.food<food)+'</div>';
   }
-
-  // Ready and affordable developments always come first, even while
-  // another building occupies the construction slot.
-  const availableSoon=([id])=>projectRequirements(c,id,true).ready;
-  const sortChoices=list=>list.sort((a,b)=>{
-    const score=([id,d])=>{
-      const r=projectRequirements(c,id,true);
-      if(r.ready)return 0;
-      if((d.need&&!known(d.need))||(d.path&&state.path!==d.path)||d.requires&&!upgrade(c,d.requires)||d.coastal&&!cityHasSea(c))return 2;
-      return 1;
-    };
-    return score(a)-score(b);
-  });
-  const buildingRows=sortChoices(Object.entries(buildings)),unitRows=sortChoices(Object.entries(unitTypes));
-  const readyBuildings=buildingRows.filter(availableSoon).length,readyUnits=unitRows.filter(availableSoon).length;
-  output+='<h4 class="panel-section-title">🏗 Buildings · '+readyBuildings+' affordable</h4>';
-  output+='<p class="hint">'+(state.project?"Construction is busy, but choices you can afford are still sorted first for your next project.":"Available, affordable buildings appear first; material shortages next; research-locked choices last.")+'</p>';
-  for(const [id,d] of buildingRows){
-   const req=projectRequirements(c,id),canBuyLater=projectRequirements(c,id,true).ready,
-     cost=["wood","stone","food","metal"].filter(k=>d[k]).map(k=>d[k]+" "+k).join(" · ");
-   const message=req.ready?"✅ Can construct now.":canBuyLater&&state.project?"✅ Materials and knowledge ready; finish active project first.":"Requires: "+req.reason+".";
-   const label=req.ready?"🏗 Construct":canBuyLater&&state.project?"⏳ Queue after current project":req.missing.find(m=>m.startsWith("Need "))||"🔒 View requirements";
-   output+=item((req.ready?"✅ ":"")+d.icon+" "+d.name+" ×"+upgrade(c,id),d.desc+" · Cost: "+cost+" · "+d.work+" work. "+message,
-     btn(label,"build:"+id+":"+c.id,false,req.ready?"primary":"secondary"));
+ }
+ if(menu==="buildings"||menu==="training"){
+  const c=viewedCity(),train=menu==="training";
+  if(!c)return "<p class='hint'>Found a city first.</p>";
+  const slot=train?"unitProject":"project",active=state[slot];
+  output='<div class="project-switch">'+btn("🏗 Buildings","buildings",!train,"primary")+btn("⚔ Train units","training",train,"primary")+'</div>';
+  output+='<div class="queue-status"><strong>'+(train?"⚔ Unit training":"🏗 Building construction")+'</strong><span>'+
+    (active?htmlSafe(projectLabel(slot)):"Slot is available")+'</span></div>';
+  if(!train&&Object.values(c.damagedBuildings||{}).some(v=>v>0))
+   output+='<p class="repair-alert">Damaged buildings stop providing bonuses. Tap a repair entry to see its requirements.</p>';
+  let options=Object.entries(train?unitTypes:buildings);
+  if(!train){
+   for(const [kind,n] of Object.entries(c.damagedBuildings||{}))if(n>0&&buildings[kind])options.unshift(["repair:"+kind,projectDef("repair:"+kind)]);
   }
-  output+='<h4 class="panel-section-title">⚔ Train units · '+readyUnits+' affordable</h4>';
-  for(const [id,d] of unitRows){
-   const req=projectRequirements(c,id),canBuyLater=projectRequirements(c,id,true).ready,
-     cost=["wood","stone","food","metal"].filter(k=>d[k]).map(k=>d[k]+" "+k).join(" · ");
-   const message=req.ready?"✅ Can train now.":canBuyLater&&state.project?"✅ Available after current project.":"Requires: "+req.reason+".";
-   const label=req.ready?"Train "+d.name:canBuyLater&&state.project?"⏳ Queue after current project":req.missing.find(m=>m.startsWith("Need "))||"🔒 View requirements";
-   output+=item((req.ready?"✅ ":"")+d.icon+" "+d.name,d.desc+" · Strength "+d.strength+" · "+cost+" · "+d.work+" work. "+message,
-     btn(label,"build:"+id+":"+c.id,false,req.ready?"primary":"secondary"));
+  options=options.map(([kind,def],order)=>{
+   const r=projectRequirements(c,kind,true),slotFull=!!active;
+   const locked=r.missing.some(x=>x.startsWith("Research ")||x.startsWith("Choose ")||x.startsWith("Build ")||x.startsWith("Requires "));
+   const score=kind.startsWith("repair:")?0:r.ready?1:locked?3:2;
+   return {kind,def,order,score,r,slotFull};
+  }).sort((a,b)=>a.score-b.score||a.order-b.order);
+  output+='<div class="compact-options">';
+  for(const o of options){
+   const status=o.kind.startsWith("repair:")?"Repair needed":o.r.ready?(o.slotFull?"Available after current project":"Ready"):(o.score===3?"Locked":"Need resources");
+   output+='<button class="development-row '+(o.r.ready?"development-ready":"development-locked")+'" data-action="inspectDevelopment:'+(train?"unit":"building")+':'+o.kind+':'+c.id+'">'+
+    '<span class="development-icon">'+(o.def.icon||"🏗")+'</span><span class="development-name">'+htmlSafe(o.def.name)+'</span>'+
+    '<small>'+status+'</small><span class="development-chevron">›</span></button>';
   }
+  output+='</div>';
+ }
+ if(menu==="development"){
+  const focus=inspectedDevelopment,c=focus?getCity(focus.city):null,
+    def=focus&&projectDef(focus.kind),train=focus?.type==="unit";
+  if(!c||!def)return '<p class="hint">Select a building or unit to see its details.</p>';
+  const r=projectRequirements(c,focus.kind);
+  const costs=["wood","stone","food","metal"].filter(k=>def[k]).map(k=>(def[k]||0)+" "+k).join(" · ")||"No material cost";
+  output='<div class="detail-back">'+btn("‹ Back to "+(train?"units":"buildings"),train?"training":"buildings")+'</div>';
+  output+='<div class="development-detail"><div class="development-detail-title"><span>'+def.icon+'</span><strong>'+htmlSafe(def.name)+'</strong></div>'+
+   '<p>'+htmlSafe(def.desc||"")+'</p>'+
+   '<div class="detail-facts"><span>🧱 '+htmlSafe(costs)+'</span><span>⏳ '+def.work+' work</span>'+
+   (train?'<span>⚔ '+def.strength+' strength</span><span>👁 '+def.vision+' sight</span>':
+   '<span>🏛 '+upgrade(c,focus.kind.replace("repair:",""))+' built</span>')+'</div>';
+  if(r.missing.length)output+='<div class="detail-requirements"><strong>To begin:</strong><ul>'+r.missing.map(m=>'<li>'+htmlSafe(m)+'</li>').join("")+'</ul></div>';
+  else output+='<p class="detail-ready">✓ Resources and requirements are ready.</p>';
+  output+=btn(focus.kind.startsWith("repair:")?"🧰 Start repair":train?"⚔ Train "+def.name:"🏗 Construct "+def.name,
+     "build:"+focus.kind+":"+c.id,!r.ready,"primary");
+  output+='</div>';
  }
 
  if(menu==="encounter"){
@@ -2020,10 +2029,10 @@ function renderUI(){
  const index=STAGES.indexOf(state.stage),stepLabel=(index+1)+' / 5 · '+stageNames[state.stage];
  const endButton=btn("End Year →","endYear",false,"primary");
  const nextButton=state.stage==="end"?"":btn("Next","nextStage");
- const stageAction=state.stage==="end"?"":btn(state.stage==="move"?"🚶 Move units":state.stage==="workers"?"👥 Assign workers":state.stage==="construction"?"🏗 Construct":"🔬 Choose tech","stageAction",false,"secondary stage-cta");
+ const stageAction=state.stage==="end"?"":btn(state.stage==="move"?"🚶 Move units":state.stage==="workers"?"👥 Assign workers":state.stage==="construction"?"🏗 Build / Train":"🔬 Choose tech","stageAction",false,"secondary stage-cta");
  actions.innerHTML='<button class="stage-label" data-action="turnMenu" title="Revisit any turn step">☰ '+stepLabel+' ▾</button><div class="stage-buttons">'+stageAction+nextButton+endButton+'</div>';
  const panel=get("panel");panel.classList.toggle("open",!!menu);
- panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game",turn:"This year",encounter:"Encounter",court:"Royal court",economy:"Resource economy"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
+ panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",buildings:"Buildings",training:"Train units",development:"Development",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game",turn:"This year",encounter:"Encounter",court:"Royal court",economy:"Resource economy"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
  panel.querySelector("#closePanel")?.addEventListener("click",()=>{menu="";renderUI();});
  document.querySelectorAll("[data-action]").forEach(b=>b.addEventListener("click",()=>doAction(b.dataset.action)));
  renderCourtScene();
@@ -2034,6 +2043,7 @@ function doAction(a){
  if(a==="endYear")return endYear();
  if(a==="court"){menu="court";renderUI();return;}
  if(a==="economy"){menu="economy";renderUI();return;}
+ if(a.startsWith("inspectDevelopment:")){const [,type,kind,city]=a.split(":");inspectedDevelopment={type,kind,city};menu="development";renderUI();return;}
  if(a.startsWith("council:")){
   const [group,action]=a.slice(8).split(":");
   return courtCouncilAction(group,action);
@@ -2057,7 +2067,7 @@ function doAction(a){
  if(a==="turnMenu"){menu=menu==="turn"?"":"turn";renderUI();return;}
  if(a.startsWith("focus:"))return focusStage(a.slice(6));
  if(a==="actions"||a==="main"){menu=menu===a?"":a;renderUI();return;}
- if(["city","tile","tech","path","units","workers","history","court","economy"].includes(a)){menu=a;renderUI();return;}
+ if(["city","tile","tech","path","units","workers","history","court","economy","buildings","training"].includes(a)){menu=a;renderUI();return;}
  if(a==="work"&&selected)return workTile(selected.x,selected.y);
  if(a==="assignAll")return assignAllWorkers();
  if(a.startsWith("builder:")){const [cityId,delta]=a.slice(8).split(":");return assignBuilder(cityId,Number(delta));}
