@@ -17,7 +17,7 @@ function owned(x,y){return s.claimed.includes(key(x,y));}
 function building(x,y){return s.buildings.find(b=>b.x===x&&b.y===y);}
 function proj(x,y){return {x:(x-y)*TW/2,y:(x+y)*TH/2};}
 function screen(x,y){let p=proj(x,y);return {x:(p.x-cam.x)*zoom+cw/2,y:(p.y-cam.y)*zoom+ch/2};}
-function world(sx,sy){let x=(sx-cw/2)/zoom+cam.x,y=(sy-ch/2)/zoom+cam.y;return {x:Math.floor(x/TW+y/TH+1),y:Math.floor(y/TH-x/TW+1)};}
+function world(sx,sy){let x=(sx-cw/2)/zoom+cam.x,y=(sy-ch/2)/zoom+cam.y;return {x:Math.round(x/TW+y/TH),y:Math.round(y/TH-x/TW)};}
 function center(x,y){let p=proj(x,y);cam.x=p.x;cam.y=p.y;}
 function resize(){dpr=Math.min(devicePixelRatio||1,2);cw=innerWidth;ch=innerHeight;canvas.width=Math.round(cw*dpr);canvas.height=Math.round(ch*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);}
 function poly(points,fill,stroke){ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke();}}
