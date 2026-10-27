@@ -53,7 +53,7 @@ function deposit(x,y){
  return null;
 }
 function fresh(){
- return {version:3,year:1,tech:["foraging","forestry"],research:0,culture:0,faith:0,military:0,
+ return {version:3,year:1,tech:["foraging","forestry"],research:0,knowledge:0,culture:0,faith:0,military:0,
  resources:{food:24,wood:14,stone:6,ore:0,metal:0,animals:0},
  cities:rivals.map(r=>({...r,buildings:{}})),
  units:[{id:"u1",type:"settler",x:15,y:15,moved:false,owner:"player",strength:1}],
@@ -61,6 +61,7 @@ function fresh(){
 }
 let state;
 try{state=JSON.parse(localStorage.getItem(STORE))||fresh();if(state.version!==3||!Array.isArray(state.units)||!Array.isArray(state.cities))state=fresh();}catch(e){state=fresh();}
+state.knowledge??=state.research;
 let borders=new Map();
 function myCities(){return state.cities.filter(c=>c.owner==="player");}
 function firstCity(){return myCities()[0];}
@@ -75,7 +76,7 @@ function populationCap(c){return 6+4*upgrade(c,"house");}
 function influenceRadius(c){
  const n=c.pop;
  let radius=n>=34?5:n>=20?4:n>=10?3:2;
- if(c.owner==="player"&&state.path==="science"){if(state.research>=35)radius++;if(state.research>=130)radius++;}
+ if(c.owner==="player"&&state.path==="science"){if(state.knowledge>=35)radius++;if(state.knowledge>=130)radius++;}
  if(c.owner==="player"&&state.path==="arts"){if(state.culture>=55)radius++;if(state.culture>=150)radius++;}
  if(c.owner==="player"&&state.path==="faith"&&state.faith>=100)radius++;
  return radius;
@@ -196,7 +197,7 @@ function pathGrowth(){
   }
  }
  if(state.victory)return;
- if(state.path==="science"&&state.research>=260&&myCities().some(c=>upgrade(c,"academy")))state.victory="Science victory — knowledge reshapes the world.";
+ if(state.path==="science"&&state.knowledge>=260&&myCities().some(c=>upgrade(c,"academy")))state.victory="Science victory — knowledge reshapes the world.";
  if(state.path==="arts"&&myCities().length>=4)state.victory="Culture victory — neighbouring civilisations join you.";
  if(state.path==="faith"&&state.cities.filter(c=>c.owner==="ally").length>=3)state.victory="Faith victory — all neighbours embrace your beliefs.";
  if(state.path==="war"&&state.cities.filter(c=>c.owner==="rival").length===0)state.victory="War victory — the rival cities have fallen.";
@@ -207,7 +208,7 @@ function endYear(){
  if(myCities().length){
   harvestResources();
   state.resources.food=Math.max(0,state.resources.food-citizens());
-  state.research+=myCities().length+myCities().reduce((n,c)=>n+3*upgrade(c,"library")+6*upgrade(c,"academy"),0)+(state.path==="science"?2:0);
+  const scienceGained=myCities().length+myCities().reduce((n,c)=>n+3*upgrade(c,"library")+6*upgrade(c,"academy"),0)+(state.path==="science"?2:0);state.research+=scienceGained;state.knowledge+=scienceGained;
   state.culture+=myCities().reduce((n,c)=>n+5*upgrade(c,"theatre"),0)+(state.path==="arts"?1:0);
   state.faith+=myCities().reduce((n,c)=>n+5*upgrade(c,"temple"),0)+(state.path==="faith"?1:0);
   changePopulation();progressBuilding();pathGrowth();
@@ -317,7 +318,7 @@ function panelContents(){
   output="<p class='hint'>"+(state.year<100?"Available in Year 100 · "+(100-state.year)+" years remaining.":state.path?"Current direction: "+paths[state.path]:"Choose one direction to shape the civilisation.")+"</p>";
   const explains={science:"Knowledge increases your population's territorial reach. Win by reaching advanced research and building an Academy.",arts:"Culture expands borders and persuades nearby cities to join you.",faith:"Faith radiates outward, converting neighbouring cities into religious allies.",war:"Military conquest captures rival city tiles and their entire sphere of influence."};
   for(const [id,title] of Object.entries(paths))output+=item(title,explains[id],btn(state.path===id?"Chosen":"Choose "+title,"path:"+id,state.year<100||!!state.path));
-  output+=item("Society progress","Research "+state.research+" · Culture "+state.culture+" · Faith "+state.faith+" · Military "+state.military,"");
+  output+=item("Society progress","Knowledge "+state.knowledge+" · Culture "+state.culture+" · Faith "+state.faith+" · Military "+state.military,"");
  }
  if(menu==="units"){
   output="<p class='hint'>Select a unit, close the panel, then tap one adjacent tile. Each unit moves only once per year.</p>";
