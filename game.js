@@ -16,7 +16,7 @@ const techs={
  netmaking:{name:"Net Making",cost:14,need:"fishing",desc:"+2 fish per coastal worker and unlock the Smokehouse."},
  seafaring:{name:"Seafaring",cost:19,need:"fishing",desc:"Unlock Harbours and Fishing Boats for coastal travel and catches."},
  shipbuilding:{name:"Shipbuilding",cost:30,need:"seafaring",desc:"Unlock Shipyards and Longships to explore coastlines."},
- navigation:{name:"Navigation",cost:42,need:"shipbuilding",desc:"Unlock open-ocean travel, longer sight at sea and Lighthouses."},
+ navigation:{name:"Navigation",cost:42,need:"shipbuilding",desc:"Unlock open-ocean travel, +1 ship movement, longer sight at sea and Lighthouses."},
  hunting:{name:"Hunting",cost:10,desc:"Unlock Hunting Lodge. Foragers collect extra food."},
  scouting:{name:"Scouting",cost:12,desc:"Unlock Scout units and Lookout towers to uncover more land."},
  toolmaking:{name:"Toolmaking",cost:15,need:"geology",desc:"Unlock Workshop (+wood, +stone and construction productivity)."},
@@ -32,10 +32,10 @@ const buildings={
  library:{name:"Library",icon:"📚",wood:20,stone:12,work:27,need:"writing",desc:"Produces three research per year."},
  stable:{name:"Stables",icon:"🐎",wood:16,stone:8,work:23,need:"husbandry",desc:"Improves livestock and pasture output."},
  forge:{name:"Forge",icon:"🔥",wood:20,stone:20,work:32,need:"metalworking",desc:"Smelts ore into metal and boosts extraction."},
- academy:{name:"Academy",icon:"🔬",wood:30,stone:25,work:44,path:"science",desc:"Research faster and expand the science sphere."},
- theatre:{name:"Theatre",icon:"🎭",wood:26,stone:20,work:40,path:"arts",desc:"Creates cultural influence on neighbouring cities."},
- temple:{name:"Temple",icon:"⛪",wood:25,stone:22,work:40,path:"faith",desc:"Spreads your faith and can convert nearby cities."},
- barracks:{name:"Barracks",icon:"🛡",wood:24,stone:22,work:34,path:"war",desc:"Improves attacks and defence."},
+ academy:{name:"Academy",icon:"🔬",wood:30,stone:25,work:44,path:"science",desc:"+6 research each year; science influence extends territory."},
+ theatre:{name:"Theatre",icon:"🎭",wood:26,stone:20,work:40,path:"arts",desc:"+5 culture per year to expand borders and persuade nearby civilisations."},
+ temple:{name:"Temple",icon:"⛪",wood:25,stone:22,work:40,path:"faith",desc:"+5 faith per year, increasing religious influence and conversion pressure."},
+ barracks:{name:"Barracks",icon:"🛡",wood:24,stone:22,work:34,path:"war",desc:"+2 military power per year, +1 city attack and additional siege strength."},
  huntingLodge:{name:"Hunting Lodge",icon:"🏕️",wood:10,stone:0,work:18,need:"hunting",desc:"+2 food from worked wild-food tiles."},
  fishingHut:{name:"Fishing Hut",icon:"🎣",wood:9,stone:0,work:16,need:"fishing",coastal:true,desc:"+2 food per worked coastal fishing tile."},
  smokehouse:{name:"Smokehouse",icon:"🐟",wood:12,stone:5,work:20,need:"netmaking",coastal:true,desc:"+1 food per worked fishing tile."},
@@ -58,7 +58,7 @@ const unitTypes={
  swordsman:{name:"Swordsman",icon:"⚔️",wood:13,stone:0,metal:3,food:5,work:22,strength:6,vision:2,need:"metalworking",requires:"forge",desc:"Advanced metal-armed infantry."},
  army:{name:"Warband",icon:"⚔️",wood:18,stone:16,metal:2,work:27,strength:4,vision:2,path:"war",desc:"Established warband used to conquer city centres."},
  fishingBoat:{name:"Fishing Boat",icon:"⛵",wood:14,stone:0,food:2,work:18,strength:1,vision:3,need:"seafaring",requires:"harbor",naval:true,range:2,desc:"Work coastal waters: spend its action to land 6 food at your nearest city."},
- longship:{name:"Longship",icon:"🚢",wood:21,stone:8,food:4,work:30,strength:4,vision:4,need:"shipbuilding",requires:"shipyard",naval:true,range:3,desc:"Fast armed ship for coastal scouting; can fish for 3 food, and navigate open sea after Navigation."}
+ longship:{name:"Longship",icon:"🚢",wood:21,stone:8,food:4,work:30,strength:4,vision:4,need:"shipbuilding",requires:"shipyard",naval:true,range:3,desc:"Sail 3 tiles/year, carry one land unit, and fish for 3 food. Navigation adds +1 move and unlocks oceans."}
 };
 const unitDef=id=>unitTypes[id];
 const fighter=u=>u&&["clubman","spearman","archer","swordsman","army"].includes(u.type);
@@ -81,7 +81,7 @@ const bonusText=id=>{
   netmaking:"🕸️ +2 food per fishing worker, Smokehouse (+1)",
   seafaring:"⚓ Harbour (+1 fish food), Fishing Boat (6 food/action)",
   shipbuilding:"🚢 Shipyard and Longship (3-tile coastal sail)",
-  navigation:"🧭 Open-sea navigation, Lighthouse (+2 sight)"
+  navigation:"🧭 Open-sea routes, +1 sea move/year, +2 ship sight and Lighthouse"
  };
  return map[id]||"New discoveries";
 };
@@ -919,7 +919,7 @@ function move(x,y){
  if(naval&&!water)return toast("Ships travel on water. They need a harbour to land.");
  if(!naval&&water)return toast("Land units cannot walk on water. Train a ship at a Harbour.");
  if(naval&&!known("navigation")&&!isCoastalWater(x,y))return toast("Open sea requires Navigation. Sail along the coast for now.");
- const step=distance(u.x,u.y,x,y),range=unitDef(u.type)?.range||(u.type==="scout"?2:1);
+ const step=distance(u.x,u.y,x,y),range=(unitDef(u.type)?.range||(u.type==="scout"?2:1))+(naval&&known("navigation")?1:0);
  if(step<1||step>range)return toast("This unit can travel up to "+range+" tile"+(range===1?"":"s")+" per year.");
  for(let k=1;k<=step;k++){
   const px=Math.round(u.x+(x-u.x)*k/step),py=Math.round(u.y+(y-u.y)*k/step);
@@ -1212,7 +1212,7 @@ function renderUI(){
  syncStage();
  const res=state.resources;
  const total=citizens(),assigned=assignedWorkers();
- get("stats").innerHTML=(firstCity()?'<span class="chip">🌾 <b>'+res.food+'</b></span><span class="chip">🪵 <b>'+res.wood+'</b></span><span class="chip">🪨 <b>'+res.stone+'</b></span><span class="chip">👥 <b>'+total+'('+assigned+')</b></span>':"")+'<span class="chip">Year <b>'+state.year+'</b></span>';
+ get("stats").innerHTML=(firstCity()?'<span class="chip" title="Stored food">🍲 <b>'+res.food+'</b></span><span class="chip">🪵 <b>'+res.wood+'</b></span><span class="chip">🪨 <b>'+res.stone+'</b></span><span class="chip">👥 <b>'+total+'('+assigned+')</b></span>':"")+'<span class="chip">Year <b>'+state.year+'</b></span>';
  const head=get("summary"),actions=get("actions"),rp=state.researchProject;
  get("leaderName").textContent=(state.leader?.leader||"Leader")+" · "+(state.leader?.name||"Civilisation");
  if(!firstCity()){
