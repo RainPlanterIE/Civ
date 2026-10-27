@@ -46,7 +46,7 @@ const CIV_WORLD=(()=>{
   for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(river(x+dx,y+dy))return true;
   return false;
  }
- function climate(x,y){
+ function computeClimate(x,y){
   if(!isLand(x,y))return "water";
   const {lon,lat}=coords(x,y),a=Math.abs(lat),n=noise(x,y,4),wet=nearbyRiver(x,y);
   const dry=ellipse(lon,lat,areas.desert),wooded=ellipse(lon,lat,areas.forest),alpine=ellipse(lon,lat,areas.mountain);
@@ -63,7 +63,17 @@ const CIV_WORLD=(()=>{
   if((a>=29&&a<46&&n<.35)||(dry>.08&&!wet))return "steppe";
   return n<.06?"hill":"grass";
  }
- function deposit(x,y){
+ const climateCache=new Map(),depositCache=new Map();
+ function climate(x,y){
+  if(!valid(x,y))return "water";
+  const key=y*W+x;
+  if(climateCache.has(key))return climateCache.get(key);
+  const value=computeClimate(x,y);
+  if(climateCache.size>20000)climateCache.clear();
+  climateCache.set(key,value);
+  return value;
+ }
+ function computeDeposit(x,y){
   const biome=climate(x,y);
   if(biome==="water")return null;
   const {lon,lat}=coords(x,y),n=noise(x,y,7),wet=nearbyRiver(x,y),
@@ -96,6 +106,15 @@ const CIV_WORLD=(()=>{
   if(n<cropChance+.13)return {type:"animals",max:6+Math.floor(noise(x,y,14)*13),tech:"husbandry",icon:"🐂"};
   if(n>.91)return {type:"wood",max:18+Math.floor(noise(x,y,15)*22),tech:"forestry",icon:"🌳"};
   return {type:"forage",max:24+Math.floor(noise(x,y,16)*26),tech:"foraging",icon:"🍓"};
+ }
+ function deposit(x,y){
+  if(!valid(x,y))return null;
+  const key=y*W+x;
+  if(depositCache.has(key))return depositCache.get(key);
+  const value=computeDeposit(x,y);
+  if(depositCache.size>20000)depositCache.clear();
+  depositCache.set(key,value);
+  return value;
  }
  function wildlife(x,y){
   if(!isLand(x,y))return null;
