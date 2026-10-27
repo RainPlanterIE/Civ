@@ -87,7 +87,7 @@ function constructionRate(c,kind){
 function estimateWork(left,rate){return Math.max(1,Math.ceil(left/Math.max(1,rate)));}
 function eligible(stage){
  if(stage==="move")return state.units.some(u=>u.owner==="player"&&!u.moved);
- if(stage==="workers")return myCities().some(c=>freeWorkers(c)>1);
+ if(stage==="workers")return myCities().some(c=>freeWorkers(c)>0&&availableWorkTiles(c).length>0);
  if(stage==="construction")return myCities().length>0&&!state.project;
  if(stage==="research")return myCities().length>0&&!state.researchProject&&Object.entries(techs).some(([id,t])=>!known(id)&&(!t.need||known(t.need)));
  return true;
@@ -150,6 +150,44 @@ function cityWork(c){
  return Object.values(state.works).filter(id=>id===c.id).length;
 }
 function freeWorkers(c){return Math.max(0,c.pop-cityWork(c));}
+function availableWorkTiles(c){
+ const radius=influenceRadius(c),tiles=[];
+ for(let y=Math.max(0,c.y-radius);y<=Math.min(SIZE-1,c.y+radius);y++)
+  for(let x=Math.max(0,c.x-radius);x<=Math.min(SIZE-1,c.x+radius);x++){
+   const key=pos(x,y),d=deposit(x,y);
+   if(borders.get(key)!==c.id||cityAt(x,y)||state.works[key]||!d||!known(d.tech))continue;
+   if(remaining(x,y)===0&&d.type!=="food"&&d.type!=="animals")continue;
+   tiles.push({x,y,kind:d.type,key});
+  }
+ return tiles;
+}
+function assignAllWorkers(){
+ syncStage();
+ if(state.stage!=="workers")return toast("Assign workers during the worker step.");
+ let count=0;
+ for(const c of myCities()){
+  const options=availableWorkTiles(c);
+  // Feed the city first, then spread jobs across wood, stone and other resources.
+  const foodNeed=Math.max(1,Math.ceil(c.pop/4));
+  const foodJobs=Object.entries(state.works).filter(([key,id])=>id===c.id&&["forage","food","animals"].includes(deposit(...decode(key))?.type)).length;
+  options.sort((a,b)=>{
+   const weight=t=>{
+    if(["food","forage","animals"].includes(t.kind))return foodJobs<foodNeed?0:3;
+    if(t.kind==="wood")return 1;
+    if(t.kind==="stone")return 2;
+    return 4;
+   };
+   return weight(a)-weight(b);
+  });
+  for(const tile of options){
+   if(freeWorkers(c)===0)break;
+   state.works[tile.key]=c.id;count++;
+  }
+ }
+ if(count)record("Assigned "+count+" available worker"+(count===1?"":"s")+" to nearby resources.");
+ else toast("There are no available workers or workable resource tiles.");
+ syncStage();save();renderUI();
+}
 function save(){try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){}}
 function toast(msg){get("toast").textContent=msg;get("toast").classList.add("show");toastUntil=Date.now()+2900;}
 function record(msg){state.events.unshift("Year "+state.year+": "+msg);state.events=state.events.slice(0,25);toast(msg);}
@@ -170,7 +208,7 @@ function workTile(x,y){
  if(!known(d.tech)){toast("Research "+(techs[d.tech]?.name||d.tech)+" to identify and use this resource.");return;}
  if(state.works[key]){delete state.works[key];record("A worker leaves the "+d.type+" tile.");save();renderUI();return;}
  if(state.stage!=="workers")return toast("Assign new workers during the worker step.");
- if(freeWorkers(c)<=1){toast("Not enough free citizens: keep one person in the city.");return;}
+ if(freeWorkers(c)<=0){toast("All citizens already have jobs.");return;}
  if(remaining(x,y)<=0&&d.type!=="animals"&&d.type!=="food"){toast("This deposit is exhausted.");return;}
  state.works[key]=c.id;record(c.name+" assigns one worker to "+d.type+".");syncStage();save();renderUI();
 }
@@ -297,7 +335,14 @@ function move(x,y){
  const occupied=cityAt(x,y);
  if(occupied&&occupied.owner==="rival")return toast("Attack rival cities from a neighbouring tile.");
  u.x=x;u.y=y;u.moved=true;selected={x,y};moving=null;menu="";
- record((u.type==="army"?"Army":"Settler")+" moves into new terrain.");syncStage();save();renderUI();
+ record((u.type==="army"?"Army":"Settler")+" moves into new terrain.");
+ syncStage();
+ const nextReady=state.units.find(other=>other.owner==="player"&&!other.moved);
+ if(state.stage==="move"&&nextReady){
+   moving=nextReady.id;
+   toast("Unit moved. "+state.units.filter(other=>other.owner==="player"&&!other.moved).length+" more ready. Select another unit from the Units panel or move the highlighted unit.");
+ }
+ save();renderUI();
 }
 function attack(rivalId){
  syncStage();if(state.stage!=="move")return toast("Attack during the movement step.");
@@ -334,7 +379,8 @@ function panelContents(){
   output+=item("⚙ Game menu","Save your progress or start a new world.",btn("Game options","main"));
  }
  if(menu==="workers"){
-  output="<p class='hint'>Work one resource tile per citizen. Total population: "+citizens()+"("+assignedWorkers()+") · Free: "+unassignedWorkers()+". Tap land within your influence border, or assign a visible tile below.</p>";
+  output="<p class='hint'>Assign every available citizen this year — one resource tile per worker. Total population: "+citizens()+"("+assignedWorkers()+") · Free: "+unassignedWorkers()+". Tap land, assign individually, or use Assign all.</p>";
+  output+=item("Assign all available workers","Automatically fills nearby resource jobs, prioritising food before wood, stone and other resources.",btn("Assign all workers","assignAll",state.stage!=="workers"||!eligible("workers"),"primary"));
   let shown=0;
   for(const c of myCities()){
    for(let y=Math.max(0,c.y-influenceRadius(c));y<=Math.min(SIZE-1,c.y+influenceRadius(c));y++)
@@ -390,9 +436,10 @@ function panelContents(){
   output+=item("Society progress","Knowledge "+state.knowledge+" · Culture "+state.culture+" · Faith "+state.faith+" · Military "+state.military,"");
  }
  if(menu==="units"){
-  output="<p class='hint'>Select a unit, close the panel, then tap one adjacent tile. Each unit moves only once per year.</p>";
+  const ready=state.units.filter(u=>u.owner==="player"&&!u.moved).length,total=state.units.filter(u=>u.owner==="player").length;
+  output="<p class='hint'>"+ready+" of "+total+" units ready. You can move <b>every unit</b> once before advancing the year. Select a ready unit, tap an adjacent tile, then select another. The stage ends when all have acted or you press Next.</p>";
   for(const u of state.units.filter(u=>u.owner==="player")){
-   output+=item((u.type==="army"?"⚔ Army":"🚶 Settler")+" at "+u.x+", "+u.y,u.moved?"Already moved this year":u.type==="army"?"Ready · Strength "+u.strength:"Ready to move",btn("Move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,u.moved,"primary"):""));
+   output+=item((u.type==="army"?"⚔ Army":"🚶 Settler")+" at "+u.x+", "+u.y,u.moved?"Already moved this year":u.type==="army"?"Ready · Strength "+u.strength:"Ready to move",btn(u.moved?"Already moved":"Select to move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,u.moved,"primary"):""));
   }
  }
  if(menu==="history")output=state.events.map(e=>"<div class='event'>"+htmlSafe(e)+"</div>").join("");
@@ -419,7 +466,7 @@ function renderUI(){
  }
  const index=STAGES.indexOf(state.stage),stepLabel=(index+1)+' / 5 · '+stageNames[state.stage];
  const primary=state.stage==="end"?btn("End Year →","endYear",false,"primary"):btn("Next →","nextStage",false,"primary");
- const stageAction=state.stage==="end"?"":btn(state.stage==="move"?"🚶 Units":state.stage==="workers"?"👥 Workers":state.stage==="construction"?"🏗 Build":"🔬 Tech","stageAction");
+ const stageAction=state.stage==="end"?"":btn(state.stage==="move"?"🚶 Units ("+state.units.filter(u=>u.owner==="player"&&!u.moved).length+")":state.stage==="workers"?"👥 Workers ("+unassignedWorkers()+")":state.stage==="construction"?"🏗 Build":"🔬 Tech","stageAction");
  actions.innerHTML='<div class="stage-label">'+stepLabel+'</div><div class="stage-buttons">'+stageAction+primary+'</div>';
  const panel=get("panel");panel.classList.toggle("open",!!menu);
  panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
@@ -431,6 +478,7 @@ function doAction(a){
  if(a==="actions"||a==="main"){menu=menu===a?"":a;renderUI();return;}
  if(["city","tile","tech","path","units","workers","history"].includes(a)){menu=a;renderUI();return;}
  if(a==="work"&&selected)return workTile(selected.x,selected.y);
+ if(a==="assignAll")return assignAllWorkers();
  if(a.startsWith("work:")){const [x,y]=a.slice(5).split(":").map(Number);selected={x,y};return workTile(x,y);}
  if(a==="nextStage")return nextStage();
  if(a==="stageAction"){
