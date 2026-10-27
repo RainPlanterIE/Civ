@@ -482,6 +482,20 @@ function structure(x,y,c){
  ctx.font="bold "+Math.max(11,14*z)+"px Georgia";ctx.textAlign="center";ctx.fillStyle="#fff4d6";
  ctx.shadowColor="#0a2416";ctx.shadowBlur=5;ctx.fillText(c.name,x,y-high-33*z);ctx.shadowBlur=0;ctx.textAlign="left";
 }
+function drawConstructionProgress(x,y,c){
+ const p=state.project;if(!p||p.city!==c.id)return;
+ const z=scale,w=Math.max(86,112*z),bh=Math.max(6,8*z),cy=y+Math.max(32,35*z);
+ const pct=Math.max(0,Math.min(1,1-p.left/Math.max(1,p.total)));
+ const remaining=estimateWork(p.left,constructionRate(c,p.kind));
+ ctx.fillStyle="#17291fe8";ctx.fillRect(x-w/2-6,cy-24,w+12,34);
+ ctx.strokeStyle="#c5a870a6";ctx.lineWidth=1;ctx.strokeRect(x-w/2-6,cy-24,w+12,34);
+ ctx.textAlign="center";ctx.textBaseline="alphabetic";
+ ctx.font="bold "+Math.max(10,11*z)+"px sans-serif";ctx.fillStyle="#f4dfb5";
+ ctx.fillText("🏗 "+(buildings[p.kind]?.name||p.kind)+" · "+remaining+"y",x,cy-12);
+ ctx.fillStyle="#495c4e";ctx.fillRect(x-w/2,cy-6,w,bh);
+ ctx.fillStyle="#ebbe71";ctx.fillRect(x-w/2,cy-6,w*pct,bh);
+ ctx.textAlign="left";
+}
 function border(x,y,id){
  if(!id)return;
  const p=screen(x,y),w=TW/2*scale,h=TH/2*scale;
@@ -515,7 +529,7 @@ function draw(){
   const d=deposit(x,y);
   if(d&&known(d.tech)&&remaining(x,y)>0){ctx.fillStyle="#ecdfaf";ctx.font=Math.max(11,14*z)+"px sans-serif";ctx.fillText(d.icon,p.x-6*z,p.y+7*z);}
   if(state.works[pos(x,y)]){ctx.fillStyle="#ffda74";ctx.beginPath();ctx.arc(p.x+15*z,p.y+7*z,4*z,0,Math.PI*2);ctx.fill();}
-  const c=cityAt(x,y);if(c)structure(p.x,p.y,c);
+  const c=cityAt(x,y);if(c){structure(p.x,p.y,c);drawConstructionProgress(p.x,p.y,c);}
  }
  for(const u of state.units){
   const p=screen(u.x,u.y),z=scale;
