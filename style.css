@@ -213,3 +213,41 @@ button:disabled{opacity:.42;cursor:default}
  #worldOverview{width:95vw;padding:10px;max-height:90dvh}
  #worldOverview p{font-size:11px}
 }
+
+/* Research branches / technology tree: clear prerequisite and bonus hierarchy */
+.tech-intro{padding:12px 14px;border:1px solid #c3af7a;border-radius:12px;background:linear-gradient(135deg,#354a39,#263a32);margin:8px 0 12px}
+.tech-intro strong{display:block;font:600 21px Georgia,serif;color:#f4d496}
+.tech-intro p{font-size:12px;color:#dce7d8;line-height:1.5;margin:6px 0 0}
+.tech-current,.tech-next{padding:12px;background:#293f33;border:1px solid #859e81;border-radius:11px;margin:10px 0 15px}
+.tech-current strong,.tech-next strong{display:block;color:#f7dc9d;font-size:14px;margin-bottom:7px}
+.tech-current small{color:#d1dfcf;display:block;margin-top:7px;font-size:12px}
+.tech-quick-picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:7px}
+.tech-quick-picks button{min-height:44px;padding:9px;font-size:12px;font-weight:750}
+.tech-tree{display:flex;flex-direction:column;gap:16px;margin:14px 0 6px}
+.tech-branch{border:1px solid #7c907e;border-radius:12px;background:#1b3228dd;overflow:hidden}
+.tech-branch-head{display:flex;flex-direction:column;gap:3px;padding:11px 13px;background:#3c5240;border-bottom:1px solid #78917b}
+.tech-branch-head strong{color:#f4d89d;font:600 18px Georgia,serif}
+.tech-branch-head span{font-size:11px;line-height:1.4;color:#dee8d7}
+.tech-node{margin:10px 11px 10px calc(12px + min(var(--depth),2)*12px);border-left:3px solid #829c9d;padding:9px 10px 10px;border-radius:0 9px 9px 0;background:#31463a}
+.tech-node.available{border-left-color:#e6cc87;background:#3c533d}
+.tech-node.researched{border-left-color:#7db69f;background:#304c41b5}
+.tech-node.locked{border-left-color:#6e8480;opacity:.78}
+.tech-node.researching{border-left-color:#79bcc9;background:#294d53}
+.tech-node-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.tech-node-top strong{font-size:14px;color:#f7e9c7}
+.tech-status{display:inline-block;padding:3px 6px;border-radius:6px;background:#20382c;color:#e0f0d8;font-size:10px;font-weight:700}
+.tech-node.available .tech-status{background:#7e7042;color:#fff4bf}
+.tech-node.researching .tech-status{background:#2e6e72;color:#e5fdff}
+.tech-node.researched .tech-status{background:#2d6853;color:#deffeb}
+.tech-prereq{color:#cedbc7;margin-top:6px;font-size:11px}
+.tech-bonus{color:#f7d9a0;font-size:12px;line-height:1.5;margin-top:6px}
+.tech-node button{margin-top:9px;padding:9px 12px;font-size:12px;min-height:39px;width:100%;text-align:center;font-weight:750}
+.tech-node button:disabled{opacity:.58}
+@media(max-width:650px){
+ .tech-intro strong{font-size:19px}
+ .tech-branch-head strong{font-size:16px}
+ .tech-node{margin-right:8px;margin-left:calc(8px + min(var(--depth),2)*10px);padding:9px 8px}
+ .tech-node-top strong{font-size:13px}
+ .tech-status{font-size:9px}
+ .tech-quick-picks{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
