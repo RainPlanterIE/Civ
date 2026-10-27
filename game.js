@@ -999,7 +999,7 @@ function fresh(scenario=CIV_WORLD.scenario()){
  cities:scenario.rivals.map((c,i)=>({id:"r"+(i+1),x:c.x,y:c.y,name:c.capital,civId:c.id,civilisation:c.name,leader:c.leader,colour:c.color,pop:7,owner:"rival",army:6,culture:0,faith:0,buildings:{},growth:0,captives:0,unrest:0})),
  units:[{id:"u1",type:"settler",x:leader.x,y:leader.y,moved:false,owner:"player",strength:1,hp:6,xp:0},{id:"u2",type:"clubman",x:leader.x,y:leader.y,moved:false,owner:"player",strength:2,hp:6,xp:0}],
  works:{},builders:{},extracted:{},explored:{},encounters:initialEncounters(scenario),nextEncounterId:1000,
- path:null,project:null,researchProject:null,stage:"move",stageYear:1,
+ path:null,project:null,unitProject:null,researchProject:null,stage:"move",stageYear:1,
  events:[leader.leader+" leads "+leader.name+" from "+leader.capital+" with a settler and a clubman."],nextId:3,startingEscortGranted:true,victory:null};
 }
 let inGame=false;
@@ -1121,8 +1121,9 @@ function constructionRate(c,kind){
  return 1+labor+captiveBonus+focus+workshopBonus;
 }
 function rebalanceActiveConstruction(){
- const p=state.project;
- if(!p||p.balanceVersion===2)return;
+ const projects=[state.project,state.unitProject];
+ for(const p of projects){
+ if(!p||p.balanceVersion===2)continue;
  const newTotal=(buildings[p.kind]||unitDef(p.kind))?.work;
  const oldTotal=Math.max(1,Number(p.total)||Number(p.left)||1);
  if(newTotal&&newTotal>oldTotal&&p.left>0){
@@ -1131,12 +1132,13 @@ function rebalanceActiveConstruction(){
   p.left=Math.max(1,Math.ceil(newTotal*Math.max(0,Math.min(1,p.left/oldTotal))));
  }else p.total=oldTotal;
  p.balanceVersion=2;
+ }
 }
 function estimateWork(left,rate){return Math.max(1,Math.ceil(left/Math.max(1,rate)));}
 function eligible(stage){
  if(stage==="move")return state.units.some(u=>u.owner==="player"&&!u.moved&&!u.embarkedOn);
  if(stage==="workers")return myCities().some(c=>freeWorkers(c)>0);
- if(stage==="construction")return myCities().length>0&&!state.project;
+ if(stage==="construction")return myCities().length>0&&(!state.project||!state.unitProject);
  if(stage==="research")return myCities().length>0&&!state.researchProject&&Object.entries(techs).some(([id,t])=>!known(id)&&(!t.need||known(t.need)));
  return true;
 }
@@ -1326,6 +1328,7 @@ function continueGame(){
  if((coastTile(state.leader?.x??-1,state.leader?.y??-1,2)||state.cities.some(c=>c.owner==="player"&&cityHasSea(c)))&&!state.tech.includes("fishing"))state.tech.push("fishing");
  state.knowledge??=state.research||0;
  state.researchProject??=null;
+ state.unitProject??=null;
  state.builders??={};
  state.explored??={};
  state.encounters??=initialEncounters();
@@ -1492,28 +1495,50 @@ function payUpkeep(){
  return state.economyLast;
 }
 
-function progressBuilding(){
- const p=state.project;if(!p)return;
- const c=getCity(p.city);if(!c||c.owner!=="player"){state.project=null;return;}
- if(p.stalledYear===state.year){p.rate=0;return;}
- const progress=constructionRate(c,p.kind);
- p.left=Math.max(0,p.left-progress);p.rate=progress;
- if(p.left===0){
-  if(unitDef(p.kind)){
-   const d=unitDef(p.kind);
-   const port=d.naval?launchWater(c):null;
-   if(d.naval&&!port){
-    p.left=1;record("A harbour berth must be freed before "+d.name+" can launch.");return;
-   }
-   state.units.push({id:"u"+state.nextId++,type:p.kind,x:port?.x??c.x,y:port?.y??c.y,moved:true,owner:"player",hp:6+Math.max(0,d.strength-2),xp:0,strength:d.strength+upgrade(c,"training")+(p.kind==="archer"?upgrade(c,"range"):0)});
-   updateFog();
-  }else{
-   c.buildings[p.kind]=(c.buildings[p.kind]||0)+1;
-   if(p.kind==="lookout")updateFog();
-  }
-  record((buildings[p.kind]?.name||unitDef(p.kind)?.name||p.kind)+" completed at "+c.name+".");state.project=null;
- }
+function trainingRate(c,kind){
+ if(!c)return 1;
+ // Military instructors and specialised facilities can train soldiers while
+ // civilian builders work independently on structures.
+ return 1+Math.min(2,upgrade(c,"training"))+
+  (kind==="archer"?Math.min(1,upgrade(c,"range")):0)+
+  (isNaval({type:kind})?Math.min(1,upgrade(c,"shipyard")):0);
 }
+function projectRate(c,kind){
+ return unitDef(kind)?trainingRate(c,kind):constructionRate(c,kind);
+}
+function progressProject(slot){
+ const p=state[slot];if(!p)return;
+ const c=getCity(p.city);if(!c||c.owner!=="player"){state[slot]=null;return;}
+ if(p.stalledYear===state.year||p.stalledUntil>=state.year){p.rate=0;return;}
+ const progress=projectRate(c,p.kind);
+ p.left=Math.max(0,p.left-progress);p.rate=progress;
+ if(p.left!==0)return;
+ if(unitDef(p.kind)){
+  const d=unitDef(p.kind),port=d.naval?launchWater(c):null;
+  if(d.naval&&!port){p.left=1;record("A free harbour berth is needed before "+d.name+" can launch.");return;}
+  state.units.push({id:"u"+state.nextId++,type:p.kind,x:port?.x??c.x,y:port?.y??c.y,moved:true,owner:"player",hp:6+Math.max(0,d.strength-2),xp:0,strength:d.strength+upgrade(c,"training")+(p.kind==="archer"?upgrade(c,"range"):0)});
+  updateFog();
+ }else if(p.kind.startsWith("repair:")){
+  const kind=p.kind.slice(7);
+  c.damagedBuildings??={};
+  c.damagedBuildings[kind]=Math.max(0,(c.damagedBuildings[kind]||0)-1);
+  if(!c.damagedBuildings[kind])delete c.damagedBuildings[kind];
+  record(c.name+"'s "+(buildings[kind]?.name||kind)+" has been repaired.");
+ }else{
+  c.buildings[p.kind]=(c.buildings[p.kind]||0)+1;
+  if(p.kind==="lookout")updateFog();
+ }
+ record((buildings[p.kind]?.name||unitDef(p.kind)?.name||p.kind)+
+   (p.kind.startsWith("repair:")?" repairs completed.":" completed at "+c.name+"."));
+ state[slot]=null;
+}
+function progressBuilding(){
+ // Both queues advance independently in the same year. Workers boost the
+ // building project, while training depends on military facilities.
+ progressProject("project");
+ progressProject("unitProject");
+}
+
 function growthGoal(c){return Math.ceil((12+c.pop*2)*(state.path==="arts"?.85:1));}
 function changePopulation(foodGained=0,foodBefore=0,foodUpkeep=0){
  for(const c of state.cities){
@@ -1610,14 +1635,20 @@ function tradeTimber(cityId){
 function startConstruction(kind,cityId){
  syncStage();
  const c=getCity(cityId);if(!c||c.owner!=="player")return;
- const def=buildings[kind]||unitDef(kind);
+ const def=projectDef(kind),isUnit=!!unitDef(kind);
  if(!def)return toast("Unrecognised development.");
- const r=projectRequirements(c,kind);
- if(!r.ready)return toast(r.missing[0]+". Check the project card for any other requirements.");
- for(const r of ["wood","stone","food","metal"])state.resources[r]-=def[r]||0;
- state.project={city:cityId,kind,left:def.work,total:def.work,rate:constructionRate(c,kind),balanceVersion:2};
- record(c.name+" begins "+def.name+".");autoAdvance("construction");save();renderUI();
+ const req=projectRequirements(c,kind);
+ if(!req.ready)return toast(req.missing[0]+". Open this option to see all its requirements.");
+ for(const resource of ["wood","stone","food","metal"])state.resources[resource]-=def[resource]||0;
+ const rate=projectRate(c,kind),slot=isUnit?"unitProject":"project";
+ state[slot]={city:cityId,kind,left:def.work,total:def.work,rate,balanceVersion:2};
+ record(c.name+" begins "+(isUnit?"training ":"building ")+def.name+".");
+ autoAdvance("construction");save();renderUI();
 }
+function startRepair(cityId,kind){
+ return startConstruction("repair:"+kind,cityId);
+}
+
 function discover(id){
  syncStage();
  const t=techs[id];if(!t||known(id)||state.researchProject||(t.need&&!known(t.need)))return;
@@ -1697,24 +1728,42 @@ function viewedCity(){
  if(selected){const c=cityAt(selected.x,selected.y)||controller(selected.x,selected.y);if(c&&c!=="contested"&&c.owner==="player")return c;}
  return firstCity();
 }
-function projectLabel(){const p=state.project;if(!p)return "Nothing being built.";return (buildings[p.kind]?.name||unitDef(p.kind)?.name||p.kind)+" · "+p.left+"/"+p.total+" work · ~"+estimateWork(p.left,constructionRate(getCity(p.city),p.kind))+" years left";}
-function projectRequirements(c,id,ignoreBusy=false){
- const def=buildings[id]||unitDef(id);
- if(!def)return {ready:false,missing:["Unknown development"]};
- const missing=[];
- if(state.project&&!ignoreBusy)missing.push("Finish "+(buildings[state.project.kind]?.name||unitDef(state.project.kind)?.name||state.project.kind)+" first ("+estimateWork(state.project.left,constructionRate(getCity(state.project.city),state.project.kind))+"y)");
- if(def.need&&!known(def.need))missing.push("Research "+(techs[def.need]?.name||def.need));
- if(def.path&&state.path!==def.path)missing.push("Choose "+(paths[def.path]||def.path)+" path");
- if(def.requires&&!upgrade(c,def.requires))missing.push("Build "+(buildings[def.requires]?.name||def.requires)+" first");
- if(def.coastal&&!cityHasSea(c))missing.push("Requires a coastal city with sea inside its influence");
- if(def.naval&&!launchWater(c))missing.push("Requires a free coastal water tile to launch the ship");
- for(const r of ["wood","stone","food","metal"]){
-  const deficit=(def[r]||0)-(state.resources[r]||0);
-  if(deficit>0)missing.push("Need "+deficit+" more "+r);
+function projectDef(id){
+ if(id.startsWith("repair:")){
+  const base=buildings[id.slice(7)];
+  if(!base)return null;
+  return {name:"Repair "+base.name,icon:"🧰",work:Math.max(5,Math.ceil(base.work*.5)),wood:Math.max(2,Math.ceil((base.wood||0)*.2)),stone:Math.ceil((base.stone||0)*.2),desc:"Restore the damaged "+base.name+". Repairs return its bonuses and any lost city defences."};
  }
- return {ready:missing.length===0,missing,reason:missing.join(" · ")};
+ return buildings[id]||unitDef(id);
 }
-function researchLabel(){const p=state.researchProject;if(!p)return "No technology being researched.";return techs[p.id].name+" · "+p.progress+"/"+p.total+" work · ~"+estimateWork(p.total-p.progress,researchRate())+" years remaining";}
+function projectLabel(slot="project"){
+ const p=state[slot];if(!p)return slot==="unitProject"?"No units in training.":"No building underway.";
+ const d=projectDef(p.kind);
+ return (d?.name||p.kind)+" · "+p.left+"/"+p.total+" work · ~"+estimateWork(p.left,projectRate(getCity(p.city),p.kind))+" years";
+}
+function projectRequirements(c,id,ignoreBusy=false){
+ const def=projectDef(id);
+ if(!def)return {ready:false,missing:["Unknown development"]};
+ const missing=[],isUnit=!!unitDef(id),slot=isUnit?"unitProject":"project";
+ if(state[slot]&&!ignoreBusy)missing.push((isUnit?"Finish training ":"Finish building ")+
+  projectLabel(slot)+" first");
+ if(id.startsWith("repair:")){
+  const name=id.slice(7);
+  if(!(c.damagedBuildings?.[name]>0))missing.push("This building does not need repair");
+ }else{
+  if(def.need&&!known(def.need))missing.push("Research "+(techs[def.need]?.name||def.need));
+  if(def.path&&state.path!==def.path)missing.push("Choose "+(paths[def.path]||def.path)+" path");
+  if(def.requires&&!upgrade(c,def.requires))missing.push("Build "+(buildings[def.requires]?.name||def.requires)+" first");
+  if(def.coastal&&!cityHasSea(c))missing.push("Requires a coastal city with sea inside its influence");
+  if(def.naval&&!launchWater(c))missing.push("Requires a free coastal water tile");
+ }
+ for(const resource of ["wood","stone","food","metal"]){
+  const lack=(def[resource]||0)-(state.resources[resource]||0);
+  if(lack>0)missing.push("Need "+lack+" more "+resource);
+ }
+ return {ready:!missing.length,missing,reason:missing.join(" · ")};
+}
+
 function panelContents(){
  let output="";
  if(menu==="turn"){
