@@ -183,7 +183,7 @@ The game now computes city influence in small circles around cities and draws **
 City buildings and units display their material cost, research prerequisites, any required training facility, society-path requirement and construction progress. **Previously some options were silently disabled** while a project was active or a technology was locked. They now remain tappable and explain the first blocking requirement (e.g. "Need 8 more wood", "Research Geology", or "Finish Housing first"). The game still allows **one active construction/training project across the civilisation**, and all building costs are taken up front.
 
 ### Preventing local resource deadlocks
-Realistic regional scarcity means some starting civilisations (notably desert and river-valley cities) may have very little timber nearby. Cities therefore have a limited **Timber Caravan** exchange to obtain imported wood: 13 food for 6 timber once per five years, improved by a Market to 9 food for 8 timber. This gives dry-region players a workable alternative without inventing European-style forests around Egypt or Babylon.
+Realistic regional scarcity means some starting civilisations (notably desert and river-valley cities) may have very little timber nearby. Cities may eventually develop a **Timber Caravan** trade exchange, unlocked only after Year 30 and Trade Routes research (after Writing): 13 food for 6 timber once per five years, improved by a Market to 9 food for 8 timber. This gives dry-region players a workable alternative without inventing European-style forests around Egypt or Babylon.
 
 ### Existing saves
 **Earth saves use a new browser key**, separate from the old valley key. Continuing an older v3 game imports its year, population, cities, buildings, stored resources, technologies, units, research, builders and partially completed construction into a region near its newly assigned historical leader. The old v3 save is preserved as a backup; tile-based worker assignments are repositioned when possible and may need some manual reassignment because old terrain coordinates cannot represent the new Earth geography. Newly created Earth saves record their scenario and leader and restore them on Continue.
@@ -232,3 +232,44 @@ Ships, passengers and known fishing technologies are part of the browser save. T
 Technology research now appears as **four themed branches**: Coast & Sailing, Food & Farming, Materials & Industry and Knowledge & Military. Each technology displays its prerequisite, research cost, current availability, and a concrete unlock or numerical production bonus. The page displays an **Available discoveries** group for research that can be started right now, and a progress bar for any active discovery. Existing one-at-a-time research rules remain.
 
 The City construction screen now sorts **currently affordable and eligible buildings first**, then those needing materials, then those locked behind technologies, society paths or prerequisites. When a build is underway, future affordable choices remain near the top to help plan the next project. Training units uses the same sorting rule. Buttons still explain exactly what prevents a choice from starting; the game continues to allow only one construction/training project at a time.
+
+
+## Royal advisors and court scheming (v16)
+Civ now includes a persistent **Royal Court** and a cutscene-style **advisor audience** system, beginning during the first decade of a reign. Instead of simply advancing through endless empty years, the ruler encounters political dilemmas about grain shortages, timber, disgruntled workers, prestigious generals, religious leadership, captive labourers, merchants, and rumours of conspiracy.
+
+### Early game economy and delayed trade
+- New civilisations start with **16 wood**, down from 24: enough for one small structure, not a storehouse of unlimited materials. Existing saved resource stockpiles are preserved unchanged.
+- **Timber Caravans are unavailable before Year 30**. After Year 30, you must also have researched **Trade Routes** (27 research work, after Writing, which itself requires Agriculture). Caravans remain limited to one transaction per city per five years, costing 13 food for 6 wood, or 9 food for 8 wood with a Market.
+- The City screen hides the caravan action until all prerequisites are met, so it does not dominate the beginning of the game. The new Trade Routes node is visible in the Knowledge & Military branch of the technology tree.
+
+### Advisor audiences and genuine choices
+A cinematic advisor overlay opens at major moments (first expected in Year 8, and roughly every 7–10 years thereafter; some urgent shortages may bring it forward). Each scene introduces an advisor, the problem, and **three consequential choices** with their exact resource costs, legitimacy and faction effects shown before selection.
+
+Typical audiences are the Steward warning about a hungry winter, the Guild Speaker demanding political representation, a War Captain becoming too popular, a High Priestess requesting authority, a Master Builder seeking timber, and a Royal Spymaster uncovering secret meetings. Choices can consume food or wood, grant supplies, reward or offend factions, and reduce or encourage scheming.
+
+Each audience **must be resolved before you can End Year**; it cannot be silently dismissed. The decision is saved with the game, so reloading during an audience restores the pending choice rather than losing it.
+
+### Legitimacy, influence, loyalty and intrigues
+Open **👑 Court** from the leader heading badge or the Actions panel. The Royal Court shows legitimacy and three persistent rival power centres:
+
+| Court faction | Gains influence from | Political danger |
+|---|---|---|
+| Workers & guilds | City population, employed citizens, labour disputes, some royal concessions | Demands representation; unrest and low loyalty lead to intrigue |
+| Warriors & generals | Clubmen, more advanced military units, barracks, military prestige | A popular general may claim the throne |
+| Priests & faith | Temples, expanding religious influence, sponsored privileges | A religious leader may oppose or replace the ruler |
+
+Each faction has **Influence (power), Loyalty and Scheming (intrigue)** ratings from 0 to 100. Faction strength grows over years through buildings, population and troops. The **Threat** rating combines influence, disloyalty, intrigue and the monarch's legitimacy. High power alone is not enough to trigger a coup: an influential *loyal* group can support the ruler.
+
+The Court offers **one royal order per year**. For each faction:
+- **Reward (9 food):** +14 loyalty, +4 influence, −8 intrigue and +2 legitimacy.
+- **Investigate (5 food):** −18 intrigue, −5 loyalty, +1 legitimacy; useful against existing plots.
+- **Restrict influence (free):** −14 influence, −12 loyalty, +7 intrigue and −3 legitimacy, effective but potentially inflammatory.
+
+Choices during the advisor cutscenes supply additional ways to keep factions balanced. Food scarcity, unrest among captives, or aggressive acts can erode loyalty and legitimacy.
+
+### Conspiracies and the end of a reign
+If a faction's Threat rating reaches **66**, a special Spymaster cutscene announces that a coup is being planned. A **three-year warning** and targeted faction are visible in the Court, providing time for negotiations, investigations, or limits on faction power. Reducing the faction's Threat below **48** breaks the conspiracy apart. If the plot reaches its deadline while still dangerous, the faction seizes the throne, ending the player's reign.
+
+The coup can be carried out by the **workers' leadership, the army's general, or a religious leader**. Failure is a genuine game-over, not merely a flavour notification; the resulting end-of-reign scene explains who overthrew the player. You may start a fresh game from the main menu. Overthrow, pending advisor audiences, faction values, royal orders and court history persist in saves.
+
+This is a first political-dynamics system, not a character-by-character court simulation: three power centres are tracked, rather than individually simulated named aristocrats with private genealogies or multiplayer diplomacy. It provides the foundation for later court characters, alliances, succession and espionage mechanics.
