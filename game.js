@@ -399,7 +399,7 @@ function fresh(scenario=CIV_WORLD.scenario()){
  units:[{id:"u1",type:"settler",x:leader.x,y:leader.y,moved:false,owner:"player",strength:1,hp:6,xp:0},{id:"u2",type:"clubman",x:leader.x,y:leader.y,moved:false,owner:"player",strength:2,hp:6,xp:0}],
  works:{},builders:{},extracted:{},explored:{},encounters:initialEncounters(scenario),nextEncounterId:1000,
  path:null,project:null,researchProject:null,stage:"move",stageYear:1,
- events:[leader.leader+" leads "+leader.name+" from "+leader.capital+" with a settler and a clubman."],nextId:3,victory:null};
+ events:[leader.leader+" leads "+leader.name+" from "+leader.capital+" with a settler and a clubman."],nextId:3,startingEscortGranted:true,victory:null};
 }
 let inGame=false;
 let state;
@@ -450,6 +450,17 @@ function readSave(){
  return null;
 }
 state=readSave()||fresh();
+function ensureStartingEscort(){
+ if(state.startingEscortGranted)return;
+ const u=state.units?.find(u=>u.owner==="player"&&u.type==="settler");
+ if(state.year===1&&u&&state.units.filter(z=>z.owner==="player").length===1){
+  const id="u"+Math.max(state.nextId||2,2);
+  state.units.push({id,type:"clubman",x:u.x,y:u.y,moved:false,owner:"player",strength:2,hp:6,xp:0});
+  state.nextId=Math.max(state.nextId||2,3);
+ }
+ state.startingEscortGranted=true;
+}
+ensureStartingEscort();
 if((coastTile(state.leader?.x??-1,state.leader?.y??-1,2)||state.cities.some(c=>c.owner==="player"&&cityHasSea(c)))&&!state.tech.includes("fishing"))state.tech.push("fishing");
 state.knowledge??=state.research;
 state.builders??={};
@@ -708,6 +719,7 @@ function continueGame(){
   return;
  }
  state=saved;
+ ensureStartingEscort();
  if((coastTile(state.leader?.x??-1,state.leader?.y??-1,2)||state.cities.some(c=>c.owner==="player"&&cityHasSea(c)))&&!state.tech.includes("fishing"))state.tech.push("fishing");
  state.knowledge??=state.research||0;
  state.researchProject??=null;
@@ -1155,7 +1167,7 @@ function panelContents(){
        needs=!!prereq&&!known(d.need),canStart=!done&&!active&&!researching&&!needs,
        status=done?'Researched':active?'In progress':needs?'Needs '+prereq.name:researching?'Research slot busy':'Ready now',
        depth=d.need?1+(techs[d.need]?.need?1:0):0;
-    output+='<div class="tech-node '+(done?'researched':active?'researching':needs?'locked':'available')+'" style="--depth:'+depth+'">';
+    output+='<div class="tech-node '+(done?'researched':active?'researching':needs?'locked':researching?'busy':'available')+'" style="margin-left:'+(11+Math.min(depth,2)*12)+'px">';
     output+='<div class="tech-node-top"><strong>'+(done?'✓ ':active?'⏳ ':needs?'🔒 ':'🔬 ')+d.name+'</strong><span class="tech-status">'+status+'</span></div>';
     output+='<div class="tech-prereq">'+(prereq?'↳ Requires '+prereq.name:'● Starting technology')+' · '+d.cost+' research work</div>';
     output+='<div class="tech-bonus">'+bonusText(id)+'</div>';
