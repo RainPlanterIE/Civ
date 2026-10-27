@@ -556,8 +556,8 @@ function panelContents(){
   output="<p class='hint'>Everything is managed through one city tile and the land it influences.</p>";
   output+=item("📋 This year's actions","Return to skipped stages before ending the year.",btn("Review turn","turnMenu"));
   if(firstCity()){
-   output+=item("🏛 City","Construct developments inside a city tile; one project at a time.",btn("Open city","city"));
-   output+=item("🌿 Workers","Population: "+citizens()+"("+assignedWorkers()+") assigned. Assign people inside your influence borders.",btn("Manage workers","workers"));
+   output+=item("🏛 City","Construct developments inside a city tile; one project at a time.",btn("🏗 Construct","city",false,"primary"));
+   output+=item("🌿 Workers","Population: "+citizens()+"("+assignedWorkers()+") assigned. "+unassignedWorkers()+" still available for resources or construction.",btn("👥 Assign workers","workers",false,"primary"));
    output+=item("🔬 Technology",researchLabel(),btn("Research","tech"));
    output+=item("♜ Society","Choose science, arts, faith or war from Year 100.",btn("Society","path"));
   }
@@ -567,33 +567,52 @@ function panelContents(){
   output+=item("💾 Save game","Save the current turn on this device.",btn("Save now","save"));
  }
  if(menu==="workers"){
-  output="<p class='hint'>Assign every available citizen this year — one resource tile per worker. Total population: "+citizens()+"("+assignedWorkers()+") · Free: "+unassignedWorkers()+". Tap land, assign individually, or use Assign all.</p>";
-  output+=item("Assign all available workers","Automatically fills nearby resource jobs, prioritising food before wood, stone and other resources.",btn("Assign all workers","assignAll",!eligible("workers"),"primary"));
+  const free=unassignedWorkers(),assigned=assignedWorkers();
+  output='<div class="worker-counter"><span class="worker-number">'+free+'</span><span><strong>Workers remaining</strong><small>'+assigned+' assigned / '+citizens()+' citizens</small></span></div>';
+  output+='<p class="hint">Assign people to resource tiles or construction. Every builder adds +1 work per year (up to six). Builders are not gathering resources. You can reassign any workers before End Year.</p>';
+  output+=item("🌾 Assign all resource workers","Automatically balances food, timber, stone and other visible resources. Keep citizens free if you want them building.",btn("Assign all resource workers","assignAll",!eligible("workers"),"primary"));
   let shown=0;
   for(const c of myCities()){
+   const builders=builderCount(c),speed=constructionRate(c,state.project?.kind||"house");
+   output+=item("🏗 Builders — "+htmlSafe(c.name),"Builders: "+builders+" · "+cityWork(c)+" resource workers · "+freeWorkers(c)+" unassigned. Construction speed with current materials: "+speed+" work/year. "+
+    (state.project&&state.project.city===c.id?estimateWork(state.project.left,speed)+" years left.":"Start a project in the City panel."),
+    btn("− Remove builder","builder:"+c.id+":-1",builders===0)+btn("＋ Assign builder","builder:"+c.id+":1",freeWorkers(c)<1,"primary"));
    for(let y=Math.max(0,c.y-influenceRadius(c));y<=Math.min(SIZE-1,c.y+influenceRadius(c));y++)
     for(let x=Math.max(0,c.x-influenceRadius(c));x<=Math.min(SIZE-1,c.x+influenceRadius(c));x++){
      if(borders.get(pos(x,y))!==c.id||cityAt(x,y))continue;
      const d=deposit(x,y),working=state.works[pos(x,y)];
-     if(!d||!known(d.tech)||(!working&&remaining(x,y)===0)||shown>=14)continue;
-     output+=item(d.icon+" "+d.type+" · "+x+","+y,d.type==="food"||d.type==="animals"?"Renewable when researched.":remaining(x,y)+" units remaining.",btn(working?"Remove worker":"Assign worker","work:"+x+":"+y,!working&&freeWorkers(c)===0));
+     if(!d||!known(d.tech)||(!working&&remaining(x,y)===0)||shown>=24)continue;
+     const jobLabel=(working?"✓ ":"")+d.icon+" "+d.type+" · "+x+","+y;
+     output+=item(jobLabel,d.type==="food"||d.type==="animals"?"Renewable after research.":remaining(x,y)+" units remaining.",
+      btn(working?"− Remove worker":"＋ Assign worker","work:"+x+":"+y,!working&&freeWorkers(c)===0,working?"secondary":"primary"));
      shown++;
     }
   }
-  if(!shown)output+="<p class='hint'>No accessible resources are currently visible. Explore or research new technologies.</p>";
+  if(!shown)output+="<p class='hint'>No accessible resources currently visible. Build units to explore or research new technologies.</p>";
  }
  if(menu==="city"){
   const c=viewedCity();
   if(!c)return "<p class='hint'>Found a city first.</p>";
-  output="<p class='hint'>"+htmlSafe(c.name)+" · Population "+c.pop+"("+cityWork(c)+") / "+populationCap(c)+" · Free citizens "+freeWorkers(c)+" · Influence radius "+influenceRadius(c)+".</p>";
-  output+=item("🏗 Current project",projectLabel(),"");
+  const speed=constructionRate(c,state.project?.kind||"house");
+  output='<div class="worker-counter"><span class="worker-number">'+freeWorkers(c)+'</span><span><strong>Free citizens in '+htmlSafe(c.name)+'</strong><small>'+cityWork(c)+' on resources · '+builderCount(c)+' building · '+c.pop+' population</small></span></div>';
+  output+='<p class="hint">All developments are built inside this city tile. Assign builders to speed up construction. Only one project can be underway across your civilisation.</p>';
+  output+=item("🏗 Current project",projectLabel()+" · Current speed "+speed+" work/year",btn("👷 Assign builders","workers",false,"primary"));
+  output+='<h4 class="panel-section-title">Buildings</h4>';
   for(const [id,d] of Object.entries(buildings)){
-   if((d.need&&!known(d.need))||(d.path&&state.path!==d.path))continue;
+   const techLocked=d.need&&!known(d.need),pathLocked=d.path&&state.path!==d.path;
    let cost=d.wood+" wood · "+d.stone+" stone"+(d.metal?" · "+d.metal+" metal":"");
-   output+=item(d.icon+" "+d.name+" ×"+upgrade(c,id),d.desc+" · "+cost+" · "+d.work+" work",btn("Construct","build:"+id+":"+c.id,!!state.project));
+   let lock=techLocked?"🔒 Research "+techs[d.need].name+" to unlock.":pathLocked?"🔒 Requires "+paths[d.path]+" path.":"";
+   output+=item(d.icon+" "+d.name+" ×"+upgrade(c,id),d.desc+" · "+cost+" · "+d.work+" work. "+lock,
+    btn(techLocked||pathLocked?"Locked":"🏗 Construct","build:"+id+":"+c.id,!!state.project||techLocked||pathLocked,techLocked||pathLocked?"secondary":"primary"));
   }
-  output+=item("🧭 Train settler","Establish a new city. 16 wood · 5 stone · 9 work.",btn("Train settler","build:settler:"+c.id,!!state.project));
-  if(state.path==="war")output+=item("⚔ Recruit army","Conquer a neighbouring city. 18 wood · 16 stone · 2 metal.",btn("Recruit army","build:army:"+c.id,!!state.project));
+  output+='<h4 class="panel-section-title">Train units</h4>';
+  for(const [id,d] of Object.entries(unitTypes)){
+   const techLocked=d.need&&!known(d.need),pathLocked=d.path&&d.path!==state.path,facilityLocked=d.requires&&!upgrade(c,d.requires);
+   let cost=["wood","stone","food","metal"].filter(k=>d[k]).map(k=>d[k]+" "+k).join(" · ");
+   let lock=techLocked?"🔒 Needs "+techs[d.need].name+".":pathLocked?"🔒 Needs "+paths[d.path]+" path.":facilityLocked?"🔒 Build "+buildings[d.requires].name+" first.":"";
+   output+=item(d.icon+" "+d.name,d.desc+" · Strength "+d.strength+" · "+cost+" · "+d.work+" work. "+lock,
+    btn(techLocked||pathLocked||facilityLocked?"Locked":"Train","build:"+id+":"+c.id,!!state.project||!!techLocked||!!pathLocked||!!facilityLocked,techLocked||pathLocked||facilityLocked?"secondary":"primary"));
+  }
  }
  if(menu==="tile"){
   if(!selected)return "";
@@ -614,7 +633,7 @@ function panelContents(){
   for(const [id,d] of Object.entries(techs)){
    const locked=known(id)||!!researching||(d.need&&!known(d.need));
    const active=researching?.id===id;
-   output+=item((known(id)?"✓ ":active?"⏳ ":"🔬 ")+d.name,d.desc+(d.need?" · Requires "+techs[d.need].name:"")+" · "+d.cost+" research work",btn(known(id)?"Researched":active?"In progress":"Start research","tech:"+id,locked));
+   output+=item((known(id)?"✓ ":active?"⏳ ":"🔬 ")+d.name,d.desc+" · Unlocks: "+bonusText(id)+(d.need?" · Requires "+techs[d.need].name:"")+" · "+d.cost+" research work",btn(known(id)?"Researched":active?"In progress":"Start research","tech:"+id,locked));
   }
  }
  if(menu==="path"){
@@ -627,7 +646,8 @@ function panelContents(){
   const ready=state.units.filter(u=>u.owner==="player"&&!u.moved).length,total=state.units.filter(u=>u.owner==="player").length;
   output="<p class='hint'>"+ready+" of "+total+" units ready. You can move <b>every unit</b> once before advancing the year. Tap a ready unit on the map (or select it below), then tap an adjacent tile. Repeat for every unit. The stage ends when all have acted or you press Next.</p>";
   for(const u of state.units.filter(u=>u.owner==="player")){
-   output+=item((u.type==="army"?"⚔ Army":"🚶 Settler")+" at "+u.x+", "+u.y,u.moved?"Already moved this year":u.type==="army"?"Ready · Strength "+u.strength:"Ready to move",btn(u.moved?"Already moved":"Select to move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,u.moved,"primary"):""));
+   const d=unitDef(u.type);
+   output+=item((d?.icon||"🚶")+" "+unitTitle(u)+" at "+u.x+", "+u.y,u.moved?"Already moved this year":"Ready · Strength "+u.strength+" · Vision "+(d?.vision||2),btn(u.moved?"Already moved":"Select to move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,u.moved,"primary"):""));
   }
  }
  if(menu==="history")output=state.events.map(e=>"<div class='event'>"+htmlSafe(e)+"</div>").join("");
@@ -655,7 +675,7 @@ function renderUI(){
  const index=STAGES.indexOf(state.stage),stepLabel=(index+1)+' / 5 · '+stageNames[state.stage];
  const endButton=btn("End Year →","endYear",false,"primary");
  const nextButton=state.stage==="end"?"":btn("Next","nextStage");
- const stageAction=state.stage==="end"?"":btn(state.stage==="move"?"🚶 Units":state.stage==="workers"?"👥 Work":state.stage==="construction"?"🏗 Build":"🔬 Tech","stageAction");
+ const stageAction=state.stage==="end"?"":btn(state.stage==="move"?"🚶 Move units":state.stage==="workers"?"👥 Assign workers":state.stage==="construction"?"🏗 Construct":"🔬 Choose tech","stageAction",false,"secondary stage-cta");
  actions.innerHTML='<button class="stage-label" data-action="turnMenu" title="Revisit any turn step">☰ '+stepLabel+' ▾</button><div class="stage-buttons">'+stageAction+nextButton+endButton+'</div>';
  const panel=get("panel");panel.classList.toggle("open",!!menu);
  panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game",turn:"This year"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
@@ -670,6 +690,7 @@ function doAction(a){
  if(["city","tile","tech","path","units","workers","history"].includes(a)){menu=a;renderUI();return;}
  if(a==="work"&&selected)return workTile(selected.x,selected.y);
  if(a==="assignAll")return assignAllWorkers();
+ if(a.startsWith("builder:")){const [cityId,delta]=a.slice(8).split(":");return assignBuilder(cityId,Number(delta));}
  if(a.startsWith("work:")){const [x,y]=a.slice(5).split(":").map(Number);selected={x,y};return workTile(x,y);}
  if(a==="nextStage")return nextStage();
  if(a==="stageAction"){
