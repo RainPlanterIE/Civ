@@ -194,7 +194,62 @@ function assignAllWorkers(){
  if(state.stage!=="workers"&&menu==="workers")menu="";
  save();renderUI();
 }
-function save(){try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){}}
+function save(){
+ try{localStorage.setItem(STORE,JSON.stringify(state));return true;}
+ catch(e){return false;}
+}
+function storedGame(){
+ try{
+  const data=JSON.parse(localStorage.getItem(STORE)||"null");
+  if(data&&data.version===3&&Array.isArray(data.units)&&Array.isArray(data.cities))return data;
+ }catch(e){}
+ return null;
+}
+function manualSave(){
+ if(save())toast("✓ Game saved on this device · Year "+state.year);
+ else toast("Could not save. Check your browser storage settings.");
+}
+function showMainMenu(){
+ menu="";moving=null;
+ const stored=storedGame();
+ const screen=get("startScreen");
+ get("continueGame").disabled=!stored;
+ get("menuStatus").textContent=stored
+  ?"Saved game available · Year "+stored.year+(stored.cities.some(c=>c.owner==="player")?" · "+(stored.cities.find(c=>c.owner==="player")?.name||"Your civilisation"):" · One settler")
+  :"No saved game yet — choose Play to begin.";
+ screen.classList.remove("hidden");
+ renderUI();
+}
+function closeMainMenu(){
+ get("startScreen").classList.add("hidden");
+ renderUI();
+}
+function playNewGame(){
+ if(storedGame()&&!window.confirm("Start a new game? This replaces the saved civilisation on this device."))return;
+ state=fresh();moving=null;selected=null;menu="";recalcBorders();center(15,15);
+ const ok=save();
+ closeMainMenu();
+ if(!ok)toast("New game started, but browser storage is unavailable.");
+}
+function continueGame(){
+ const saved=storedGame();
+ if(!saved){
+  get("menuStatus").textContent="No valid saved game was found. Choose Play to begin.";
+  get("continueGame").disabled=true;
+  return;
+ }
+ state=saved;
+ state.knowledge??=state.research||0;
+ state.researchProject??=null;
+ if(state.project&&!state.project.total)state.project.total=state.project.left;
+ if(state.researchProject&&!state.researchProject.total)state.researchProject.total=techs[state.researchProject.id]?.cost||state.researchProject.left||1;
+ selected=null;moving=null;menu="";recalcBorders();
+ const unit=state.units.find(u=>u.owner==="player"&&u.type==="settler")||state.units.find(u=>u.owner==="player");
+ const city=state.cities.find(c=>c.owner==="player");
+ center(unit?.x??city?.x??15,unit?.y??city?.y??15);
+ closeMainMenu();
+ toast("Continued saved game · Year "+state.year);
+}
 function toast(msg){get("toast").textContent=msg;get("toast").classList.add("show");toastUntil=Date.now()+2900;}
 function record(msg){state.events.unshift("Year "+state.year+": "+msg);state.events=state.events.slice(0,25);toast(msg);}
 function found(u){
@@ -384,7 +439,8 @@ function panelContents(){
   }
   output+=item("🚶 Units","One movement per unit per year.",btn("Manage units","units"));
   output+=item("🧾 Chronicle","Recent events and discoveries.",btn("Open chronicle","history"));
-  output+=item("⚙ Game menu","Save your progress or start a new world.",btn("Game options","main"));
+  output+=item("🏠 Main menu","Play a new game or continue from your save.",btn("Open main menu","openMainMenu"));
+  output+=item("💾 Save game","Save the current turn on this device.",btn("Save now","save"));
  }
  if(menu==="workers"){
   output="<p class='hint'>Assign every available citizen this year — one resource tile per worker. Total population: "+citizens()+"("+assignedWorkers()+") · Free: "+unassignedWorkers()+". Tap land, assign individually, or use Assign all.</p>";
@@ -451,7 +507,7 @@ function panelContents(){
   }
  }
  if(menu==="history")output=state.events.map(e=>"<div class='event'>"+htmlSafe(e)+"</div>").join("");
- if(menu==="main")output=item("Save","Your game automatically saves in this browser.",btn("Save","save"))+item("New world","Start again with one settler. Replaces this game's save.",btn("Restart","restart"));
+ if(menu==="main")output=item("Save","Your game automatically saves in this browser.",btn("Save now","save"))+item("Main menu","Play a new world or continue your save.",btn("Main menu","openMainMenu"));
  if(state.victory)output="<div class='option' id='chosen'><strong>🏆 "+htmlSafe(state.victory)+"</strong></div>"+output;
  return output;
 }
@@ -495,7 +551,8 @@ function doAction(a){
   menu=state.stage==="move"?"units":state.stage==="workers"?"workers":state.stage==="construction"?"city":"tech";
   renderUI();return;
  }
- if(a==="save"){save();toast("Saved.");return;}
+ if(a==="save")return manualSave();
+ if(a==="openMainMenu")return showMainMenu();
  if(a==="restart"){if(confirm("Start a new world and replace your save?")){state=fresh();moving=null;menu="";selected=null;recalcBorders();center(15,15);save();renderUI();}return;}
  if(a.startsWith("unit:")){if(state.stage!=="move")return toast("Movement is only available during the movement step.");moving=a.slice(5);menu="";toast("Tap one adjacent tile to move.");renderUI();return;}
  if(a.startsWith("found:"))return found(getUnit(a.slice(6)));
@@ -631,6 +688,9 @@ canvas.addEventListener("touchend",()=>twoFinger=0);
 get("zoomIn").onclick=()=>scale=Math.min(2.3,scale+.18);
 get("zoomOut").onclick=()=>scale=Math.max(.55,scale-.18);
 get("menu").onclick=()=>{menu=menu==="actions"?"":"actions";renderUI();};
+get("saveGame").onclick=manualSave;
+get("playGame").onclick=playNewGame;
+get("continueGame").onclick=continueGame;
 window.addEventListener("resize",resize);
 function loop(){
  if(toastUntil&&Date.now()>toastUntil){get("toast").classList.remove("show");toastUntil=0;}
@@ -639,5 +699,5 @@ function loop(){
 resize();recalcBorders();
 const unit=state.units.find(u=>u.type==="settler");
 center(unit?.x||firstCity()?.x||15,unit?.y||firstCity()?.y||15);
-renderUI();requestAnimationFrame(loop);
+renderUI();showMainMenu();requestAnimationFrame(loop);
 })();
