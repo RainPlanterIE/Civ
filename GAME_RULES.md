@@ -325,3 +325,18 @@ The goal is uncertainty grounded in each political choice, not arbitrary punishm
 
 ### Small coastal timber sources
 Coastal land that would otherwise only offer natural forage may occasionally provide **coastal scrub or driftwood** instead. Such sites are uncommon and **finite** (a small handful of wood units rather than an entire forest). The change makes historically wood-scarce Mediterranean starts such as **Athens** capable of gathering a little local timber without receiving a large forest or unlocking a caravan in the opening years. Their worker yields still begin at +1 wood per year, and deposits still run out.
+
+
+## Civilisation-specific royal court interiors (v18)
+
+Every one of the 21 playable historical civilisations has its **own named, distinct court backdrop asset** in the repository under assets/courts/{civilisation-id}.webp. The room is automatically chosen from the player's historical civilisation ID (with a fallback for older or incomplete saves). This selection is visual only: it does not alter faction risks, decisions, event probabilities or resource costs.
+
+**Examples:** Rome receives the Roman Senate; Greece, the Athenian assembly; the Mongols, the Khan's great yurt; Han China, the imperial palace; Ancient Egypt, a throne hall; the Norse, a timber great hall; Mali, a Sahelian royal court; and the Inca Empire, an Andean imperial court.
+
+Separate styled settings also exist for Persia, Babylonia, Maurya, the Aztec and Maya polities, Khmer, Tokugawa Japan, Aksum, the Iceni, the Ottomans, Carthage, the Zulu Kingdom, and the Chola Empire.
+
+The first eight core illustrations were created as original painterly environment assets. The remaining thirteen are **stylised adaptations and variations of the existing artwork**, with their own palettes, culturally inspired ornamental details, and architectural motifs. They are atmospheric game illustrations, not precise archaeological reconstructions.
+
+The illustration appears prominently behind **each Royal Advisor cutscene**, with a smaller label showing the court setting and with the advisor's name kept readable. The Royal Court management panel also displays the matching court illustration as a preview immediately after founding a city. The same interior is used in **delayed-consequence** and **overthrow/end-of-reign scenes**, giving political events a continuous sense of place.
+
+Images are optimised WebP files (960 × 540 pixels, typically tens of KB each). The game loads the selected room on demand rather than all 21 backgrounds together. The mobile image stage is compact enough to leave adequate space for decisions and dialogue. Existing v4 Earth saves automatically use their leader's room without any save migration.
