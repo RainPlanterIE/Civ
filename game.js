@@ -492,6 +492,190 @@ const COURT_SCENES={
   ]
  }
 };
+// Advisors reveal their perspectives, not the numerical faction changes.
+// Consequences include longer-term rumours and unforeseen political reactions.
+const COURT_STORIES={
+ founding:{
+  context:"The first walls stand, yet there is no settled custom for who advises the throne. The Guild Speaker represents those who built the houses. A captain keeps the gate by force of habit, and a priestess has begun to bless each harvest. None claims to challenge you, but each expects a place in the story of the new capital.",
+  counsel:["The Steward: A ruler who hears everyone can avoid grave mistakes, but nobody likes waiting for an answer.","The Captain: The realm is new. There is still time to decide who may stand beside the throne."],
+  choices:{listen:"Invite the guilds, guards and priests to speak as equals. Some may mistake patience for uncertainty.",bread:"Open the royal stores for a celebration that the people will remember. They may remember who served the food, too.",guards:"Give the captain responsibility for protecting the palace. It offers reassurance, although no throne should depend entirely on one commander."}
+ },
+ food:{
+  context:"Traders arrive with empty sacks, fishermen argue with inland farmers, and the market square has begun to close early. Rumour claims the palace holds hidden stores. A winter of hunger would undermine more than the economy: every faction is watching how the ruler shares hardship.",
+  counsel:["The Steward: A public ration will buy us time, but an angry market cannot be ordered to fill its stalls.","The Guild Speaker: The people will judge who eats first when the cupboards are bare."],
+  choices:{hunt:"Send skilled hunters and fishermen farther from home, carrying provisions and tools. Their success is uncertain.",levy:"Claim grain from private stores under royal authority. It will restore order quickly, though not everyone will accept your reasons.",ration:"Begin rationing at the palace table and require the court to share in the hardship. Some courtiers will call it noble; others may quietly resent it."}
+ },
+ timber:{
+  context:"A half-finished roof in {capital} has been left exposed to the weather. The Master Builder says the nearest usable timber is harder to reach than it was when the first families settled. Guild apprentices have offered to cross unfamiliar country, while nearby villages say they have already contributed enough.",
+  counsel:["Master Builder: I can save the project, but not without taking something from somebody.","The Steward: There is no shortage of timber in the world. There is a shortage of people willing to bring it to our gates."],
+  choices:{woodlands:"Pay for a journey into remote woodlands. The expedition may discover new supplies, or return with grievances.",requisition:"Order nearby settlements to surrender their spare beams and carts. Your builders will thank you, at least.",conserve:"Suspend wasteful work and reuse what can be recovered. It may take longer to finish, but avoids making a new enemy."}
+ },
+ guilds:{
+  context:"Carpenters, masons and farm workers now hold meetings after dusk. Their speaker has brought a careful petition, signed by people whose labour makes the city possible. They do not ask for the crown. They ask that no new burden be imposed without their consent. The soldiers watch with interest.",
+  counsel:["The Guild Speaker: We ask to be heard before our hands are ordered to move.","The War Captain: A council granted today may demand command of the gates tomorrow."],
+  choices:{seats:"Offer the guild leaders permanent chairs at council meetings. It may settle their grievances and establish a new rival authority.",wages:"Promise better meals and reasonable time away from public works. The cost is immediate, the gratitude harder to measure.",deny:"Tell the delegation that royal authority cannot be negotiated. They leave politely, without saying where they will meet next."}
+ },
+ army:{
+  context:"Returning patrols have been greeted in the streets. The captain's veterans are admired for keeping the road safe, and several young warriors have sworn loyalty to him personally. A courtier reports that the barracks now settles disputes without consulting the palace.",
+  counsel:["The War Captain: My soldiers followed orders when no one else would. Would you have them treated as ordinary labourers?","The Steward: A commander can be your strongest shield, until the shield decides it owns the hand."],
+  choices:{honours:"Seat the captain beside you and recognise his victories in public. The soldiers may become more devoted to the throne—or to him.",civil:"Require that military decisions receive approval from civilian councillors. The city may welcome restraint, but the officers may feel humiliated.",divide:"Give command of the patrols to separate officers. No one commands the entire army, although rivalry could create new dangers."}
+ },
+ temple:{
+  context:"The temple steps are crowded each morning. Priests are settling family disputes, blessing new homes and recording promises that used to be witnessed by the palace. The High Priestess offers to formalise the relationship, while merchants fear the temple may soon speak for everyone.",
+  counsel:["The High Priestess: A faith that protects the people also protects the ruler, if the ruler respects its place.","The Guild Speaker: Today they bless the market. Tomorrow they may decide who is permitted to sell there."],
+  choices:{sponsor:"Contribute royal supplies to the temples and invite the priestess to major ceremonies. Her blessing may come with expectations.",plural:"Declare that several traditions may worship without interference. Ordinary people may appreciate the freedom; established priests may not.",separate:"Keep temple officials away from the royal courts and taxes. It preserves a boundary, but one side may insist on crossing it."}
+ },
+ captives:{
+  context:"The workshops are productive, yet some of those carrying stone and timber arrived in chains after a raid. Local workers complain that their neighbours are being dismissed. The captives' families have petitioned for mercy, and the garrison warns of disorder if the question remains unsettled.",
+  counsel:["The Steward: Coerced labour makes an impressive wall until the people who built it refuse to defend it.","The Captain: If we change the arrangement, the families who benefited from it will have questions of their own."],
+  choices:{free:"Release the captives and ask them to remain as free citizens if they choose. Their labour may be lost, but the grievance might end.",reforms:"Improve provisions and introduce oversight in the workshops. It could ease anger without resolving every injustice.",enforce:"Assign armed guards to enforce the existing arrangements. Resistance may diminish in the streets while growing elsewhere."}
+ },
+ rumours:{
+  context:"The Spymaster reports that letters have been delivered at night to houses near the palace. One officer was seen speaking privately with a priest, while a wealthy guild leader has quietly settled several debts. There is no evidence of a single plot. That may be the most disturbing part.",
+  counsel:["The Spymaster: I know who spoke, not what they promised. A harsh response could create the very conspiracy we fear.","The Steward: If people cannot speak openly to their ruler, they will speak privately to one another."],
+  choices:{investigate:"Allow a discreet inquiry into the meetings. An innocent courtier may never forgive being watched.",open:"Invite prominent figures to a public council, where disagreements must be voiced in daylight. The cost of hospitality is real.",ignore:"Treat these reports as the ordinary noise of politics. Perhaps nothing is wrong, or perhaps silence is precisely what the plotters want."}
+ },
+ merchant:{
+  context:"A foreign caravan has reached the city with unfamiliar tools, timber and stories of markets beyond the known roads. Its leaders request safe passage and a clear agreement about tolls. The guilds see opportunity; the royal treasury sees revenue; the priests worry about customs arriving with the traders.",
+  counsel:["The Foreign Envoy: Your neighbours are already listening. Only you can decide whose name appears on the agreement.","The Guild Speaker: We know the roads and their risks. Do not tax a trade you do not understand."],
+  choices:{guild:"Give local merchants responsibility for the new routes. Trade may grow quickly, while their representatives gain independence.",royal:"Create a royal office for the trade and its tolls. Supplies will arrive under your seal, but officials can become targets.",decline:"Thank the envoy and refuse an agreement for now. The roads remain quiet, though another city may seize the opportunity."}
+ },
+ conspiracy:{
+  context:"A messenger from the Spymaster has entered the chamber without asking permission. Intercepted notes refer to money changing hands, a private oath and a chosen date. Supporters of {faction} say their complaints have been ignored for years. Some may want reforms; others may already have chosen a replacement ruler.",
+  counsel:["The Spymaster: I can name the messengers, but not every hand that has touched their letters.","The Steward: A frightened court is capable of mistakes as dangerous as betrayal itself."],
+  choices:{negotiate:"Send a trusted envoy with terms that might reopen dialogue. The leaders could accept—or treat the offer as evidence that you are afraid.",expose:"Read the accusations before the assembly and name the suspected organisers. Their influence might collapse, or their followers might rally.",reconcile:"Ask citizens from every faction to stand for a public renewal of the realm. It may rebuild trust without addressing the hidden network."}
+ }
+};
+const COURT_AFTERSHOCKS={
+ founding:{
+  listen:[{text:"The open council is praised in the streets, though some members have begun to meet without royal officials. Their new habits may last longer than the ruler expected.",effect:{legitimacy:3,factions:{workers:{power:7,intrigue:3}}}},
+   {text:"The three factions disagree in public but remain willing to settle their disputes in the palace. An early custom of consultation has taken root.",effect:{legitimacy:5,factions:{faith:{loyalty:5},military:{loyalty:3}}}}],
+  bread:[{text:"Families still speak warmly of the feast, but suppliers insist that several wealthy courtiers quietly diverted sacks of grain.",effect:{food:-4,factions:{workers:{intrigue:5}}}},
+   {text:"The festival is remembered as the first common celebration of the city, drawing guilds and soldiers together.",effect:{legitimacy:5,factions:{workers:{loyalty:4}}}}],
+  guards:[{text:"The guard captain now controls entry to the palace and some officers have begun to ask his permission before yours.",effect:{factions:{military:{power:9,intrigue:9}}}},
+   {text:"The strengthened watch prevents a theft of state supplies and citizens praise the new order.",effect:{wood:3,legitimacy:4}}]
+ },
+ food:{
+  hunt:[{text:"Hunters return with less game than promised and report that a distant settlement now objects to their camps.",effect:{food:-3,factions:{workers:{loyalty:-5}}}},
+   {text:"The hunting camps discover an old trail to richer pasture, and supplies arrive unexpectedly.",effect:{food:4,factions:{workers:{loyalty:4}}}}],
+  levy:[{text:"The compulsory grain levy has not been forgotten. Local families now hide supplies from royal collectors.",effect:{factions:{workers:{loyalty:-9,intrigue:9}}}},
+   {text:"The emergency stores saved several households, but influential landowners now demand repayment.",effect:{food:-3,factions:{workers:{power:5}}}}],
+  ration:[{text:"The palace's shared hardship is admired, yet several officers have been entertaining guests in private rather than attending court.",effect:{factions:{military:{intrigue:8,loyalty:-4}}}},
+   {text:"Communal kitchens established during the rationing survive and are helping families through another difficult season.",effect:{food:3,legitimacy:3}}]
+ },
+ timber:{
+  woodlands:[{text:"The timber expedition returns with wood and word of a promising stand of trees, but some workers refuse another journey without better terms.",effect:{wood:4,factions:{workers:{power:6,loyalty:-4}}}},
+   {text:"A storm damages several carts on the return journey, and the promised timber arrives in smaller quantities.",effect:{wood:1,food:-2}}],
+  requisition:[{text:"Families who lost their beams now gather at the guild hall, saying the crown took more than it promised.",effect:{factions:{workers:{loyalty:-10,intrigue:8}}}},
+   {text:"A village elder offers timber in future in exchange for predictable agreements instead of sudden orders.",effect:{wood:2,factions:{workers:{loyalty:3}}}}],
+  conserve:[{text:"The builders develop better ways to reuse old beams. Their success adds to the guilds' standing.",effect:{wood:3,factions:{workers:{power:5}}}},
+   {text:"A neglected roof finally gives way, costing repairs that could have been prevented by an earlier decision.",effect:{wood:-2}}]
+ },
+ guilds:{
+  seats:[{text:"The guild councillors quietly agree to consult one another before bringing proposals to the palace. Their influence is growing beyond the council chamber.",effect:{factions:{workers:{power:10,intrigue:6}}}},
+   {text:"A dispute over working hours is resolved without violence. The guilds credit the ruler's willingness to listen.",effect:{legitimacy:5,factions:{workers:{loyalty:6}}}}],
+  wages:[{text:"The promised provisions have raised expectations; the workers now ask whether the same benefits will be offered next year.",effect:{food:-3,factions:{workers:{power:5}}}},
+   {text:"The better-fed workforce volunteers to repair neglected roads and warehouses after hours.",effect:{wood:3,factions:{workers:{loyalty:4}}}}],
+  deny:[{text:"The guild speaker's petition circulates anonymously among traders and builders, gathering signatures away from the palace.",effect:{factions:{workers:{intrigue:10,loyalty:-5}}}},
+   {text:"The petition is set aside for now, but the city loses several skilled workers to neighbouring settlements.",effect:{wood:-3}}]
+ },
+ army:{
+  honours:[{text:"The War Captain's victories are now celebrated in songs more often than those of the ruler.",effect:{factions:{military:{power:10,intrigue:8}}}},
+   {text:"The captain's public pledge of loyalty encourages the soldiers to return to royal command.",effect:{factions:{military:{loyalty:7,intrigue:-4}}}}],
+  civil:[{text:"An officer refuses a council summons and younger soldiers speak of interference from people who have never carried a weapon.",effect:{factions:{military:{loyalty:-9,intrigue:8}}}},
+   {text:"Civilian review uncovers missing stores in a distant garrison. The treasury recovers supplies.",effect:{wood:3,legitimacy:4}}],
+  divide:[{text:"Two officers compete over recruits and are building rival circles of supporters.",effect:{factions:{military:{intrigue:12}}}},
+   {text:"The divided commands remain effective but no single captain can claim credit for every victory.",effect:{factions:{military:{power:-6}}}}]
+ },
+ temple:{
+  sponsor:[{text:"The High Priestess begins to settle disputes between merchants. People now seek her judgement before they seek the ruler's.",effect:{factions:{faith:{power:11,intrigue:5}}}},
+   {text:"Temple granaries distribute aid after a poor harvest, drawing praise for both priesthood and crown.",effect:{food:4,factions:{faith:{loyalty:5}}}}],
+  plural:[{text:"A smaller religious group thanks the ruler for protection, but established temple officials condemn the policy in their sermons.",effect:{factions:{faith:{loyalty:-8,intrigue:6}}}},
+   {text:"The festivals of different traditions bring visitors and traders to the city.",effect:{wood:2,legitimacy:4}}],
+  separate:[{text:"The priestess asks her followers to withhold support from royal officials until the temples are heard again.",effect:{factions:{faith:{intrigue:11,loyalty:-7}}}},
+   {text:"Some citizens praise the clear boundary between temple and court, reducing religious disputes.",effect:{legitimacy:5,factions:{faith:{power:-4}}}}]
+ },
+ captives:{
+  free:[{text:"Former captives establish families near the city and remember that the ruler granted their freedom.",effect:{legitimacy:5,factions:{workers:{loyalty:5}}}},
+   {text:"Former owners petition the court for compensation, stirring resentment among influential households.",effect:{factions:{workers:{intrigue:6,loyalty:-3}}}}],
+  reforms:[{text:"Improved provisions ease daily hardship, but one workshop foreman is accused of keeping the changes from labourers.",effect:{factions:{workers:{intrigue:8}}}},
+   {text:"Inspectors enforce the new rules and an outbreak of unrest subsides.",effect:{unrest:-4,factions:{workers:{loyalty:5}}}}],
+  enforce:[{text:"Guards keep the worksites quiet, but several captives escape and their families blame the crown.",effect:{unrest:6,factions:{workers:{intrigue:8}}}},
+   {text:"The additional garrison is effective for a time, giving its captain more independence.",effect:{factions:{military:{power:8}}}}]
+ },
+ rumours:{
+  investigate:[{text:"The Spymaster's inquiry finds an innocent family was watched. Their allies question whether anyone is safe from suspicion.",effect:{legitimacy:-5,factions:{workers:{intrigue:5}}}},
+   {text:"One courier confesses to carrying secret messages, and a quiet network of plotters dissolves.",effect:{factions:{military:{intrigue:-5},faith:{intrigue:-5},workers:{intrigue:-5}}}}],
+  open:[{text:"The public council produces some genuine agreements, but a few factions now meet separately before every assembly.",effect:{factions:{workers:{power:5},military:{power:4}}}},
+   {text:"An officer and a guild speaker unexpectedly cooperate on a common proposal, calming rumours.",effect:{legitimacy:4}}],
+  ignore:[{text:"The intercepted letters are still circulating. Their writers take the crown's silence as permission to recruit others.",effect:{factions:{workers:{intrigue:5},military:{intrigue:5},faith:{intrigue:5}}}},
+   {text:"The suspected meetings turn out to have been a private dispute over a marriage and no wider plot emerges.",effect:{legitimacy:2}}]
+ },
+ merchant:{
+  guild:[{text:"The merchants establish a permanent exchange house. The guild council is now wealthy enough to lend money to officials.",effect:{wood:3,factions:{workers:{power:9}}}},
+   {text:"A caravan is lost to bandits and guild leaders ask for more guards on the road.",effect:{wood:-3,factions:{military:{power:3}}}}],
+  royal:[{text:"The royal toll office has become profitable, but its chief clerk is accused of selling exemptions to friends.",effect:{factions:{workers:{intrigue:7}},legitimacy:-3}},
+   {text:"The crown's trade agreement opens a regular supply route, improving the treasury's stores.",effect:{wood:4,legitimacy:2}}],
+  decline:[{text:"The refused merchants settle in a neighbouring city, and the local guilds complain of a missed opportunity.",effect:{factions:{workers:{loyalty:-7}}}},
+   {text:"When a competing trade deal collapses, the ruler's caution looks surprisingly wise.",effect:{legitimacy:4}}]
+ },
+ conspiracy:{
+  negotiate:[{text:"A faction leader accepts the settlement in public but later asks for a separate guarantee of authority.",effect:{factions:{target:{power:7,intrigue:6}}}},
+   {text:"Private letters reveal that the compromise persuaded several conspirators to withdraw.",effect:{factions:{target:{loyalty:8,intrigue:-7}}}}],
+  expose:[{text:"Some accused courtiers were innocent. Their relatives now question the ruler's judgement.",effect:{legitimacy:-5,factions:{target:{loyalty:-4}}}},
+   {text:"An exposed officer names two accomplices and the remaining plotters scatter.",effect:{factions:{target:{intrigue:-10}}}}],
+  reconcile:[{text:"The public appeal wins cheers, but the organisers continue their private meetings.",effect:{factions:{target:{intrigue:7}}}},
+   {text:"Citizens independently form a loyalist watch that makes conspiratorial meetings harder to organise.",effect:{factions:{target:{intrigue:-8}},legitimacy:4}}]
+ }
+};
+function courtStory(sceneId,p){
+ const scene=COURT_SCENES[sceneId],story=COURT_STORIES[sceneId];
+ const resolve=text=>String(text||"").replaceAll("{leader}",state.leader?.leader||"Ruler")
+  .replaceAll("{capital}",firstCity()?.name||state.leader?.capital||"the capital")
+  .replaceAll("{faction}",COURT_GROUPS[p?.target]?.name||"the plotters");
+ return {opening:resolve(scene?.text),background:resolve(story?.context||""),
+   counsel:(story?.counsel||[]).map(resolve),choices:story?.choices||{}};
+}
+function aftershockRoll(sceneId,optionId){
+ // Deterministic across saves, different for each world, year and decision.
+ const hash=(sceneId+":"+optionId).split("").reduce((h,ch)=>Math.imul(h,31)+ch.charCodeAt(0)|0,317);
+ const seed=Number(state.worldSeed)||421,year=state.year;
+ const roll=dice((seed%99791)+year*13+Math.abs(hash%100003),year*97+Math.abs(hash%53123));
+ const variant=dice((seed%65537)+Math.abs(hash%16381),year*47+791)>0.43?0:1;
+ return {trigger:roll<.76,variant,delay:2+Math.floor(dice((seed%19991)+year*29,Math.abs(hash%8719)+37)*4)};
+}
+function scheduleCourtAftershock(sceneId,choiceId,target){
+ const options=COURT_AFTERSHOCKS[sceneId]?.[choiceId];
+ if(!options?.length)return;
+ const roll=aftershockRoll(sceneId,choiceId);
+ if(!roll.trigger)return;
+ const c=ensureCourt();
+ c.aftershocks??=[];
+ c.aftershocks.push({scene:sceneId,choice:choiceId,variant:roll.variant%options.length,
+   target:target||null,due:state.year+roll.delay});
+}
+function resolveCourtAftershock(){
+ const c=ensureCourt();c.aftershocks??=[];
+ if(c.pending||state.overthrown)return false;
+ const index=c.aftershocks.findIndex(a=>a.due<=state.year);
+ if(index<0)return false;
+ const event=c.aftershocks.splice(index,1)[0];
+ const result=COURT_AFTERSHOCKS[event.scene]?.[event.choice]?.[event.variant];
+ if(!result)return false;
+ applyCourtEffect(result.effect,event.target);
+ const past=COURT_SCENES[event.scene],label=past?.title||"An old decision";
+ c.pending={id:"aftermath",year:state.year,story:result.text,
+  title:label,target:event.target||null};
+ c.history.unshift({year:state.year,scene:event.scene,choice:"Aftermath: "+label,target:event.target||null});
+ c.history=c.history.slice(0,30);
+ record("A past court decision has unforeseen consequences.");
+ return true;
+}
+function acknowledgeCourtAftershock(){
+ const c=ensureCourt();
+ if(c.pending?.id!=="aftermath")return;
+ c.pending=null;save();renderUI();
+}
 function defaultCourt(){
  return {legitimacy:72,factions:{
   workers:{power:32,loyalty:68,intrigue:5},
