@@ -2397,7 +2397,7 @@ function doAction(a){
  if(a==="court"){menu="court";renderUI();return;}
  if(a.startsWith("courtFocus:")){focusedCourtFaction=a.slice(11);menu="court";renderUI();return;}
  if(a==="economy"){menu="economy";renderUI();return;}
- if(a.startsWith("inspectDevelopment:")){const [,type,kind,city]=a.split(":");inspectedDevelopment={type,kind,city};menu="development";renderUI();return;}
+ if(a.startsWith("inspectDevelopment:")){const parts=a.slice(19).split(":"),type=parts.shift(),city=parts.pop(),kind=parts.join(":");inspectedDevelopment={type,kind,city};menu="development";renderUI();return;}
  if(a.startsWith("council:")){
   const [group,action]=a.slice(8).split(":");
   return courtCouncilAction(group,action);
@@ -2447,7 +2447,7 @@ function doAction(a){
  if(a.startsWith("attack:"))return attack(a.slice(7));
  if(a.startsWith("tech:"))return discover(a.slice(5));
  if(a.startsWith("path:"))return choosePath(a.slice(5));
- if(a.startsWith("build:")){const [kind,id]=a.slice(6).split(":");return startConstruction(kind,id);}
+ if(a.startsWith("build:")){const parts=a.slice(6).split(":"),id=parts.pop(),kind=parts.join(":");return startConstruction(kind,id);}
 }
 function project(x,y){return {x:(x-y)*TW/2,y:(x+y)*TH/2};}
 function center(x,y){const p=project(x,y);camera.x=p.x;camera.y=p.y;}
