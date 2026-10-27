@@ -446,8 +446,28 @@ function projectLabel(){const p=state.project;if(!p)return "Nothing being built.
 function researchLabel(){const p=state.researchProject;if(!p)return "No technology being researched.";return techs[p.id].name+" · "+p.progress+"/"+p.total+" work · ~"+estimateWork(p.total-p.progress,researchRate())+" years remaining";}
 function panelContents(){
  let output="";
+ if(menu==="turn"){
+  const ready=state.units.filter(u=>u.owner==="player"&&!u.moved).length;
+  output="<p class='hint'>These are suggestions, not locks. You may return to any step, or take actions out of order, until you press <b>End Year</b>. Research, building and resource production only advance when you end the year.</p>";
+  const summaries={
+   move:ready+" unit"+(ready===1?"":"s")+" still able to move",
+   workers:unassignedWorkers()+" citizens unassigned · "+assignedWorkers()+" working",
+   construction:state.project?projectLabel():"No building under construction",
+   research:state.researchProject?researchLabel():"No technology being researched"
+  };
+  for(const stage of STAGES){
+   if(stage==="end"){
+    output+=item("📅 End Year","This finishes the year and advances all ongoing projects. Skipped actions will no longer be available for this year.",btn("End Year →","endYear",false,"primary"));
+   }else{
+    const label=(state.stage===stage?"● ":"")+stageNames[stage];
+    const status=summaries[stage]+(eligible(stage)?" · Available":" · Review or rearrange");
+    output+=item(label,status,btn("Open "+stageNames[stage],"focus:"+stage));
+   }
+  }
+ }
  if(menu==="actions"){
   output="<p class='hint'>Everything is managed through one city tile and the land it influences.</p>";
+  output+=item("📋 This year's actions","Return to skipped stages before ending the year.",btn("Review turn","turnMenu"));
   if(firstCity()){
    output+=item("🏛 City","Construct developments inside a city tile; one project at a time.",btn("Open city","city"));
    output+=item("🌿 Workers","Population: "+citizens()+"("+assignedWorkers()+") assigned. Assign people inside your influence borders.",btn("Manage workers","workers"));
@@ -546,16 +566,19 @@ function renderUI(){
   head.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();menu="tech";renderUI();}};
  }
  const index=STAGES.indexOf(state.stage),stepLabel=(index+1)+' / 5 · '+stageNames[state.stage];
- const primary=state.stage==="end"?btn("End Year →","endYear",false,"primary"):btn("Next →","nextStage",false,"primary");
+ const endButton=btn("End Year →","endYear",false,"primary");
+ const nextButton=state.stage==="end"?"":btn("Next","nextStage");
  const stageAction=state.stage==="end"?"":btn(state.stage==="move"?"🚶 Units ("+state.units.filter(u=>u.owner==="player"&&!u.moved).length+")":state.stage==="workers"?"👥 Workers ("+unassignedWorkers()+")":state.stage==="construction"?"🏗 Build":"🔬 Tech","stageAction");
- actions.innerHTML='<div class="stage-label">'+stepLabel+'</div><div class="stage-buttons">'+stageAction+primary+'</div>';
+ actions.innerHTML='<button class="stage-label" data-action="turnMenu" title="Revisit any turn step">☰ '+stepLabel+' ▾</button><div class="stage-buttons">'+stageAction+nextButton+endButton+'</div>';
  const panel=get("panel");panel.classList.toggle("open",!!menu);
- panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
+ panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game",turn:"This year"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
  panel.querySelector("#closePanel")?.addEventListener("click",()=>{menu="";renderUI();});
  document.querySelectorAll("[data-action]").forEach(b=>b.addEventListener("click",()=>doAction(b.dataset.action)));
 }
 function doAction(a){
  if(a==="endYear")return endYear();
+ if(a==="turnMenu"){menu=menu==="turn"?"":"turn";renderUI();return;}
+ if(a.startsWith("focus:"))return focusStage(a.slice(6));
  if(a==="actions"||a==="main"){menu=menu===a?"":a;renderUI();return;}
  if(["city","tile","tech","path","units","workers","history"].includes(a)){menu=a;renderUI();return;}
  if(a==="work"&&selected)return workTile(selected.x,selected.y);
@@ -564,7 +587,7 @@ function doAction(a){
  if(a==="nextStage")return nextStage();
  if(a==="stageAction"){
   syncStage();
-  if(state.stage==="end")return endYear();
+  if(state.stage==="end"){menu="turn";renderUI();return;}
   menu=state.stage==="move"?"units":state.stage==="workers"?"workers":state.stage==="construction"?"city":"tech";
   renderUI();return;
  }
@@ -687,14 +710,14 @@ canvas.addEventListener("pointerup",e=>{
  if(!pointer)return;const p=pointer;pointer=null;if(p.moved)return;
  const spot=hit(e.clientX,e.clientY);if(!spot)return;
  selected=spot;
- if(state.stage==="move"){
+ {
   const standing=state.units.find(u=>u.owner==="player"&&u.x===spot.x&&u.y===spot.y);
   if(standing){
     if(standing.moved)toast("That unit has already moved this year. Choose another ready unit.");
     else{moving=standing.id;menu="";toast((standing.type==="army"?"Army":"Settler")+" selected. Tap an adjacent tile to move.");}
     renderUI();return;
   }
-  if(state.units.some(u=>u.owner==="player"&&!u.moved)){move(spot.x,spot.y);return;}
+  if((state.stage==="move"||moving)&&state.units.some(u=>u.owner==="player"&&!u.moved)){move(spot.x,spot.y);return;}
  }
  menu=cityAt(spot.x,spot.y)&&cityAt(spot.x,spot.y).owner==="player"?"city":"tile";renderUI();
 });
