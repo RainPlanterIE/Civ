@@ -616,7 +616,8 @@ function panelContents(){
  }
  if(menu==="tile"){
   if(!selected)return "";
-  const {x,y}=selected,c=controller(x,y),d=deposit(x,y),job=state.works[pos(x,y)],capital=cityAt(x,y);
+  const {x,y}=selected;if(!currentlyVisible(x,y))return "<p class='hint'>This area is hidden by the fog of war. Send a unit nearby.</p>";
+  const c=controller(x,y),d=deposit(x,y),job=state.works[pos(x,y)],capital=cityAt(x,y);
   const label=capital?"City tile":c==="contested"?"Contested border":c?c.owner==="player"?"Your influence":"Rival influence":"Wilderness";
   output="<p class='hint'>Tile "+x+", "+y+" · "+htmlSafe(label)+" · "+terrain(x,y)+"</p>";
   if(capital)output+=item("🏛 "+htmlSafe(capital.name),"Population "+capital.pop+" · Influence radius "+influenceRadius(capital),capital.owner==="player"?btn("Manage city","city"):"");
@@ -776,14 +777,23 @@ function draw(){
  const render=[];
  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
   const p=screen(x,y);if(p.x< -100||p.x>width+100||p.y< -120||p.y>height+130)continue;
-  const t=terrain(x,y),n=Math.floor(dice(x,y)*4);
+  if(!explored(x,y)){
+   const dark=["#15272c","#172b30","#1b3035","#12252b"][Math.floor(dice(x,y)*4)];
+   tile(x,y,dark);
+   continue;
+  }
+  const t=terrain(x,y),n=Math.floor(dice(x,y)*4),seen=currentlyVisible(x,y);
   const colors=t==="water"?["#31798a","#428797","#388091","#337887"]:t==="forest"?["#477c4f","#508858","#4a8154","#568f5a"]:t==="hill"?["#838d78","#939987","#929580","#9f9c84"]:["#81a76e","#77a267","#8baf77","#7eaa6b"];
-  tile(x,y,colors[n]);const id=borders.get(pos(x,y));
-  if(id){const own=id==="contested"?"contested":getCity(id)?.owner;tile(x,y,own==="player"?"#e6c87f2a":own==="rival"?"#c560472b":own==="ally"?"#80cfb622":"#e9dca731");}
-  render.push({x,y,p,t});
+  tile(x,y,colors[n]);
+  if(seen){
+   const id=borders.get(pos(x,y));
+   if(id){const own=id==="contested"?"contested":getCity(id)?.owner;tile(x,y,own==="player"?"#e6c87f2a":own==="rival"?"#c560472b":own==="ally"?"#80cfb622":"#e9dca731");}
+  }else tile(x,y,"#0e2027b8");
+  render.push({x,y,p,t,seen});
  }
- for(const o of render)border(o.x,o.y,borders.get(pos(o.x,o.y)));
- for(const {x,y,p,t} of render){
+ for(const o of render)if(o.seen)border(o.x,o.y,borders.get(pos(o.x,o.y)));
+ for(const {x,y,p,t,seen} of render){
+  if(!seen)continue;
   const z=scale;
   if(t==="forest"){tree(p.x-9*z,p.y+6*z);if(dice(x+3,y)>.45)tree(p.x+12*z,p.y+8*z);}
   if(t==="hill")polygon([[p.x-24*z,p.y+8*z],[p.x-3*z,p.y-24*z],[p.x+19*z,p.y+8*z]],"#8d9484","#697d6b");
@@ -799,12 +809,12 @@ function draw(){
   ctx.fillStyle=u.type==="army"?"#a96054":"#e1b684";ctx.fillRect(p.x-6*z,p.y-18*z,12*z,18*z);
   ctx.fillStyle="#e8c7a3";ctx.beginPath();ctx.arc(p.x,p.y-23*z,6*z,0,Math.PI*2);ctx.fill();
   ctx.font="bold "+Math.max(10,12*z)+"px sans-serif";ctx.textAlign="center";ctx.fillStyle="#f9e4b6";ctx.fillText(u.type==="army"?"Army":"Settler",p.x,p.y-35*z);ctx.textAlign="left";
-  if(state.stage==="move"&&!u.moved&&activeUnit()?.id===u.id){
+  if(!u.moved&&activeUnit()?.id===u.id){
    ctx.beginPath();ctx.ellipse(p.x,p.y+3*z,14*z,7*z,0,0,Math.PI*2);
    ctx.strokeStyle="#ffe28d";ctx.lineWidth=Math.max(2,2.8*z);ctx.stroke();
   }
  }
- if(selected){
+ if(selected&&explored(selected.x,selected.y)){
   const p=screen(selected.x,selected.y);ctx.strokeStyle="#f8dc9a";ctx.lineWidth=2;
   ctx.beginPath();ctx.ellipse(p.x,p.y,20*scale,10*scale,0,0,Math.PI*2);ctx.stroke();
  }
@@ -827,6 +837,8 @@ canvas.addEventListener("pointerup",e=>{
   }
   if((state.stage==="move"||moving)&&state.units.some(u=>u.owner==="player"&&!u.moved)){move(spot.x,spot.y);return;}
  }
+ if(!explored(spot.x,spot.y)){toast("Unexplored land. Send a unit closer to reveal it.");return;}
+ if(!currentlyVisible(spot.x,spot.y)){toast("This area is outside your current sight. Send a scout to investigate.");return;}
  menu=cityAt(spot.x,spot.y)&&cityAt(spot.x,spot.y).owner==="player"?"city":"tile";renderUI();
 });
 canvas.addEventListener("wheel",e=>{e.preventDefault();scale=Math.min(2.3,Math.max(.55,scale+(e.deltaY<0?.12:-.12)));},{passive:false});
