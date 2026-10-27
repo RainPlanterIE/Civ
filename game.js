@@ -4,6 +4,7 @@ const canvas=document.getElementById("world"),ctx=canvas.getContext("2d"),get=id
 const MAP_W=CIV_WORLD.W,MAP_H=CIV_WORLD.H,SIZE=MAP_W,TW=98,TH=49,STORE="civ-earth-v4",LEGACY_STORE="civ-influence-v3";
 const PALETTE={player:"#f2ca7e",rival:"#d7796c",ally:"#8cd2c8",contested:"#ede0ac"};
 let width=0,height=0,dpr=1,scale=1,camera={x:0,y:0},selected=null,menu="",moving=null,pointer=null,toastUntil=0;
+const unitMotion=new Map(); // purely visual: game positions and saves are still turn-based
 const paths={science:"🔬 Science",arts:"🎭 Arts",faith:"⛪ Faith",war:"⚔ War"};
 const techs={
  agriculture:{name:"Agriculture",cost:6,desc:"Reveal fertile fields and cultivate renewable food."},
@@ -1866,7 +1867,7 @@ function closeMainMenu(){
 }
 function playNewGame(){
  if(storedGame()&&!window.confirm("Start a new game? This replaces the saved civilisation on this device."))return;
- state=fresh();moving=null;selected=null;menu="";recalcBorders();center(state.leader.x,state.leader.y);
+ state=fresh();unitMotion.clear();moving=null;selected=null;menu="";recalcBorders();center(state.leader.x,state.leader.y);
  const ok=save();
  inGame=true;
  closeMainMenu();
@@ -1880,6 +1881,7 @@ function continueGame(){
   return;
  }
  state=saved;
+ unitMotion.clear();
  ensureCourt();
  ensureStartingEscort();
  if((coastTile(state.leader?.x??-1,state.leader?.y??-1,2)||state.cities.some(c=>c.owner==="player"&&cityHasSea(c)))&&!state.tech.includes("fishing"))state.tech.push("fishing");
@@ -2249,6 +2251,7 @@ function move(x,y){
  if(e&&currentlyVisible(x,y)){selected={x,y};menu="encounter";renderUI();return toast("Encounter: "+wildTypes[e.type].name+". Choose how to approach it.");}
  const occupied=cityAt(x,y);
  if(occupied&&occupied.owner==="rival")return toast("Attack rival cities from a neighbouring tile.");
+ unitMotion.set(u.id,{fromX:u.x,fromY:u.y,toX:x,toY:y,started:Date.now(),duration:350});
  u.x=x;u.y=y;u.moved=true;
  if(isNaval(u)){const passenger=passengerFor(u);if(passenger){passenger.x=x;passenger.y=y;}}
  selected={x,y};moving=null;menu="";updateFog();
@@ -2667,6 +2670,16 @@ function doAction(a){
 function project(x,y){return {x:(x-y)*TW/2,y:(x+y)*TH/2};}
 function center(x,y){const p=project(x,y);camera.x=p.x;camera.y=p.y;}
 function screen(x,y){const p=project(x,y);return {x:(p.x-camera.x)*scale+width/2,y:(p.y-camera.y)*scale+height/2};}
+function unitDrawPosition(u){
+ const transition=unitMotion.get(u.id);
+ if(!transition)return screen(u.x,u.y);
+ if(transition.toX!==u.x||transition.toY!==u.y){unitMotion.delete(u.id);return screen(u.x,u.y);}
+ const fraction=Math.min(1,(Date.now()-transition.started)/transition.duration);
+ if(fraction>=1){unitMotion.delete(u.id);return screen(u.x,u.y);}
+ const eased=1-Math.pow(1-fraction,3);
+ const a=screen(transition.fromX,transition.fromY),b=screen(u.x,u.y);
+ return {x:a.x+(b.x-a.x)*eased,y:a.y+(b.y-a.y)*eased};
+}
 function hit(screenX,screenY){
  const x=(screenX-width/2)/scale+camera.x,y=(screenY-height/2)/scale+camera.y;
  const a=Math.round(x/TW+y/TH),b=Math.round(y/TH-x/TW);
@@ -2815,7 +2828,7 @@ function draw(){
  }
  for(const u of state.units){
   if(u.embarkedOn)continue;
-  const p=screen(u.x,u.y),z=scale;
+  const p=unitDrawPosition(u),z=scale;
   if(!currentlyVisible(u.x,u.y)&&u.owner!=="player")continue;
   if(isNaval(u)){
    ctx.fillStyle="#142e34ad";ctx.beginPath();ctx.ellipse(p.x,p.y+8*z,23*z,8*z,0,0,Math.PI*2);ctx.fill();
@@ -2828,7 +2841,14 @@ function draw(){
    continue;
   }
   const armed=fighter(u),club=u.type==="clubman",scout=u.type==="scout";
-  ctx.fillStyle="#071a1366";ctx.beginPath();ctx.ellipse(p.x,p.y+6*z,11*z,5*z,0,0,Math.PI*2);ctx.fill();
+  // Each warrior is a small painted board-game miniature on a raised base.
+  // The decorative pedestal makes silhouettes legible at laptop zoom levels.
+  const miniatureColour=u.owner==="player"?"#b89755":u.owner==="rival"?"#b66b5a":"#78a4a2";
+  ctx.fillStyle="#08171070";ctx.beginPath();ctx.ellipse(p.x,p.y+11*z,20*z,7*z,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#3b382b";ctx.beginPath();ctx.ellipse(p.x,p.y+8*z,17*z,8*z,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=miniatureColour;ctx.beginPath();ctx.ellipse(p.x,p.y+5*z,17*z,8*z,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle="#f6d69d";ctx.lineWidth=Math.max(.8,1.2*z);ctx.stroke();
+  ctx.fillStyle="#6b5a40";ctx.beginPath();ctx.ellipse(p.x,p.y+3*z,11*z,5*z,0,0,Math.PI*2);ctx.fill();
   // Two legs, leather tunic, arms and head make unit silhouettes readable on mobile.
   ctx.strokeStyle="#654e37";ctx.lineWidth=Math.max(2,3*z);ctx.lineCap="round";
   ctx.beginPath();ctx.moveTo(p.x-3*z,p.y-4*z);ctx.lineTo(p.x-5*z,p.y+7*z);
@@ -2861,8 +2881,13 @@ function draw(){
   }
   ctx.font="bold "+Math.max(10,12*z)+"px sans-serif";ctx.textAlign="center";ctx.fillStyle="#f9e4b6";
   ctx.shadowColor="#10261a";ctx.shadowBlur=4;ctx.fillText(unitTitle(u),p.x,p.y-44*z);ctx.shadowBlur=0;ctx.textAlign="left";
+  if(unitHP(u)<unitMaxHP(u)){
+   const ratio=unitHP(u)/unitMaxHP(u);
+   ctx.beginPath();ctx.ellipse(p.x,p.y+11*z,19*z,8*z,0,Math.PI,Math.PI*2);
+   ctx.strokeStyle=ratio<.5?"#e97772":"#efc178";ctx.lineWidth=Math.max(1.4,2*z);ctx.stroke();
+  }
   if(!u.moved&&activeUnit()?.id===u.id){
-   ctx.beginPath();ctx.ellipse(p.x,p.y+3*z,14*z,7*z,0,0,Math.PI*2);
+   ctx.beginPath();ctx.ellipse(p.x,p.y+3*z,18*z,9*z,0,0,Math.PI*2);
    ctx.strokeStyle="#ffe28d";ctx.lineWidth=Math.max(2,2.8*z);ctx.stroke();
   }
  }
