@@ -139,7 +139,7 @@ function constructionRate(c,kind){
 function estimateWork(left,rate){return Math.max(1,Math.ceil(left/Math.max(1,rate)));}
 function eligible(stage){
  if(stage==="move")return state.units.some(u=>u.owner==="player"&&!u.moved);
- if(stage==="workers")return myCities().some(c=>freeWorkers(c)>0&&availableWorkTiles(c).length>0);
+ if(stage==="workers")return myCities().some(c=>freeWorkers(c)>0);
  if(stage==="construction")return myCities().length>0&&!state.project;
  if(stage==="research")return myCities().length>0&&!state.researchProject&&Object.entries(techs).some(([id,t])=>!known(id)&&(!t.need||known(t.need)));
  return true;
@@ -572,7 +572,7 @@ function panelContents(){
   const free=unassignedWorkers(),assigned=assignedWorkers();
   output='<div class="worker-counter"><span class="worker-number">'+free+'</span><span><strong>Workers remaining</strong><small>'+assigned+' assigned / '+citizens()+' citizens</small></span></div>';
   output+='<p class="hint">Assign people to resource tiles or construction. Every builder adds +1 work per year (up to six). Builders are not gathering resources. You can reassign any workers before End Year.</p>';
-  output+=item("🌾 Assign all resource workers","Automatically balances food, timber, stone and other visible resources. Keep citizens free if you want them building.",btn("Assign all resource workers","assignAll",!eligible("workers"),"primary"));
+  output+=item("🌾 Assign all resource workers","Automatically balances food, timber, stone and other visible resources. Keep citizens free if you want them building.",btn("Assign all resource workers","assignAll",!myCities().some(c=>freeWorkers(c)>0&&availableWorkTiles(c).length>0),"primary"));
   let shown=0;
   for(const c of myCities()){
    const builders=builderCount(c),speed=constructionRate(c,state.project?.kind||"house");
