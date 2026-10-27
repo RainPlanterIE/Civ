@@ -397,3 +397,35 @@ These are **game scenarios inspired by historical political problems**, not lite
 The top-left **👑 Court** badge is larger. Under it are three clickable faction rows (Workers, Warriors, Priests), each with three unlabeled, color-coded mini-bars: influence in gold, loyalty in green, intrigue in red. Hover titles and accessible descriptions show exact labels/values; tapping a row opens the full Court with that faction highlighted. The main Court page still shows detailed numerical ratings.
 
 Isometric map tiles are now approximately 14% larger and have subtle visible diamond outlines. Forest/jungle decorations are smaller and sparser (a single icon on some tiles instead of two large trees on most). **Terrain and actual resource availability are unchanged**: the improvement is a visual de-cluttering pass, especially for laptop screens. City overlays show two progress bars if building construction and unit training happen simultaneously.
+
+
+## Improved hunting, varied court runs and tabletop unit visuals (v20)
+
+### Clubman hunting balance
+- Starter Clubmen gain an **initiative bonus (+2 effective attack)** against wildlife; other fighters get a modest +1 hunting edge. Researching Hunting adds another +1.
+- Deer, boars, wolves, llamas, kangaroos, camels and zebras are now **ordinary game** for a healthy Clubman. Their hit points, attack and defence have been reduced where needed.
+- **Wildlife killed by a blow cannot retaliate.** Previously retaliation happened even after the prey was dead; this was a significant source of unwanted hunter losses.
+- Apex animals (lion, tiger, bear, elephant) still require multiple attacks for a starter Clubman and can injure them, but a wildlife retaliation against a fighter is capped at 2 HP (3 against an unarmed traveller).
+- Unprovoked wild predators attack much less frequently during yearly roaming. They **do not attack units within one tile of a friendly city**, and they retreat for a period after being hunted. Unprovoked wildlife may cause injuries but cannot kill a unit between turns when the player had no opportunity to react. Intentional hunting can still be fatal if a fighter is already badly wounded.
+- Raiders and rival warriors **remain dangerous** and are not included in the wildlife difficulty reduction.
+- Encounters now identify ordinary game versus a challenging or dangerous hunt in their detail text.
+
+### Different decisions in different games
+There is now a dedicated **world-seeded court-selection system**, using the world seed, historical civilisation identity, current year, court history and the actual state of the realm. The important differences from v19 are:
+
+1. The **first court audience is no longer always the Founding scene**. Depending on the world, it can be a founding dispute, guild request, political rumour or a military matter, with other problems available when conditions justify them.
+2. In new games, the first ordinary audience appears **between Years 22 and 29**, based on the campaign seed. Older saves keep valid existing decisions and scheduled future events.
+3. Subsequent scenes are selected from game-relevant choices with **recent repeats excluded when alternatives exist**; previously unseen stories are weighted more heavily. The event pool expands as infrastructure, military and technologies develop.
+4. The full political catalogue has **three alternative narrative details for each of 22 existing scenarios**, chosen deterministically for the pending event. These include contested eyewitness accounts, rival petitions, disagreements among officials and region-specific institutional tensions.
+5. Each scene can incorporate **actual current game facts**, such as stored food, projected food production, available timber, the active building project, city population or number of troops. It also includes a brief cultural detail appropriate to the current playable civilisation.
+6. Court events save their **variant ID** with the pending decision, so reloading a game never rerolls or changes an unfinished choice.
+7. Tech-specific extra political options, delayed repercussions, factions, coups, infrastructure damage and injuries continue to work as before.
+
+The selection is not guaranteed to be unique every time—there is a finite set of authored historical problems—but replay variation is substantially greater without inventing incoherent situations. A deterministic seed means tests can reproduce an encounter or scene.
+
+### Raised board-game miniatures and movement (first graphics pass)
+Instead of trying to turn the large globe into a heavy real-time 3D environment, the isometric map now displays land units on **raised tabletop-style miniature bases**, with a lighter top rim and a shadowed foot. Wounded units have a coloured ring at the base, making injuries identifiable without opening the unit panel.
+
+When a unit moves, the logical destination is stored immediately (preserving rules, saves and fog), while a temporary **350 ms eased sliding animation** renders the figurine travelling between tiles. Animations live only in a client-side visual map and are not part of the saved game; continuing a save shows the unit at the correct completed destination.
+
+This is the first step in a deliberately restrained hybrid approach: a readable turn-based strategy board with responsive movement and clear pieces, rather than continuous animation on every tile. Future graphics upgrades could include bespoke era-specific miniature silhouettes, modelled city improvements, small battle hit effects and subdued environmental motion. All should be optimised for desktop and mobile.
