@@ -59,6 +59,7 @@ function fresh(){
  units:[{id:"u1",type:"settler",x:15,y:15,moved:false,owner:"player",strength:1}],
  works:{},extracted:{},path:null,project:null,researchProject:null,stage:"move",stageYear:1,events:["A lone settler enters the valley."],nextId:2,victory:null};
 }
+let inGame=false;
 let state;
 try{state=JSON.parse(localStorage.getItem(STORE))||fresh();if(state.version!==3||!Array.isArray(state.units)||!Array.isArray(state.cities))state=fresh();}catch(e){state=fresh();}
 state.knowledge??=state.research;
@@ -214,6 +215,7 @@ function showMainMenu(){
  const stored=storedGame();
  const screen=get("startScreen");
  get("continueGame").disabled=!stored;
+ get("backToGame").hidden=!inGame;
  get("menuStatus").textContent=stored
   ?"Saved game available · Year "+stored.year+(stored.cities.some(c=>c.owner==="player")?" · "+(stored.cities.find(c=>c.owner==="player")?.name||"Your civilisation"):" · One settler")
   :"No saved game yet — choose Play to begin.";
@@ -228,6 +230,7 @@ function playNewGame(){
  if(storedGame()&&!window.confirm("Start a new game? This replaces the saved civilisation on this device."))return;
  state=fresh();moving=null;selected=null;menu="";recalcBorders();center(15,15);
  const ok=save();
+ inGame=true;
  closeMainMenu();
  if(!ok)toast("New game started, but browser storage is unavailable.");
 }
@@ -247,6 +250,7 @@ function continueGame(){
  const unit=state.units.find(u=>u.owner==="player"&&u.type==="settler")||state.units.find(u=>u.owner==="player");
  const city=state.cities.find(c=>c.owner==="player");
  center(unit?.x??city?.x??15,unit?.y??city?.y??15);
+ inGame=true;
  closeMainMenu();
  toast("Continued saved game · Year "+state.year);
 }
@@ -691,6 +695,7 @@ get("menu").onclick=()=>{menu=menu==="actions"?"":"actions";renderUI();};
 get("saveGame").onclick=manualSave;
 get("playGame").onclick=playNewGame;
 get("continueGame").onclick=continueGame;
+get("backToGame").onclick=closeMainMenu;
 window.addEventListener("resize",resize);
 function loop(){
  if(toastUntil&&Date.now()>toastUntil){get("toast").classList.remove("show");toastUntil=0;}
