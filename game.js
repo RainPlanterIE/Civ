@@ -97,7 +97,26 @@ state.explored??={};
 state.researchProject??=null;
 if(state.project&&!state.project.total)state.project.total=state.project.left;
 if(state.researchProject&&!state.researchProject.total)state.researchProject.total=techs[state.researchProject.id]?.cost||state.researchProject.left||1;
-let borders=new Map();
+let borders=new Map(),visible=new Set();
+function currentlyVisible(x,y){return visible.has(pos(x,y));}
+function explored(x,y){return !!state.explored?.[pos(x,y)];}
+function updateFog(){
+ visible=new Set();
+ const reveal=(x,y,r)=>{
+  for(let j=Math.max(0,y-r);j<=Math.min(SIZE-1,y+r);j++)
+   for(let i=Math.max(0,x-r);i<=Math.min(SIZE-1,x+r);i++){
+    if(distance(x,y,i,j)>r)continue;
+    const key=pos(i,j);visible.add(key);state.explored[key]=1;
+   }
+ };
+ for(const city of state.cities){
+  if(city.owner==="player")reveal(city.x,city.y,Math.max(2,influenceRadius(city))+upgrade(city,"lookout")*2);
+  else if(city.owner==="ally")reveal(city.x,city.y,2);
+ }
+ for(const unit of state.units)if(unit.owner==="player")
+  reveal(unit.x,unit.y,(unitDef(unit.type)?.vision||2)+(known("scouting")&&unit.type==="settler"?1:0));
+}
+
 function myCities(){return state.cities.filter(c=>c.owner==="player");}
 function firstCity(){return myCities()[0];}
 function getCity(id){return state.cities.find(c=>c.id===id);}
@@ -188,6 +207,8 @@ function recalcBorders(){
  for(const key of Object.keys(state.works)){
   if(borders.get(key)!==state.works[key])delete state.works[key];
  }
+ for(const city of myCities())balanceCityLabor(city);
+ updateFog();
 }
 function controller(x,y){
  const id=borders.get(pos(x,y));
@@ -461,10 +482,16 @@ function move(x,y){
  const u=activeUnit();if(!u)return toast("Select a unit first.");
  if(u.moved)return toast("This unit already moved this year.");
  if(!inMap(x,y)||terrain(x,y)==="water")return toast("That tile is impassable.");
- if(distance(u.x,u.y,x,y)!==1)return toast("One tile per unit per year.");
+ const step=distance(u.x,u.y,x,y),range=u.type==="scout"?2:1;
+ if(step<1||step>range)return toast("This unit can move "+range+" tile"+(range===1?"":"s")+" per year.");
+ if(step===2){
+  const midX=Math.round((u.x+x)/2),midY=Math.round((u.y+y)/2);
+  if(terrain(midX,midY)==="water")return toast("The route crosses impassable water.");
+  const midway=cityAt(midX,midY);if(midway&&midway.owner==="rival")return toast("You cannot pass through a rival city.");
+ }
  const occupied=cityAt(x,y);
  if(occupied&&occupied.owner==="rival")return toast("Attack rival cities from a neighbouring tile.");
- u.x=x;u.y=y;u.moved=true;selected={x,y};moving=null;menu="";
+ u.x=x;u.y=y;u.moved=true;selected={x,y};moving=null;menu="";updateFog();
  record((u.type==="army"?"Army":"Settler")+" moves into new terrain.");
  autoAdvance("move");
  const nextReady=state.units.find(other=>other.owner==="player"&&!other.moved);
