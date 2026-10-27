@@ -11,7 +11,12 @@ const techs={
  writing:{name:"Writing",cost:15,need:"agriculture",desc:"Develop libraries for more research."},
  husbandry:{name:"Animal Husbandry",cost:21,need:"agriculture",desc:"Reveal wild herds and create renewable pastures."},
  metalworking:{name:"Metalworking",cost:28,need:"geology",desc:"Reveal ore deposits and develop metals."},
- engineering:{name:"Engineering",cost:37,need:"geology",desc:"Increase yields from all worked resource tiles. Unlock stronger workshops."},
+ engineering:{name:"Engineering",cost:37,need:"geology",desc:"Increase yields from all worked resource tiles."},
+ fishing:{name:"Fishing",cost:6,desc:"Work renewable fish shoals along the coast (+4 food per fishing worker). Coastal civilisations begin with this skill."},
+ netmaking:{name:"Net Making",cost:14,need:"fishing",desc:"+2 fish per coastal worker and unlock the Smokehouse."},
+ seafaring:{name:"Seafaring",cost:19,need:"fishing",desc:"Unlock Harbours and Fishing Boats for coastal travel and catches."},
+ shipbuilding:{name:"Shipbuilding",cost:30,need:"seafaring",desc:"Unlock Shipyards and Longships to explore coastlines."},
+ navigation:{name:"Navigation",cost:42,need:"shipbuilding",desc:"Unlock open-ocean travel, longer sight at sea and Lighthouses."},
  hunting:{name:"Hunting",cost:10,desc:"Unlock Hunting Lodge. Foragers collect extra food."},
  scouting:{name:"Scouting",cost:12,desc:"Unlock Scout units and Lookout towers to uncover more land."},
  toolmaking:{name:"Toolmaking",cost:15,need:"geology",desc:"Unlock Workshop (+wood, +stone and construction productivity)."},
@@ -32,6 +37,11 @@ const buildings={
  temple:{name:"Temple",icon:"⛪",wood:25,stone:22,work:40,path:"faith",desc:"Spreads your faith and can convert nearby cities."},
  barracks:{name:"Barracks",icon:"🛡",wood:24,stone:22,work:34,path:"war",desc:"Improves attacks and defence."},
  huntingLodge:{name:"Hunting Lodge",icon:"🏕️",wood:10,stone:0,work:18,need:"hunting",desc:"+2 food from worked wild-food tiles."},
+ fishingHut:{name:"Fishing Hut",icon:"🎣",wood:9,stone:0,work:16,need:"fishing",coastal:true,desc:"+2 food per worked coastal fishing tile."},
+ smokehouse:{name:"Smokehouse",icon:"🐟",wood:12,stone:5,work:20,need:"netmaking",coastal:true,desc:"+1 food per worked fishing tile."},
+ harbor:{name:"Harbour",icon:"⚓",wood:16,stone:8,work:26,need:"seafaring",coastal:true,desc:"+1 food per fishing tile and enables Fishing Boat training."},
+ shipyard:{name:"Shipyard",icon:"🛶",wood:24,stone:13,work:34,need:"shipbuilding",coastal:true,desc:"Build Longships capable of coastal exploration."},
+ lighthouse:{name:"Lighthouse",icon:"🗼",wood:14,stone:14,work:27,need:"navigation",coastal:true,desc:"+2 city sight tiles and safer navigation."},
  lookout:{name:"Lookout Tower",icon:"🔭",wood:14,stone:6,work:22,need:"scouting",desc:"+2 city vision range and +1 defence."},
  workshop:{name:"Workshop",icon:"🛠️",wood:18,stone:8,work:28,need:"toolmaking",desc:"+1 wood and stone output; +1 building work each year."},
  range:{name:"Archery Range",icon:"🏹",wood:19,stone:7,work:28,need:"archery",desc:"Unlocks Archer training and improves ranged troops."},
@@ -46,22 +56,76 @@ const unitTypes={
  spearman:{name:"Spearman",icon:"🔱",wood:12,stone:5,food:4,work:16,strength:4,vision:2,need:"drill",requires:"training",desc:"Stronger defensive infantry."},
  archer:{name:"Archer",icon:"🏹",wood:15,stone:0,food:4,work:16,strength:3,vision:3,need:"archery",requires:"range",desc:"Ranged fighter with improved sight."},
  swordsman:{name:"Swordsman",icon:"⚔️",wood:13,stone:0,metal:3,food:5,work:22,strength:6,vision:2,need:"metalworking",requires:"forge",desc:"Advanced metal-armed infantry."},
- army:{name:"Warband",icon:"⚔️",wood:18,stone:16,metal:2,work:27,strength:4,vision:2,path:"war",desc:"Established warband used to conquer city centres."}
+ army:{name:"Warband",icon:"⚔️",wood:18,stone:16,metal:2,work:27,strength:4,vision:2,path:"war",desc:"Established warband used to conquer city centres."},
+ fishingBoat:{name:"Fishing Boat",icon:"⛵",wood:14,stone:0,food:2,work:18,strength:1,vision:3,need:"seafaring",requires:"harbor",naval:true,range:2,desc:"Work coastal waters: spend its action to land 6 food at your nearest city."},
+ longship:{name:"Longship",icon:"🚢",wood:21,stone:8,food:4,work:30,strength:4,vision:4,need:"shipbuilding",requires:"shipyard",naval:true,range:3,desc:"Fast armed ship for coastal scouting; can fish for 3 food, and navigate open sea after Navigation."}
 };
 const unitDef=id=>unitTypes[id];
 const fighter=u=>u&&["clubman","spearman","archer","swordsman","army"].includes(u.type);
 const unitTitle=u=>unitTypes[u?.type]?.name||"Unit";
 const bonusText=id=>{
- const map={agriculture:"Fertile fields",geology:"Stone quarries",writing:"Libraries and markets",husbandry:"Pastures and stables",metalworking:"Ore veins, forges and swordsmen",engineering:"More resources per tile",hunting:"Hunting Lodges",scouting:"Scouts and Lookout Towers",toolmaking:"Workshops",archery:"Archers and Archery Ranges",drill:"Spearmen and Training Grounds",masonry:"City Walls"};
+ const map={
+  agriculture:"🌾 Renewable farmland; +4 food per worked crop tile",
+  geology:"🪨 Reveal quarries and stone resources",
+  writing:"📚 Library (+3 research/year), Market (+1 crop food)",
+  husbandry:"🐂 Pasture +1 food/year; Stables improve livestock",
+  metalworking:"⚔️ Ore, Forge, Swordsmen after Forge",
+  engineering:"🛠️ +1 yield from each worked resource tile",
+  hunting:"🍓 Hunting Lodge (+2 wild forage food); more food from hunts",
+  scouting:"👣 Scout (two-tile moves, vision 4), Lookout Tower",
+  toolmaking:"🔨 Workshop (+1 timber/stone yield; +1 build work)",
+  archery:"🏹 Archer after Archery Range",
+  drill:"🛡️ Spearman after Training Grounds",
+  masonry:"🏰 City Walls (+4 city defence)",
+  fishing:"🎣 Coastal fish worker yields 4 renewable food/year; Fishing Hut",
+  netmaking:"🕸️ +2 food per fishing worker, Smokehouse (+1)",
+  seafaring:"⚓ Harbour (+1 fish food), Fishing Boat (6 food/action)",
+  shipbuilding:"🚢 Shipyard and Longship (3-tile coastal sail)",
+  navigation:"🧭 Open-sea navigation, Lighthouse (+2 sight)"
+ };
  return map[id]||"New discoveries";
 };
+const techBranches=[
+ {name:"🌊 Coast & Sailing",desc:"Feed seaside cities, then launch boats and explore the sea.",ids:["fishing","netmaking","seafaring","shipbuilding","navigation"]},
+ {name:"🌾 Food & Farming",desc:"Grow sustainable food on land and domesticate animals.",ids:["agriculture","husbandry","hunting"]},
+ {name:"🛠️ Materials & Industry",desc:"Find minerals, improve resources and build stronger defences.",ids:["geology","toolmaking","metalworking","engineering","masonry"]},
+ {name:"📜 Knowledge & Military",desc:"Explore the land, improve research and train specialised fighters.",ids:["scouting","writing","archery","drill"]}
+];
 const dice=(x,y)=>CIV_WORLD.noise(x,y,42);
 const inMap=(x,y)=>CIV_WORLD.valid(x,y);
 const pos=(x,y)=>x+","+y;
 const decode=str=>str.split(",").map(Number);
 const distance=(x,y,a,b)=>Math.max(Math.abs(x-a),Math.abs(y-b));
 const terrain=(x,y)=>CIV_WORLD.climate(x,y);
-const deposit=(x,y)=>CIV_WORLD.deposit(x,y);
+const coastalWaterCache=new Map();
+function isCoastalWater(x,y){
+ if(!inMap(x,y)||CIV_WORLD.isLand(x,y))return false;
+ const key=pos(x,y);
+ if(coastalWaterCache.has(key))return coastalWaterCache.get(key);
+ let nearby=false;
+ for(let dy=-1;dy<=1&&!nearby;dy++)for(let dx=-1;dx<=1;dx++){
+  if(!dx&&!dy)continue;
+  if(CIV_WORLD.isLand(x+dx,y+dy)){nearby=true;break;}
+ }
+ if(coastalWaterCache.size>16000)coastalWaterCache.clear();
+ coastalWaterCache.set(key,nearby);
+ return nearby;
+}
+function coastTile(x,y,r=2){
+ for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)
+  if(Math.max(Math.abs(dx),Math.abs(dy))<=r&&isCoastalWater(x+dx,y+dy))return {x:x+dx,y:y+dy};
+ return null;
+}
+function cityHasSea(c){return !!(c&&coastTile(c.x,c.y,influenceRadius(c)));}
+function isNaval(u){return !!unitDef(u?.type)?.naval;}
+function deposit(x,y){
+ if(!inMap(x,y))return null;
+ if(isCoastalWater(x,y)){
+  const yieldBand=dice(x+161,y+37);
+  return {type:"fish",max:Infinity,tech:"fishing",icon:yieldBand>.76?"🐟":"🎣",renewable:true};
+ }
+ return CIV_WORLD.deposit(x,y);
+}
 
 const wildTypes={
  deer:{name:"Deer",icon:"🦌",hp:3,attack:1,defense:1,food:7,description:"A shy animal. Hunting yields food."},
@@ -274,13 +338,13 @@ function villageYearlyEffects(){
 function fresh(scenario=CIV_WORLD.scenario()){
  const leader=scenario.player;
  return {version:4,world:"earth",worldSeed:scenario.seed,leader:{...leader},initialRivalCount:12,year:1,
- tech:["foraging","forestry"],research:0,knowledge:0,culture:0,faith:0,military:0,
+ tech:["foraging","forestry",...(coastTile(leader.x,leader.y,2)?["fishing"]:[])],research:0,knowledge:0,culture:0,faith:0,military:0,
  resources:{food:32,wood:24,stone:14,ore:0,metal:0,animals:0},
  cities:scenario.rivals.map((c,i)=>({id:"r"+(i+1),x:c.x,y:c.y,name:c.capital,civId:c.id,civilisation:c.name,leader:c.leader,colour:c.color,pop:7,owner:"rival",army:6,culture:0,faith:0,buildings:{},growth:0,captives:0,unrest:0})),
- units:[{id:"u1",type:"settler",x:leader.x,y:leader.y,moved:false,owner:"player",strength:1,hp:6,xp:0}],
+ units:[{id:"u1",type:"settler",x:leader.x,y:leader.y,moved:false,owner:"player",strength:1,hp:6,xp:0},{id:"u2",type:"clubman",x:leader.x,y:leader.y,moved:false,owner:"player",strength:2,hp:6,xp:0}],
  works:{},builders:{},extracted:{},explored:{},encounters:initialEncounters(scenario),nextEncounterId:1000,
  path:null,project:null,researchProject:null,stage:"move",stageYear:1,
- events:[leader.leader+" leads "+leader.name+" from "+leader.capital+"."],nextId:2,victory:null};
+ events:[leader.leader+" leads "+leader.name+" from "+leader.capital+" with a settler and a clubman."],nextId:3,victory:null};
 }
 let inGame=false;
 let state;
