@@ -19,11 +19,11 @@ const CIV_WORLD=(()=>{
   forest:[
    [-71,-4,20,14], [22,-1,11,10], [108,8,16,17], [131,0,11,14],
    [-85,46,28,14], [87,59,68,12], [17,53,23,15], [-83,34,14,8],
-   [140,37,8,8], [45,4,9,5], [150,-7,9,10], [-73,-36,6,8]
+   [140,37,8,8], [45,4,9,5], [150,-7,9,10], [-73,-36,6,8],[-101,20,10,8],[-90,17,10,7],[-71,-13,6,10],[79,11,8,8],[39,13,8,7],[30,-29,9,7]
   ],
   mountain:[
    [-74,2,5,11],[-72,-13,4,19],[-71,-37,4,13],[-113,43,9,17],
-   [11,46,7,3], [9,33,10,4],[80,32,19,6],[48,33,11,5],
+   [11,46,7,3], [9,33,10,4],[80,32,19,6],[51,33,5.5,3.5],
    [43,43,9,4],[65,57,6,16],[87,47,10,7],[39,12,5,7],
    [29,-29,6,6],[142,37,9,11],[146,-6,7,6],[-101,18,7,8]
   ],
@@ -51,7 +51,7 @@ const CIV_WORLD=(()=>{
   const {lon,lat}=coords(x,y),a=Math.abs(lat),n=noise(x,y,4),wet=nearbyRiver(x,y);
   const dry=ellipse(lon,lat,areas.desert),wooded=ellipse(lon,lat,areas.forest),alpine=ellipse(lon,lat,areas.mountain);
   if(a>74)return "tundra";
-  if(alpine>.45&&n<.92)return "hill";
+  if(alpine>.45&&n<.35+alpine*.45)return "hill";
   if(a>65&&wooded<.18)return n<.35?"tundra":"forest";
   if(dry>.2&&!wet&&n<.7+dry*.18)return "desert";
   if(alpine>.09&&n<.33+alpine*.45)return "hill";
@@ -86,7 +86,7 @@ const CIV_WORLD=(()=>{
   if(biome==="steppe"){
    if(wet||fertile>.65)return {type:"food",max:28,tech:"agriculture",icon:"🌾"};
    if(n<.24)return {type:"animals",max:8+Math.floor(noise(x,y,11)*12),tech:"husbandry",icon:"🐂"};
-   if(n>.89)return {type:"wood",max:18,tech:"forestry",icon:"🌳"};
+   if(n>.81)return {type:"wood",max:18,tech:"forestry",icon:"🌳"};
    return {type:"forage",max:16+Math.floor(noise(x,y,12)*20),tech:"foraging",icon:"🍓"};
   }
   const cropChance=wet?.86:.18+fertile*.65;
@@ -103,7 +103,7 @@ const CIV_WORLD=(()=>{
   if(lon< -60&&lon> -83&&lat< -4&&lat> -32)return r>.28?"llama":"jaguar";
   if(lon< -32&&lon> -120&&lat> -22&&lat<22)return r>.38?"jaguar":"deer";
   if(lon< -82&&lat>30&&lat<52&&biome==="grass")return r>.4?"bison":"deer";
-  if(lon>10&&lon<50&&lat<17&&lat> -36)return r>.73?"elephant":r>.43?"lion":r>.22?"zebra":"boar";
+  if(lon> -18&&lon<50&&lat<17&&lat> -36)return r>.73?"elephant":r>.43?"lion":r>.22?"zebra":"boar";
   if(lon>65&&lon<120&&lat> -3&&lat<30)return r>.68?"elephant":r>.4?"tiger":"boar";
   if(lon>125&&lon<151&&lat> -36&&lat< -10)return "kangaroo";
   if(a>58&&biome==="tundra")return r>.5?"wolf":"bear";
