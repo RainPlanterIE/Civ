@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#183a36">
 <meta name="description" content="Civ: begin with one settler, found your city, work the surrounding land and shape a civilisation.">
 <title>CIV — A Civilisation Begins</title>
-<link rel="stylesheet" href="./style.css?v=6">
+<link rel="stylesheet" href="./style.css?v=7">
 </head>
 <body>
 <canvas id="world" aria-label="Interactive isometric civilisation game world"></canvas>
@@ -18,7 +18,8 @@
   <div id="tools">
     <button id="zoomIn" class="smallbtn" aria-label="Zoom in">＋</button>
     <button id="zoomOut" class="smallbtn" aria-label="Zoom out">−</button>
-    <button id="menu" class="smallbtn" aria-label="Game menu">☰</button>
+    <button id="saveGame" class="smallbtn save-game" aria-label="Save game">💾 <span>Save</span></button>
+    <button id="menu" class="smallbtn" aria-label="Game actions">☰</button>
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
   <div id="footer">
@@ -27,6 +28,18 @@
   </div>
   <section id="panel" class="panel" aria-label="Game controls"></section>
 </div>
-<script src="./game.js?v=6"></script>
+<div id="startScreen" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+  <div class="main-menu">
+    <div class="menu-eyebrow">A WORLD TO SHAPE</div>
+    <h1 id="menuTitle">CIV</h1>
+    <p class="menu-subtitle">From one settler to a civilisation.</p>
+    <div class="menu-rule"></div>
+    <button id="playGame" class="menu-choice primary"><span>▶</span> Play <small>Start a new civilisation</small></button>
+    <button id="continueGame" class="menu-choice secondary"><span>↪</span> Continue <small>Return to your saved world</small></button>
+    <p id="menuStatus" class="menu-status" aria-live="polite">Checking for a saved game…</p>
+    <p class="menu-note">Progress is saved in this browser. You can also save at any time during the game.</p>
+  </div>
+</div>
+<script src="./game.js?v=7"></script>
 </body>
 </html>
