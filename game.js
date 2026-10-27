@@ -279,7 +279,53 @@ function fresh(scenario=CIV_WORLD.scenario()){
 }
 let inGame=false;
 let state;
-try{state=JSON.parse(localStorage.getItem(STORE))||fresh();if(state.version!==3||!Array.isArray(state.units)||!Array.isArray(state.cities))state=fresh();}catch(e){state=fresh();}
+function migrateLegacy(old){
+ const seed=((Math.imul(Number(old.year)||1,8191)+Math.imul(Number(old.nextId)||2,739)+123456789)>>>0);
+ const earth=fresh(CIV_WORLD.scenario(seed));
+ const site=earth.leader,original=old.cities?.filter(c=>c.owner==="player")||[],anchor=original[0]||{x:15,y:15};
+ const migrated=[];
+ for(let i=0;i<original.length;i++){
+  const c=original[i];
+  const px=site.x+(c.x-anchor.x),py=site.y+(c.y-anchor.y);
+  const p=i===0?{x:site.x,y:site.y}:CIV_WORLD.safeSite(-180+(px+.5)/2,90-(py+.5)/2,[...earth.cities,...migrated]);
+  migrated.push({...c,x:p.x,y:p.y,name:c.name==="New Haven"?site.capital:c.name,civId:site.id,civilisation:site.name,leader:site.leader,colour:site.color,owner:"player",buildings:{...(c.buildings||{})}});
+ }
+ earth.cities.push(...migrated);
+ const anchorPoint={x:site.x,y:site.y};
+ earth.units=(old.units||[]).filter(u=>u.owner==="player").map(u=>{
+  const x=anchorPoint.x+u.x-anchor.x,y=anchorPoint.y+u.y-anchor.y;
+  const dest=CIV_WORLD.safeSite(-180+(x+.5)/2,90-(y+.5)/2,earth.cities.filter(c=>c.owner==="rival"));
+  return {...u,x:dest.x,y:dest.y,owner:"player"};
+ });
+ for(const key of ["year","tech","research","knowledge","culture","faith","military","resources","path","project","researchProject","stage","stageYear","nextId","victory","events"]){
+  if(old[key]!==undefined)earth[key]=old[key];
+ }
+ earth.builders={...(old.builders||{})};
+ earth.nextEncounterId=1000;
+ earth.legacyMigrated=true;
+ const convertedWorks={};
+ for(const [key,id] of Object.entries(old.works||{})){
+  const [x,y]=key.split(",").map(Number),owner=migrated.find(c=>c.id===id),previous=original.find(c=>c.id===id);
+  if(!owner||!previous)continue;
+  const wx=owner.x+x-previous.x,wy=owner.y+y-previous.y;
+  if(!inMap(wx,wy)||terrain(wx,wy)==="water"||distance(wx,wy,owner.x,owner.y)>5)continue;
+  if(deposit(wx,wy)?.tech&&!earth.tech.includes(deposit(wx,wy).tech))continue;
+  convertedWorks[pos(wx,wy)]=id;
+ }
+ earth.works=convertedWorks;
+ // Keep the old save intact under its previous key.
+ return earth;
+}
+function readSave(){
+ try{
+  const current=JSON.parse(localStorage.getItem(STORE)||"null");
+  if(current?.version===4&&Array.isArray(current.cities)&&Array.isArray(current.units))return current;
+  const legacy=JSON.parse(localStorage.getItem(LEGACY_STORE)||"null");
+  if(legacy?.version===3&&Array.isArray(legacy.cities)&&Array.isArray(legacy.units))return migrateLegacy(legacy);
+ }catch(e){}
+ return null;
+}
+state=readSave()||fresh();
 state.knowledge??=state.research;
 state.builders??={};
 state.explored??={};
@@ -496,13 +542,7 @@ function save(){
  try{localStorage.setItem(STORE,JSON.stringify(state));return true;}
  catch(e){return false;}
 }
-function storedGame(){
- try{
-  const data=JSON.parse(localStorage.getItem(STORE)||"null");
-  if(data&&data.version===3&&Array.isArray(data.units)&&Array.isArray(data.cities))return data;
- }catch(e){}
- return null;
-}
+function storedGame(){return readSave();}
 function manualSave(){
  if(save())toast("✓ Game saved on this device · Year "+state.year);
  else toast("Could not save. Check your browser storage settings.");
@@ -514,8 +554,9 @@ function showMainMenu(){
  get("continueGame").disabled=!stored;
  get("backToGame").hidden=!inGame;
  get("menuStatus").textContent=stored
-  ?"Saved game available · Year "+stored.year+(stored.cities.some(c=>c.owner==="player")?" · "+(stored.cities.find(c=>c.owner==="player")?.name||"Your civilisation"):" · One settler")
-  :"No saved game yet — choose Play to begin.";
+  ?(stored.legacyMigrated?"Earlier valley save detected — Continue moves its progress to Earth. The original is kept. ":"Earth save available · ")+
+     "Year "+stored.year+" · "+(stored.leader?.leader||"Historical leader")+" · "+(stored.leader?.name||"Civilisation")
+  :"No Earth save yet — Play assigns a random historical leader.";
  screen.classList.remove("hidden");
  renderUI();
 }
@@ -525,7 +566,7 @@ function closeMainMenu(){
 }
 function playNewGame(){
  if(storedGame()&&!window.confirm("Start a new game? This replaces the saved civilisation on this device."))return;
- state=fresh();moving=null;selected=null;menu="";recalcBorders();center(15,15);
+ state=fresh();moving=null;selected=null;menu="";recalcBorders();center(state.leader.x,state.leader.y);
  const ok=save();
  inGame=true;
  closeMainMenu();
@@ -553,8 +594,8 @@ function continueGame(){
  selected=null;moving=null;menu="";recalcBorders();
  const unit=state.units.find(u=>u.owner==="player"&&u.type==="settler")||state.units.find(u=>u.owner==="player");
  const city=state.cities.find(c=>c.owner==="player");
- center(unit?.x??city?.x??15,unit?.y??city?.y??15);
- inGame=true;
+ center(unit?.x??city?.x??state.leader.x,unit?.y??city?.y??state.leader.y);
+ save();inGame=true;
  closeMainMenu();
  toast("Continued saved game · Year "+state.year);
 }
@@ -564,7 +605,10 @@ function found(u){
  syncStage();
  if(!u||u.type!=="settler")return;if(u.moved)return toast("This settler has already acted this year.");
  if(terrain(u.x,u.y)==="water"||state.cities.some(c=>distance(c.x,c.y,u.x,u.y)<=3)){toast("Settle on land at least four tiles from another city.");return;}
- const c={id:"c"+state.nextId++,x:u.x,y:u.y,name:myCities().length?"New Settlement "+state.nextId:"New Haven",pop:3,owner:"player",army:1,culture:0,faith:0,buildings:{}};
+ const first=myCities().length===0,c={id:"c"+state.nextId++,x:u.x,y:u.y,
+ name:first?(state.leader?.capital||"Capital"):"New Settlement "+state.nextId,
+ civilisation:state.leader?.name||"Your civilisation",civId:state.leader?.id,leader:state.leader?.leader,
+ colour:state.leader?.color,pop:3,owner:"player",army:1,culture:0,faith:0,buildings:{}};
  state.cities.push(c);state.units=state.units.filter(a=>a.id!==u.id);moving=null;
  selected={x:c.x,y:c.y};recalcBorders();record(c.name+" was founded. Its people now work the surrounding land.");autoAdvance("move");save();menu="";renderUI();
 }
@@ -1189,6 +1233,6 @@ function loop(){
 }
 resize();recalcBorders();
 const unit=state.units.find(u=>u.type==="settler");
-center(unit?.x||firstCity()?.x||15,unit?.y||firstCity()?.y||15);
+center(unit?.x??firstCity()?.x??state.leader.x,unit?.y??firstCity()?.y??state.leader.y);
 renderUI();showMainMenu();requestAnimationFrame(loop);
 })();
