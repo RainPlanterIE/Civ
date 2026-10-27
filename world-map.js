@@ -12,7 +12,7 @@ const CIV_WORLD=(()=>{
  const noise=(x,y,seed=1)=>{const z=Math.sin(x*127.1+y*311.7+seed*53.13)*43758.5453;return z-Math.floor(z);};
  const areas={
   desert:[
-   [-4,23,29,18], [46,23,18,12], [60,31,11,9], [91,39,19,8], [112,43,14,7],
+   [-4,25,29,12], [46,23,18,12], [60,31,11,9], [91,39,19,8], [112,43,14,7],
    [133,-24,18,11], [16,-23,6,9], [23,-25,9,5], [-69,-23,5,13],
    [-111,31,11,7], [-116,40,8,7], [-69,-44,9,6], [69,39,7,4]
   ],
@@ -95,6 +95,21 @@ const CIV_WORLD=(()=>{
   if(n>.91)return {type:"wood",max:18+Math.floor(noise(x,y,15)*22),tech:"forestry",icon:"🌳"};
   return {type:"forage",max:24+Math.floor(noise(x,y,16)*26),tech:"foraging",icon:"🍓"};
  }
+ function wildlife(x,y){
+  if(!isLand(x,y))return null;
+  const {lon,lat}=coords(x,y),a=Math.abs(lat),biome=climate(x,y),r=noise(x,y,30);
+  if(biome==="desert")return lat>0&&lon>-20&&lon<70?"camel":r>.7?"wolf":null;
+  if(lon>111&&lat< -10&&lat> -46)return "kangaroo";
+  if(lon< -60&&lon> -83&&lat< -4&&lat> -32)return r>.28?"llama":"jaguar";
+  if(lon< -32&&lon> -120&&lat> -22&&lat<22)return r>.38?"jaguar":"deer";
+  if(lon< -82&&lat>30&&lat<52&&biome==="grass")return r>.4?"bison":"deer";
+  if(lon>10&&lon<50&&lat<17&&lat> -36)return r>.73?"elephant":r>.43?"lion":r>.22?"zebra":"boar";
+  if(lon>65&&lon<120&&lat> -3&&lat<30)return r>.68?"elephant":r>.4?"tiger":"boar";
+  if(lon>125&&lon<151&&lat> -36&&lat< -10)return "kangaroo";
+  if(a>58&&biome==="tundra")return r>.5?"wolf":"bear";
+  if(a>42&&biome==="forest")return r>.73?"bear":r>.46?"wolf":"deer";
+  return r>.78?"wolf":r>.46?"boar":"deer";
+ }
  // Named leaders and civilisations represent deliberately mixed historical eras.
  const civilisations=[
   {id:"roman",name:"Roman Empire",leader:"Julius Caesar",capital:"Rome",lon:12.50,lat:41.90,region:"Europe",color:"#c76c56"},
@@ -154,5 +169,5 @@ const CIV_WORLD=(()=>{
   }
   return {seed,player:{...player,...playerSite},rivals:selected};
  }
- return {W,H,valid,xy,coords,isLand,river,nearbyRiver,noise,climate,deposit,civilisations,safeSite,scenario};
+ return {W,H,valid,xy,coords,isLand,river,nearbyRiver,noise,climate,deposit,wildlife,civilisations,safeSite,scenario};
 })();
