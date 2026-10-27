@@ -329,6 +329,8 @@ function continueGame(){
  state=saved;
  state.knowledge??=state.research||0;
  state.researchProject??=null;
+ state.builders??={};
+ state.explored??={};
  if(state.project&&!state.project.total)state.project.total=state.project.left;
  if(state.researchProject&&!state.researchProject.total)state.researchProject.total=techs[state.researchProject.id]?.cost||state.researchProject.left||1;
  selected=null;moving=null;menu="";recalcBorders();
