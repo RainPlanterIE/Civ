@@ -395,6 +395,7 @@ function readSave(){
  return null;
 }
 state=readSave()||fresh();
+if((coastTile(state.leader?.x??-1,state.leader?.y??-1,2)||state.cities.some(c=>c.owner==="player"&&cityHasSea(c)))&&!state.tech.includes("fishing"))state.tech.push("fishing");
 state.knowledge??=state.research;
 state.builders??={};
 state.explored??={};
@@ -526,7 +527,7 @@ function recalcBorders(){
   const r=influenceRadius(c);
   for(let y=Math.max(0,c.y-r);y<=Math.min(MAP_H-1,c.y+r);y++)
    for(let x=Math.max(0,c.x-r);x<=Math.min(MAP_W-1,c.x+r);x++){
-    if(!CIV_WORLD.isLand(x,y))continue;
+    if(!CIV_WORLD.isLand(x,y)&&!isCoastalWater(x,y))continue;
     const key=pos(x,y),score=territoryScore(c,x,y);
     if(score===-Infinity)continue;
     const existing=scores.get(key);
@@ -572,7 +573,7 @@ function availableWorkTiles(c){
   for(let x=Math.max(0,c.x-radius);x<=Math.min(MAP_W-1,c.x+radius);x++){
    const key=pos(x,y),d=deposit(x,y);
    if(borders.get(key)!==c.id||cityAt(x,y)||state.works[key]||!d||!known(d.tech))continue;
-   if(remaining(x,y)===0&&d.type!=="food"&&d.type!=="animals")continue;
+   if(remaining(x,y)===0&&d.type!=="food"&&d.type!=="animals"&&d.type!=="fish")continue;
    tiles.push({x,y,kind:d.type,key});
   }
  return tiles;
@@ -588,20 +589,20 @@ function assignAllWorkers(){
   for(const [key,id] of Object.entries(state.works)){
    if(id!==c.id)continue;
    const kind=deposit(...decode(key))?.type;
-   if(kind==="food"||kind==="forage")totals.food++;
+   if(kind==="food"||kind==="forage"||kind==="fish")totals.food++;
    else if(kind&&totals[kind]!==undefined)totals[kind]++;
   }
   while(freeWorkers(c)>0&&options.length){
    // Choose again after each assignment to balance food with timber and stone.
    const score=t=>{
-    if(t.kind==="food"||t.kind==="forage")return totals.food<foodTarget?0:9+totals.food;
+    if(t.kind==="food"||t.kind==="forage"||t.kind==="fish")return totals.food<foodTarget?0:9+totals.food;
     if(t.kind==="wood")return totals.wood===0?1:5+totals.wood;
     if(t.kind==="stone")return totals.stone===0?2:6+totals.stone;
     return 7+(totals[t.kind]||0);
    };
    options.sort((a,b)=>score(a)-score(b));
    const tile=options.shift();state.works[tile.key]=c.id;count++;
-   const kind=tile.kind==="forage"?"food":tile.kind;totals[kind]=(totals[kind]||0)+1;
+   const kind=tile.kind==="forage"||tile.kind==="fish"?"food":tile.kind;totals[kind]=(totals[kind]||0)+1;
   }
  }
  if(count)record("Assigned "+count+" available worker"+(count===1?"":"s")+" to nearby resources.");
@@ -652,6 +653,7 @@ function continueGame(){
   return;
  }
  state=saved;
+ if((coastTile(state.leader?.x??-1,state.leader?.y??-1,2)||state.cities.some(c=>c.owner==="player"&&cityHasSea(c)))&&!state.tech.includes("fishing"))state.tech.push("fishing");
  state.knowledge??=state.research||0;
  state.researchProject??=null;
  state.builders??={};
@@ -694,7 +696,7 @@ function workTile(x,y){
  if(state.works[key]){delete state.works[key];record("A worker leaves the "+d.type+" tile.");save();renderUI();return;}
 
  if(freeWorkers(c)<=0){toast("All citizens already have jobs.");return;}
- if(remaining(x,y)<=0&&d.type!=="animals"&&d.type!=="food"){toast("This deposit is exhausted.");return;}
+ if(remaining(x,y)<=0&&d.type!=="animals"&&d.type!=="food"&&d.type!=="fish"){toast("This deposit is exhausted.");return;}
  state.works[key]=c.id;record(c.name+" assigns one worker to "+d.type+".");autoAdvance("workers");if(state.stage!=="workers"&&(menu==="workers"||menu==="tile"))menu="";save();renderUI();
 }
 function harvestResources(){
@@ -702,9 +704,10 @@ function harvestResources(){
  for(const [key,id] of Object.entries(state.works)){
   const c=getCity(id),[x,y]=decode(key),d=deposit(x,y);
   if(!c||c.owner!=="player"||borders.get(key)!==id||!d||!known(d.tech)){delete state.works[key];continue;}
-  let output=d.type==="wood"?3+upgrade(c,"sawmill")+upgrade(c,"workshop"):d.type==="stone"?2+upgrade(c,"stoneworks")+upgrade(c,"workshop"):d.type==="ore"?2+upgrade(c,"forge"):d.type==="animals"?1+upgrade(c,"stable"):d.type==="food"?4+upgrade(c,"granary")+upgrade(c,"market"):4+upgrade(c,"granary")+2*upgrade(c,"huntingLodge");
+  let output=d.type==="fish"?4+2*upgrade(c,"fishingHut")+upgrade(c,"smokehouse")+upgrade(c,"harbor")+(known("netmaking")?2:0):
+   d.type==="wood"?3+upgrade(c,"sawmill")+upgrade(c,"workshop"):d.type==="stone"?2+upgrade(c,"stoneworks")+upgrade(c,"workshop"):d.type==="ore"?2+upgrade(c,"forge"):d.type==="animals"?1+upgrade(c,"stable"):d.type==="food"?4+upgrade(c,"granary")+upgrade(c,"market"):4+upgrade(c,"granary")+2*upgrade(c,"huntingLodge");
   if(known("engineering"))output++;
-  if(d.type==="food"&&known("agriculture")){gains.food+=output;continue;}
+  if((d.type==="food"&&known("agriculture"))||(d.type==="fish"&&known("fishing"))){gains.food+=output;continue;}
   if(d.type==="animals"&&known("husbandry")){
    if(remaining(x,y)<=0)continue;
    if(!state.extracted[key])state.extracted[key]=1; // domestication uses one wild animal
@@ -968,7 +971,7 @@ function panelContents(){
      const d=deposit(x,y),working=state.works[pos(x,y)];
      if(!d||!known(d.tech)||(!working&&remaining(x,y)===0)||shown>=24)continue;
      const jobLabel=(working?"✓ ":"")+d.icon+" "+d.type+" · "+x+","+y;
-     output+=item(jobLabel,d.type==="food"||d.type==="animals"?"Renewable after research.":remaining(x,y)+" units remaining.",
+     output+=item(jobLabel,d.type==="fish"?"Renewable fishing grounds · "+(4+2*upgrade(c,"fishingHut")+upgrade(c,"smokehouse")+upgrade(c,"harbor")+(known("netmaking")?2:0)+(known("engineering")?1:0))+" food/year.":d.type==="food"||d.type==="animals"?"Renewable after research.":remaining(x,y)+" units remaining.",
       btn(working?"− Remove worker":"＋ Assign worker","work:"+x+":"+y,!working&&freeWorkers(c)===0,working?"secondary":"primary"));
      shown++;
     }
@@ -1036,9 +1039,9 @@ function panelContents(){
   output="<p class='hint'>Tile "+x+", "+y+" · "+htmlSafe(label)+" · "+terrain(x,y)+"</p>";
   if(capital)output+=item("🏛 "+htmlSafe(capital.name)+" · "+htmlSafe(capital.civilisation||"City"),"Leader: "+htmlSafe(capital.leader||"Unknown")+" · Population "+capital.pop+" · Influence radius "+influenceRadius(capital)+" · ⚔ Attack "+cityAttack(capital)+" · 🛡 Defence "+cityDefense(capital),capital.owner==="player"?btn("Manage city","city"):"");
   else if(d&&known(d.tech)){
-   let resource=d.type==="forage"?"wild food":d.type;
-   let n=remaining(x,y);
-   output+=item(d.icon+" "+resource,"Visible supply: "+n+" · "+(d.type==="food"?"Crops renew after agriculture.":d.type==="animals"?"Domestic pasture renews with animal husbandry.":"Finite resource.")+(job?" · One worker assigned.":""),c&&c!=="contested"&&c.owner==="player"?btn(job?"Remove worker":"Assign worker", "work"):"");
+   let resource=d.type==="forage"?"wild food":d.type==="fish"?"coastal fish":d.type;
+   let n=d.type==="fish"?"Renewable":remaining(x,y);
+   output+=item(d.icon+" "+resource,"Visible supply: "+n+" · "+(d.type==="fish"?"Fish regenerate each year. Assign a coastal worker to produce food.":d.type==="food"?"Crops renew after agriculture.":d.type==="animals"?"Domestic pasture renews with animal husbandry.":"Finite resource.")+(job?" · One worker assigned.":""),c&&c!=="contested"&&c.owner==="player"?btn(job?"Remove worker":"Assign worker", "work"):"");
   }else output+=item("Unexplored potential",d?"Discover the appropriate technology to identify resources.":"No usable resource detected.","");
   if(capital&&capital.owner==="rival"&&state.path==="war")output+=item("⚔ Siege", "Move a ready army adjacent to this city to capture it.",btn("Attack city","attack:"+capital.id));
  }
