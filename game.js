@@ -13,8 +13,8 @@ const techs={
  husbandry:{name:"Animal Husbandry",cost:21,need:"agriculture",desc:"Reveal wild herds and create renewable pastures."},
  metalworking:{name:"Metalworking",cost:28,need:"geology",desc:"Reveal ore deposits and develop metals."},
  engineering:{name:"Engineering",cost:37,need:"geology",desc:"Increase yields from all worked resource tiles."},
- fishing:{name:"Fishing",cost:6,desc:"Work renewable fish shoals along the coast (+4 food per fishing worker). Coastal civilisations begin with this skill."},
- netmaking:{name:"Net Making",cost:14,need:"fishing",desc:"+2 fish per coastal worker and unlock the Smokehouse."},
+ fishing:{name:"Fishing",cost:6,desc:"Unlock 1 renewable food per year for each fishing worker. Coastal starts know Fishing."},
+ netmaking:{name:"Net Making",cost:14,need:"fishing",desc:"+1 fish food per worked fishing tile and unlock the Smokehouse."},
  seafaring:{name:"Seafaring",cost:19,need:"fishing",desc:"Unlock Harbours and Fishing Boats for coastal travel and catches."},
  shipbuilding:{name:"Shipbuilding",cost:30,need:"seafaring",desc:"Unlock Shipyards and Longships to explore coastlines."},
  navigation:{name:"Navigation",cost:42,need:"shipbuilding",desc:"Unlock open-ocean travel, +1 ship movement, longer sight at sea and Lighthouses."},
@@ -37,8 +37,8 @@ const buildings={
  theatre:{name:"Theatre",icon:"🎭",wood:26,stone:20,work:40,path:"arts",desc:"+5 culture per year to expand borders and persuade nearby civilisations."},
  temple:{name:"Temple",icon:"⛪",wood:25,stone:22,work:40,path:"faith",desc:"+5 faith per year, increasing religious influence and conversion pressure."},
  barracks:{name:"Barracks",icon:"🛡",wood:24,stone:22,work:34,path:"war",desc:"+2 military power per year, +1 city attack and additional siege strength."},
- huntingLodge:{name:"Hunting Lodge",icon:"🏕️",wood:10,stone:0,work:18,need:"hunting",desc:"+2 food from worked wild-food tiles."},
- fishingHut:{name:"Fishing Hut",icon:"🎣",wood:9,stone:0,work:16,need:"fishing",coastal:true,desc:"+2 food per worked coastal fishing tile."},
+ huntingLodge:{name:"Hunting Lodge",icon:"🏕️",wood:10,stone:0,work:18,need:"hunting",desc:"+1 food from worked wild-food tiles."},
+ fishingHut:{name:"Fishing Hut",icon:"🎣",wood:9,stone:0,work:16,need:"fishing",coastal:true,desc:"+1 food per worked coastal fishing tile."},
  smokehouse:{name:"Smokehouse",icon:"🐟",wood:12,stone:5,work:20,need:"netmaking",coastal:true,desc:"+1 food per worked fishing tile."},
  harbor:{name:"Harbour",icon:"⚓",wood:16,stone:8,work:26,need:"seafaring",coastal:true,desc:"+1 food per fishing tile and enables Fishing Boat training."},
  shipyard:{name:"Shipyard",icon:"🛶",wood:24,stone:13,work:34,need:"shipbuilding",coastal:true,desc:"Build Longships capable of coastal exploration."},
@@ -58,30 +58,30 @@ const unitTypes={
  archer:{name:"Archer",icon:"🏹",wood:15,stone:0,food:4,work:16,strength:3,vision:3,need:"archery",requires:"range",desc:"Ranged fighter with improved sight."},
  swordsman:{name:"Swordsman",icon:"⚔️",wood:13,stone:0,metal:3,food:5,work:22,strength:6,vision:2,need:"metalworking",requires:"forge",desc:"Advanced metal-armed infantry."},
  army:{name:"Warband",icon:"⚔️",wood:18,stone:16,metal:2,work:27,strength:4,vision:2,path:"war",desc:"Established warband used to conquer city centres."},
- fishingBoat:{name:"Fishing Boat",icon:"⛵",wood:14,stone:0,food:2,work:18,strength:1,vision:3,need:"seafaring",requires:"harbor",naval:true,range:2,desc:"Work coastal waters: spend its action to land 6 food at your nearest city."},
- longship:{name:"Longship",icon:"🚢",wood:21,stone:8,food:4,work:30,strength:4,vision:4,need:"shipbuilding",requires:"shipyard",naval:true,range:3,desc:"Sail 3 tiles/year, carry one land unit, and fish for 3 food. Navigation adds +1 move and unlocks oceans."}
+ fishingBoat:{name:"Fishing Boat",icon:"⛵",wood:14,stone:0,food:2,work:18,strength:1,vision:3,need:"seafaring",requires:"harbor",naval:true,range:2,desc:"Spend an action to land 2 food at your nearest city. Its crew needs 1 food each year."},
+ longship:{name:"Longship",icon:"🚢",wood:21,stone:8,food:4,work:30,strength:4,vision:4,need:"shipbuilding",requires:"shipyard",naval:true,range:3,desc:"Sail 3 tiles/year and carry one land unit. Fish for 1 food/action; its crew and hull need supplies."}
 };
 const unitDef=id=>unitTypes[id];
 const fighter=u=>u&&["clubman","spearman","archer","swordsman","army"].includes(u.type);
 const unitTitle=u=>unitTypes[u?.type]?.name||"Unit";
 const bonusText=id=>{
  const map={
-  agriculture:"🌾 Renewable farmland; +4 food per worked crop tile",
+  agriculture:"🌾 Renewable farmland; base 1 food per worked crop tile",
   geology:"🪨 Reveal quarries and stone resources",
   writing:"📚 Library (+3 research/year), Market (+1 crop food)",
  commerce:"🐫 Timber caravans available from Year 30; Market improves timber exchange",
   husbandry:"🐂 Pasture +1 food/year; Stables improve livestock",
   metalworking:"⚔️ Ore, Forge, Swordsmen after Forge",
   engineering:"🛠️ +1 yield from each worked resource tile",
-  hunting:"🍓 Hunting Lodge (+2 wild forage food); more food from hunts",
+  hunting:"🍓 Hunting Lodge (+1 forage food); more food from hunts",
   scouting:"👣 Scout (two-tile moves, vision 4), Lookout Tower",
   toolmaking:"🔨 Workshop (+1 timber/stone yield; +1 build work)",
   archery:"🏹 Archer after Archery Range",
   drill:"🛡️ Spearman after Training Grounds",
   masonry:"🏰 City Walls (+4 city defence)",
-  fishing:"🎣 Coastal fish worker yields 4 renewable food/year; Fishing Hut",
-  netmaking:"🕸️ +2 food per fishing worker, Smokehouse (+1)",
-  seafaring:"⚓ Harbour (+1 fish food), Fishing Boat (6 food/action)",
+  fishing:"🎣 Coastal fish worker yields 1 food/year; Fishing Hut +1",
+  netmaking:"🕸️ +1 food per fishing worker, Smokehouse (+1)",
+  seafaring:"⚓ Harbour (+1 fish food), Fishing Boat (2 food/action)",
   shipbuilding:"🚢 Shipyard and Longship (3-tile coastal sail)",
   navigation:"🧭 Open-sea routes, +1 sea move/year, +2 ship sight and Lighthouse"
  };
@@ -223,7 +223,7 @@ function fishAtSea(unitId){
  if(u.moved)return toast("This ship has already acted this year.");
  if(terrain(u.x,u.y)!=="water")return toast("The ship must be at sea to fish.");
  if(!isCoastalWater(u.x,u.y)&&!known("navigation"))return toast("Open-sea fishing requires Navigation.");
- const catchSize=(u.type==="fishingBoat"?6:3)+(known("netmaking")?2:0);
+ const catchSize=(u.type==="fishingBoat"?2:1)+(known("netmaking")?1:0);
  state.resources.food+=catchSize;u.moved=true;
  const home=closestCity(u.x,u.y),where=home?.name||"your civilisation";
  record("🎣 "+unitTitle(u)+" brings "+catchSize+" food from the sea to "+where+".");
@@ -744,7 +744,7 @@ function fresh(scenario=CIV_WORLD.scenario()){
  const leader=scenario.player;
  return {version:4,world:"earth",worldSeed:scenario.seed,leader:{...leader},initialRivalCount:12,year:1,
  tech:["foraging","forestry",...(coastTile(leader.x,leader.y,2)?["fishing"]:[])],research:0,knowledge:0,culture:0,faith:0,military:0,
- resources:{food:32,wood:16,stone:14,ore:0,metal:0,animals:0},court:defaultCourt(),overthrown:null,
+ resources:{food:18,wood:16,stone:8,ore:0,metal:0,animals:0},court:defaultCourt(),overthrown:null,
  cities:scenario.rivals.map((c,i)=>({id:"r"+(i+1),x:c.x,y:c.y,name:c.capital,civId:c.id,civilisation:c.name,leader:c.leader,colour:c.color,pop:7,owner:"rival",army:6,culture:0,faith:0,buildings:{},growth:0,captives:0,unrest:0})),
  units:[{id:"u1",type:"settler",x:leader.x,y:leader.y,moved:false,owner:"player",strength:1,hp:6,xp:0},{id:"u2",type:"clubman",x:leader.x,y:leader.y,moved:false,owner:"player",strength:2,hp:6,xp:0}],
  works:{},builders:{},extracted:{},explored:{},encounters:initialEncounters(scenario),nextEncounterId:1000,
@@ -1001,7 +1001,7 @@ function assignAllWorkers(){
  let count=0;
  for(const c of myCities()){
   const options=availableWorkTiles(c);
-  const foodTarget=Math.max(1,Math.ceil(c.pop/4));
+  const foodTarget=Math.min(c.pop,Math.max(2,Math.ceil(c.pop*.65)));
   const totals={food:0,wood:0,stone:0,ore:0,animals:0};
   for(const [key,id] of Object.entries(state.works)){
    if(id!==c.id)continue;
