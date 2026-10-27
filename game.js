@@ -197,20 +197,25 @@ function encounterAction(id,action){
 }
 function spawnEncounters(){
  if(!state.encounters)state.encounters=[];
- const types=["deer","boar","wolf","raider"];
- let counts={};for(const e of state.encounters)counts[e.type]=(counts[e.type]||0)+1;
- for(let i=0;i<2;i++){
-  if(state.year%3!==0&&i>0)continue;
-  const chance=eventRng(i*83+41);
-  const type=chance>.88?"raider":chance>.73?"wolf":chance>.45?"boar":"deer";
-  if((counts[type]||0)>=(type==="raider"?7:12))continue;
-  for(let t=0;t<36;t++){
-   const seed=state.year*389+i*37+t*19;
-   const x=1+Math.floor(eventRng(seed)*30),y=1+Math.floor(eventRng(seed+333)*30);
-   if(terrain(x,y)==="water"||cityAt(x,y)||encounterAt(x,y)||state.units.some(u=>u.x===x&&u.y===y))continue;
-   if(state.encounters.some(e=>e.type==="village"&&distance(e.x,e.y,x,y)<=2))continue;
-   if(type==="raider"&&myCities().some(c=>distance(c.x,c.y,x,y)<4))continue;
-   state.encounters.push(makeEncounter(type,x,y,"e"+state.nextEncounterId++));counts[type]=(counts[type]||0)+1;break;
+ const countByType={};
+ for(const e of state.encounters)countByType[e.type]=(countByType[e.type]||0)+1;
+ if(state.encounters.length>=260||state.year%2!==0)return;
+ const hubs=[...myCities(),...state.units.filter(u=>u.owner==="player")];
+ if(state.year%6===0)hubs.push(...state.cities.filter(c=>c.owner==="rival"));
+ if(!hubs.length)hubs.push(state.leader);
+ for(let i=0;i<3;i++){
+  const hub=hubs[Math.floor(eventRng(state.year*29+i*37)*hubs.length)];
+  if(!hub)continue;
+  for(let k=0;k<42;k++){
+   const num=state.year*1241+i*91+k*7;
+   const x=hub.x+Math.floor((eventRng(num+11)-.5)*42);
+   const y=hub.y+Math.floor((eventRng(num+47)-.5)*42);
+   if(!CIV_WORLD.isLand(x,y)||cityAt(x,y)||encounterAt(x,y)||state.units.some(u=>u.x===x&&u.y===y))continue;
+   if(state.encounters.some(e=>e.type==="village"&&distance(e.x,e.y,x,y)<3))continue;
+   const type=eventRng(num+88)>.86?"raider":CIV_WORLD.wildlife(x,y);
+   if(!type||!wildTypes[type]||(countByType[type]||0)>=(type==="raider"?32:55))continue;
+   state.encounters.push(makeEncounter(type,x,y,"e"+state.nextEncounterId++));
+   countByType[type]=(countByType[type]||0)+1;break;
   }
  }
 }
@@ -449,23 +454,26 @@ function territoryScore(c,x,y){
  return (r-d)*10+c.pop/4+(c.owner==="player"&&state.path==="arts"?3:0);
 }
 function recalcBorders(){
+ // Only visit tiles near city centres; scanning a 720×360 world each year
+ // is prohibitively slow on mobile.
  borders=new Map();
- for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
-  if(terrain(x,y)==="water")continue;
-  const central=cityAt(x,y);
-  if(central){borders.set(pos(x,y),central.id);continue;}
-  let score=-Infinity,winner=null,tied=false;
-  for(const c of state.cities){
-   const test=territoryScore(c,x,y);
-   if(test>score+.01){score=test;winner=c;tied=false;}
-   else if(test!==-Infinity&&Math.abs(test-score)<.01)tied=true;
-  }
-  if(winner&&score!==-Infinity)borders.set(pos(x,y),tied?"contested":winner.id);
+ const scores=new Map();
+ for(const c of state.cities){
+  const r=influenceRadius(c);
+  for(let y=Math.max(0,c.y-r);y<=Math.min(MAP_H-1,c.y+r);y++)
+   for(let x=Math.max(0,c.x-r);x<=Math.min(MAP_W-1,c.x+r);x++){
+    if(!CIV_WORLD.isLand(x,y))continue;
+    const key=pos(x,y),score=territoryScore(c,x,y);
+    if(score===-Infinity)continue;
+    const existing=scores.get(key);
+    if(!existing||score>existing.score+.01)scores.set(key,{score,id:c.id,tied:false});
+    else if(Math.abs(score-existing.score)<.01&&existing.id!==c.id)existing.tied=true;
+   }
  }
- for(const key of Object.keys(state.works)){
-  if(borders.get(key)!==state.works[key])delete state.works[key];
- }
- for(const city of myCities())balanceCityLabor(city);
+ for(const [key,o] of scores)borders.set(key,o.tied?"contested":o.id);
+ for(const c of state.cities)if(CIV_WORLD.isLand(c.x,c.y))borders.set(pos(c.x,c.y),c.id);
+ for(const key of Object.keys(state.works))if(borders.get(key)!==state.works[key])delete state.works[key];
+ for(const c of myCities())balanceCityLabor(c);
  updateFog();
 }
 function controller(x,y){
@@ -1096,10 +1104,22 @@ function border(x,y,id){
   ctx.lineWidth=Math.max(1.7,3*scale);ctx.stroke();
  }
 }
+function viewportBounds(){
+ const pts=[[0,0],[width,0],[0,height],[width,height]];
+ let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+ for(const [px,py] of pts){
+  const wx=(px-width/2)/scale+camera.x,wy=(py-height/2)/scale+camera.y;
+  const xx=wx/TW+wy/TH,yy=wy/TH-wx/TW;
+  x0=Math.min(x0,xx);x1=Math.max(x1,xx);
+  y0=Math.min(y0,yy);y1=Math.max(y1,yy);
+ }
+ return {x0:Math.max(0,Math.floor(x0)-5),x1:Math.min(MAP_W-1,Math.ceil(x1)+5),
+         y0:Math.max(0,Math.floor(y0)-5),y1:Math.min(MAP_H-1,Math.ceil(y1)+5)};
+}
 function draw(){
  ctx.fillStyle="#315a68";ctx.fillRect(0,0,width,height);
- const render=[];
- for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+ const render=[],bounds=viewportBounds();
+ for(let y=bounds.y0;y<=bounds.y1;y++)for(let x=bounds.x0;x<=bounds.x1;x++){
   const p=screen(x,y);if(p.x< -100||p.x>width+100||p.y< -120||p.y>height+130)continue;
   if(!explored(x,y)){
    const dark=["#15272c","#172b30","#1b3035","#12252b"][Math.floor(dice(x,y)*4)];
@@ -1107,7 +1127,16 @@ function draw(){
    continue;
   }
   const t=terrain(x,y),n=Math.floor(dice(x,y)*4),seen=currentlyVisible(x,y);
-  const colors=t==="water"?["#31798a","#428797","#388091","#337887"]:t==="forest"?["#477c4f","#508858","#4a8154","#568f5a"]:t==="hill"?["#838d78","#939987","#929580","#9f9c84"]:["#81a76e","#77a267","#8baf77","#7eaa6b"];
+  const colors={
+   water:["#31798a","#428797","#388091","#337887"],
+   forest:["#477c4f","#508858","#4a8154","#568f5a"],
+   jungle:["#23664c","#277653","#31845b","#347f55"],
+   hill:["#939181","#a2a091","#85867b","#9a9887"],
+   grass:["#81a76e","#77a267","#8baf77","#7eaa6b"],
+   steppe:["#abae71","#a6a968","#b2b57a","#bbb479"],
+   desert:["#c5b18b","#cbb48b","#cfbc9a","#bca681"],
+   tundra:["#a4adb0","#a9b5ad","#bbc5c1","#98a9ad"]
+  }[t]||["#81a76e","#77a267","#8baf77","#7eaa6b"];
   tile(x,y,colors[n]);
   if(seen){
    const id=borders.get(pos(x,y));
@@ -1119,11 +1148,12 @@ function draw(){
  for(const {x,y,p,t,seen} of render){
   if(!seen)continue;
   const z=scale;
-  if(t==="forest"){tree(p.x-9*z,p.y+6*z);if(dice(x+3,y)>.45)tree(p.x+12*z,p.y+8*z);}
+  if((t==="forest"||t==="jungle")&&scale>.58){tree(p.x-9*z,p.y+6*z);if(dice(x+3,y)>.45)tree(p.x+12*z,p.y+8*z);}
   if(t==="hill")polygon([[p.x-24*z,p.y+8*z],[p.x-3*z,p.y-24*z],[p.x+19*z,p.y+8*z]],"#8d9484","#697d6b");
   if(t==="water"){ctx.strokeStyle="#9ed1da60";ctx.beginPath();ctx.moveTo(p.x-13*z,p.y+1*z);ctx.lineTo(p.x+7*z,p.y+1*z);ctx.stroke();}
+  if(CIV_WORLD.river(x,y)&&t!=="water"){ctx.strokeStyle="#6eb2cdba";ctx.lineWidth=Math.max(1,2*z);ctx.beginPath();ctx.moveTo(p.x-9*z,p.y);ctx.lineTo(p.x+9*z,p.y+2*z);ctx.stroke();}
   const d=deposit(x,y);
-  if(d&&known(d.tech)&&remaining(x,y)>0){ctx.fillStyle="#ecdfaf";ctx.font=Math.max(11,14*z)+"px sans-serif";ctx.fillText(d.icon,p.x-6*z,p.y+7*z);}
+  if(d&&known(d.tech)&&remaining(x,y)>0&&scale>.48){ctx.fillStyle="#ecdfaf";ctx.font=Math.max(11,14*z)+"px sans-serif";ctx.fillText(d.icon,p.x-6*z,p.y+7*z);}
   if(state.works[pos(x,y)]){ctx.fillStyle="#ffda74";ctx.beginPath();ctx.arc(p.x+15*z,p.y+7*z,4*z,0,Math.PI*2);ctx.fill();}
   const c=cityAt(x,y);if(c){structure(p.x,p.y,c);drawConstructionProgress(p.x,p.y,c);}
  }
