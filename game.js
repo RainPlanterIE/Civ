@@ -556,7 +556,7 @@ function manualSave(){
  else toast("Could not save. Check your browser storage settings.");
 }
 function showMainMenu(){
- menu="";moving=null;
+ hideWorldMap();menu="";moving=null;
  const stored=storedGame();
  const screen=get("startScreen");
  get("continueGame").disabled=!stored;
@@ -1236,6 +1236,42 @@ function draw(){
   ctx.beginPath();ctx.ellipse(p.x,p.y,20*scale,10*scale,0,0,Math.PI*2);ctx.stroke();
  }
 }
+function showWorldMap(){
+ const panel=get("worldOverview");
+ panel.hidden=false;
+ drawWorldOverview();
+}
+function hideWorldMap(){get("worldOverview").hidden=true;}
+function drawWorldOverview(){
+ const canvas=get("worldMini"),ctx2=canvas.getContext("2d");
+ if(!ctx2||typeof ctx2.createImageData!=="function")return;
+ const img=ctx2.createImageData(MAP_W,MAP_H),pixels=img.data,discovered=state.explored||{};
+ for(let y=0;y<MAP_H;y++)for(let x=0;x<MAP_W;x++){
+  const offset=(y*MAP_W+x)*4,land=CIV_WORLD.isLand(x,y),seen=currentlyVisible(x,y),past=!!discovered[pos(x,y)];
+  if(!land){
+   pixels[offset]=seen?46:26;pixels[offset+1]=seen?119:69;pixels[offset+2]=seen?141:87;
+  }else if(seen){
+   pixels[offset]=146;pixels[offset+1]=172;pixels[offset+2]=111;
+  }else if(past){
+   pixels[offset]=89;pixels[offset+1]=124;pixels[offset+2]=94;
+  }else{
+   // Show faint geography but no hidden resources, rivals or their borders.
+   pixels[offset]=56;pixels[offset+1]=77;pixels[offset+2]=64;
+  }
+  pixels[offset+3]=255;
+ }
+ ctx2.putImageData(img,0,0);
+ for(const c of state.cities){
+  if(c.owner!=="player"&&!currentlyVisible(c.x,c.y))continue;
+  ctx2.beginPath();ctx2.arc(c.x,c.y,c.owner==="player"?3.5:2.3,0,Math.PI*2);
+  ctx2.fillStyle=c.owner==="player"?"#ffde91":c.owner==="ally"?"#80d5b0":"#e78473";ctx2.fill();
+  ctx2.strokeStyle="#152622";ctx2.lineWidth=1;ctx2.stroke();
+ }
+ for(const u of state.units){
+  if(u.owner!=="player")continue;
+  ctx2.fillStyle="#ffe09d";ctx2.fillRect(u.x-1,u.y-1,3,3);
+ }
+}
 function resize(){
  dpr=Math.min(window.devicePixelRatio||1,2);width=innerWidth;height=innerHeight;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
 }
@@ -1266,6 +1302,23 @@ canvas.addEventListener("touchend",()=>twoFinger=0);
 get("zoomIn").onclick=()=>scale=Math.min(2.3,scale+.18);
 get("zoomOut").onclick=()=>scale=Math.max(.55,scale-.18);
 get("menu").onclick=()=>{menu=menu==="actions"?"":"actions";renderUI();};
+get("mapBtn").onclick=showWorldMap;
+get("closeWorld").onclick=hideWorldMap;
+get("homeView").onclick=()=>{
+ const u=state.units.find(u=>u.owner==="player"),c=firstCity(),p=c||u||state.leader;
+ center(p.x,p.y);hideWorldMap();
+ toast("Map centred on "+(c?.name||state.leader?.capital||"your people")+".");
+};
+get("worldMini").addEventListener("click",e=>{
+ const rect=get("worldMini").getBoundingClientRect();
+ if(!rect.width||!rect.height)return;
+ const x=Math.max(0,Math.min(MAP_W-1,Math.floor((e.clientX-rect.left)*MAP_W/rect.width)));
+ const y=Math.max(0,Math.min(MAP_H-1,Math.floor((e.clientY-rect.top)*MAP_H/rect.height)));
+ center(x,y);hideWorldMap();
+ const place=CIV_WORLD.coords(x,y);
+ toast("Viewing "+Math.abs(place.lat).toFixed(1)+"°"+(place.lat>=0?"N":"S")+" · "+Math.abs(place.lon).toFixed(1)+"°"+(place.lon>=0?"E":"W")+". Explore with units to reveal details.");
+});
+
 get("saveGame").onclick=manualSave;
 get("playGame").onclick=playNewGame;
 get("continueGame").onclick=continueGame;
