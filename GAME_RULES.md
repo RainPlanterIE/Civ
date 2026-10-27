@@ -4,8 +4,8 @@
 - **One turn = one year.** End Year is the only action that advances production, growth, research, borders and construction.
 - **Units move at most once per turn**, one adjacent tile (diagonals included). Settlers found cities on suitable unoccupied land.
 - **A city occupies exactly one map tile.** Its buildings are developments inside the city, not separate map tiles.
-- **Only one construction or unit-production project is active across the player's civilisation.** A project has work remaining; each year advances its progress by labour, stock availability and later specialisation. Construction materials are paid when started.
-- A city's citizens can work resource tiles within its influence boundary. Each worked tile uses **one citizen**. You can assign **every citizen** during a single worker stage, including the last one. Unassigned citizens provide extra labour that can speed up construction, so full assignment comes with a trade-off.
+- **Only one construction or unit-production project is active across the player's civilisation.** A project has work remaining; each year advances its progress based on assigned construction labour, Workshops and later specialisation. Construction materials are paid when the project starts; storing extra materials does not automatically speed up construction.
+- A city's citizens can work resource tiles within its influence boundary. Each worked tile uses **one citizen**. You can assign **every citizen** during a single worker stage, including the last one. Only citizens explicitly assigned as builders speed up construction, so there is a trade-off between resource gathering and building speed.
 - Worked tiles produce resources only when a relevant physical deposit exists and its technology has been discovered. Timber, forage, stone and ore are finite. Agriculture allows renewing cultivated food; animal husbandry establishes renewable pasture output. Ore can be smelted at a forge.
 - The game begins with Forestry and Foraging known. Agriculture, Geology, Writing, Husbandry, Metalworking and Engineering are researchable. **Hidden deposits do not appear until their research is completed.**
 
@@ -51,7 +51,7 @@ Each year has a **revisitable turn checklist**, not a one-way lock. Use **Next**
 
 A previously skipped action can still be taken **before End Year** as long as its normal constraints hold: each unit moves once per year, each worked tile requires a free citizen, one construction project can be active, and only one technology is researched at a time. Work assignments can be rearranged during the year. The checklist is a navigation aid, not a commitment.
 
-The top bar shows population as **total(assigned)**, such as **6(4)**. The research progress card replaces the old static city-name panel at the bottom-left: it shows current technology, progress and estimated years until completion, and opens research controls when tapped. The city drawing shows an active construction project's progress bar and estimated years beneath the city. Work remaining falls every year based on assigned construction builders (not unassigned people), stocked materials, Workshops and specialisation bonuses.
+The top bar shows population as **total(assigned)**, such as **6(4)**. The research progress card replaces the old static city-name panel at the bottom-left: it shows current technology, progress and estimated years until completion, and opens research controls when tapped. The city drawing shows an active construction project's progress bar and estimated years beneath the city. Work remaining falls every year based on assigned builders (not unassigned people), Workshops, captives and specialisation bonuses. A stocked-material speed bonus is no longer applied.
 
 A research technology takes its published *research work* to finish, rather than unlocking immediately when chosen. Every city produces base research per year; libraries, academies and science specialisation accelerate research. Research and construction run at the same time, each with only one active project.
 
@@ -68,7 +68,7 @@ A completed action does not consume the entire phase: moving one unit leaves all
 - Games are stored **on this device and in this browser only**. They are not yet synchronised between devices or backed up to an online account.
 
 ## Builders, clearer buttons and worker availability
-The Workers page prominently shows **Workers remaining**, counting people not assigned to land or construction. Each resource tile uses one worker. A new **Builders** assignment lets you move free citizens onto construction projects with the +/− buttons. Every builder assigned to the project city adds **+1 construction work per year** (up to six builders counted for this bonus). Builders cannot gather food or timber simultaneously. A Workshop adds a further +1 construction work per year.
+The Workers page prominently shows **Workers remaining**, counting people not assigned to land or construction. Each resource tile uses one worker. A new **Builders** assignment lets you move free citizens onto construction projects with the +/− buttons. Construction has diminishing returns: **one or two builders add +1 construction work per year; three or four add +2; five or six add +3**. Builders cannot gather food or timber simultaneously. A Workshop can add a further +1 work per year, science or matching civilisation specialisation +1, and captive labour +1.
 
 The worker and construction buttons are larger, with high-contrast actions on the mobile game page. Workers can be reassigned at any time before End Year. The population counter includes both resource workers and builders: **6(4)** means four total assigned citizens.
 
@@ -132,3 +132,28 @@ Villages remain small sites, not opponent cities or territorial borders. A unit 
 All animals, raiders and villages are hidden until they enter current sight. Map icons show their positions and remaining health when visible. Previously explored land remains dim, but unseen encounter movements are hidden.
 
 Wildlife health, rival units, village relationships, city unrest and captives, unit health and experience, and growth meters are stored in the browser save. Older saves are automatically migrated to initialise the new mechanics.
+
+## Construction and training rebalancing (v12)
+Construction was previously too fast: most projects cost only 4–12 work, while six assigned builders and several other bonuses could complete them instantly. The new work requirements and capped labour bonuses give the player time to explore, collect resources, research technologies and defend against roaming threats during construction.
+
+The new rate is **1 base construction work per year**, plus:
+- **+1 work** with one or two assigned builders; **+2 work** with three or four; **+3 work** with five or six.
+- **+1 work** if at least one captive remains in that city.
+- **+1 work** if there is a Workshop.
+- **+1 work** if the science path is selected, or if the project matches the civilisation's specialisation.
+
+Extra stockpiled materials provide no annual speed bonus; the materials are already consumed up front. Builder benefits cap at six assigned builders.
+
+| Example project | New total work | With one builder, no other bonus | With three builders |
+|---|---:|---:|---:|
+| Clubman | 8 | 4 years | 3 years |
+| Housing | 18 | 9 years | 6 years |
+| Hunting Lodge | 18 | 9 years | 6 years |
+| Granary or Sawmill | 22 | 11 years | 8 years |
+| Workshop | 28 | 14 years | 10 years |
+| Forge | 32 | 16 years | 11 years |
+| Academy | 44 | 22 years | 15 years |
+
+Longer projects encourage maintaining a dedicated builder group while other citizens continue food and timber collection. The active city's construction bar and estimated years remaining reflect the new totals and the currently assigned workers.
+
+Older save games and **construction projects already in progress** are supported. On loading an old project for the first time, its remaining work is scaled to the new total while preserving its existing percentage of completion; projects that were already completed stay completed. This migration runs only once per active project.
