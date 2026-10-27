@@ -689,6 +689,7 @@ function ensureCourt(){
  c.legitimacy??=72;c.factions??={};c.history??=[];
  c.nextSceneYear??=Math.max(8,state.year+5);
  c.lastSceneYear??=0;c.lastCouncilYear??=0;
+ c.aftershocks??=[];
  for(const [id,base] of Object.entries(defaultCourt().factions)){
   if(!c.factions[id])c.factions[id]={...base};
   for(const key of ["power","loyalty","intrigue"])c.factions[id][key]??=base[key];
@@ -766,6 +767,7 @@ function chooseCourtOption(choiceId){
  if(!choice)return;
  if(!costAvailable(choice.effect))return toast("You lack the resources for that decision.");
  applyCourtEffect(choice.effect,p.target);
+ scheduleCourtAftershock(p.id,choice.id,p.target);
  c.history.unshift({year:state.year,scene:p.id,choice:choice.label,target:p.target||null});
  c.history=c.history.slice(0,30);
  c.pending=null;
@@ -856,6 +858,7 @@ function advanceCourt(){
   record("A conspiracy has been discovered among the "+COURT_GROUPS[threat.id].name+".");
   return;
  }
+ if(!c.pending&&resolveCourtAftershock())return;
  if(!c.pending){
   const urgent=state.year>=5&&state.year-c.lastSceneYear>=4&&state.resources.food===0;
   if(state.year>=c.nextSceneYear||urgent){
@@ -882,7 +885,7 @@ function courtMarkup(){
    btn("⚖ Limit influence","council:"+id+":restrict",cooldown)+
    '</div></section>';
  }
- output+='<p class="hint">Reward: +14 loyalty, +4 influence, −8 scheming. Investigate: −18 scheming, −5 loyalty. Limit influence: −14 power, −12 loyalty, +7 scheming. Orders cost one action per year.</p>';
+ output+='<p class="hint">One court order per year. Rewarding factions can secure loyalty but encourage ambition; investigations may expose plots or damage trust; limiting influence can weaken a rival and deepen resentment. Consequences are not entirely predictable.</p>';
  if(cooldown)output+='<p class="hint"><strong>✓ Council order issued this year.</strong> Next order available after End Year.</p>';
  if(c.history.length){
   output+='<h4 class="panel-section-title">Court decisions</h4>';
@@ -906,23 +909,34 @@ function renderCourtScene(){
   get("courtRestart")?.addEventListener("click",()=>showMainMenu());
   return;
  }
+ if(p.id==="aftermath"){
+  overlay.innerHTML='<div class="council-cinematic council-aftermath" role="dialog" aria-modal="true" aria-label="Consequences of an earlier court decision">'+
+   '<div class="cinematic-eyebrow">YEAR '+p.year+' · ECHOES OF THE COURT</div>'+
+   '<div class="advisor-stage"><div class="advisor-portrait">🕯️</div><span class="advisor-name">Royal Messenger</span></div>'+
+   '<h2>An Old Decision Returns</h2>'+
+   '<p class="council-quote">The consequences of "'+htmlSafe(p.title||"your earlier audience")+'" have reached the throne.</p>'+
+   '<div class="council-background">'+htmlSafe(p.story||"The court awaits your attention.")+'</div>'+
+   '<div class="council-afterword">What once seemed settled may shape the loyalties and resources of the kingdom for years to come. Your council and stores now reflect the consequences.</div>'+
+   '<div class="council-choices"><button id="ackCourtAftershock" class="council-choice royal-button">Continue the reign</button></div></div>';
+  get("ackCourtAftershock")?.addEventListener("click",acknowledgeCourtAftershock);
+  return;
+ }
  const scene=COURT_SCENES[p.id];if(!scene){c.pending=null;overlay.hidden=true;return;}
- const narrative=scene.text.replaceAll("{leader}",state.leader?.leader||"Ruler")
-  .replaceAll("{capital}",firstCity()?.name||state.leader?.capital||"the capital")
-  .replaceAll("{faction}",COURT_GROUPS[p.target]?.name||"the plotters");
+ const narrative=courtStory(p.id,p);
  overlay.innerHTML='<div class="council-cinematic" role="dialog" aria-modal="true" aria-label="An advisor brings news">'+
   '<div class="cinematic-eyebrow">YEAR '+p.year+' · A ROYAL AUDIENCE · '+htmlSafe(scene.type)+'</div>'+
   '<div class="advisor-stage"><div class="advisor-portrait">'+scene.icon+'</div><span class="advisor-name">'+htmlSafe(scene.advisor)+'</span></div>'+
-  '<h2>'+htmlSafe(scene.title)+'</h2><p class="council-quote">'+htmlSafe(narrative)+'</p>'+
-  '<div class="council-decision-heading">How will you respond?</div>'+
+  '<h2>'+htmlSafe(scene.title)+'</h2><p class="council-quote">'+htmlSafe(narrative.opening)+'</p>'+
+  '<div class="council-background">'+htmlSafe(narrative.background)+'</div>'+
+  '<div class="council-testimonies">'+narrative.counsel.map(line=>'<div class="council-testimony">'+htmlSafe(line)+'</div>').join("")+'</div>'+
+  '<div class="council-decision-heading">What will you do?</div>'+
   '<div class="council-choices">'+scene.choices.map(choice=>{
    const can=costAvailable(choice.effect);
    return '<button class="council-choice" data-court-choice="'+choice.id+'" '+(can?"":"disabled")+'>'
     +'<span class="choice-heading">'+htmlSafe(choice.label)+'</span>'
-    +'<span class="choice-story">'+htmlSafe(choice.detail)+'</span>'
-    +'<span class="choice-outcome">'+htmlSafe(courtEffectText(choice.effect,p.target))+'</span>'
-    +(can?"":'<span class="choice-unavailable">Insufficient resources</span>')+'</button>';
-  }).join("")+'</div><div class="cinematic-footer">Your decision is recorded and cannot be undone after the year proceeds.</div></div>';
+    +'<span class="choice-story">'+htmlSafe(narrative.choices[choice.id]||choice.detail)+'</span>'
+    +(can?"":'<span class="choice-unavailable">Your stores cannot support this decision</span>')+'</button>';
+  }).join("")+'</div><div class="cinematic-footer">Advisors cannot predict every reaction. Some consequences may emerge years later.</div></div>';
  overlay.querySelectorAll("[data-court-choice]").forEach(btn=>btn.addEventListener("click",()=>chooseCourtOption(btn.dataset.courtChoice)));
 }
 function fresh(scenario=CIV_WORLD.scenario()){
