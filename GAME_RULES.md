@@ -5,7 +5,7 @@
 - **Units move at most once per turn**, one adjacent tile (diagonals included). Settlers found cities on suitable unoccupied land.
 - **A city occupies exactly one map tile.** Its buildings are developments inside the city, not separate map tiles.
 - **Only one construction or unit-production project is active across the player's civilisation.** A project has work remaining; each year advances its progress by labour, stock availability and later specialisation. Construction materials are paid when started.
-- A city's citizens can work resource tiles within its influence boundary. Each worked tile uses **one citizen**. At least one citizen must remain available in the city.
+- A city's citizens can work resource tiles within its influence boundary. Each worked tile uses **one citizen**. You can assign **every citizen** during a single worker stage, including the last one. Unassigned citizens provide extra labour that can speed up construction, so full assignment comes with a trade-off.
 - Worked tiles produce resources only when a relevant physical deposit exists and its technology has been discovered. Timber, forage, stone and ore are finite. Agriculture allows renewing cultivated food; animal husbandry establishes renewable pasture output. Ore can be smelted at a forge.
 - The game begins with Forestry and Foraging known. Agriculture, Geology, Writing, Husbandry, Metalworking and Engineering are researchable. **Hidden deposits do not appear until their research is completed.**
 
@@ -34,15 +34,15 @@ The player can choose **one defining path** from Year 100 onward.
 Three AI-owned city centres begin on the map, slowly gaining population and borders. Their city centres remain distinct, contested border tiles are not workable, and all cities use the same local influence calculation.
 
 ## Controls
-The map fills the entire screen. Tap a tile to inspect it; tap your own city tile to manage its developments. Bottom controls are kept to **Actions** and **End Year** (plus **Settle** before founding). Every panel has a visible close button. The game saves to the browser locally.
+The map fills the entire screen. Tap a tile to inspect it; tap your own city tile to manage its developments. The bottom controls show the current phase and **Next**; End Year appears during the final phase. The top-right menu provides the full set of actions. Every panel has a visible close button. The game saves to the browser locally.
 
 ## Current prototype boundaries
 This version implements deterministic turn rules and simplified rival city growth. Rivals do not yet build autonomous structures, send their own field armies, or trade. Paths have distinct victory conditions, but their balance and the illustrated map will need testing and refinement on mobile.
 
 ## Guided stages within each year
 Each year is broken into five sequential stages:
-1. **Move units** — each ready unit may move one tile, found a settlement, or conduct a military action. If no ready units exist, this step is automatically skipped.
-2. **Assign workers** — work visible resource deposits within a city's influence, using one citizen per tile. The stage automatically skips when no assignable citizens remain (the city must retain one unassigned citizen).
+1. **Move units** — move **every ready unit** (one movement/action per unit per year), selecting them from the unit list or directly on the map. The phase remains active while another unit can act and automatically advances only when every unit has acted (or you press Next).
+2. **Assign workers** — you may assign **every unassigned citizen** in a single worker phase, one per available resource tile. Assign them individually or tap **Assign all workers**, which balances food with timber and stone. The phase only auto-skips when no free citizens or workable resource tiles remain. Finite deposits release their assigned worker when exhausted.
 3. **Construction** — start exactly one city development or unit-training project, civilisation-wide. When a project is underway, this stage is automatically skipped.
 4. **Choose technology** — start exactly one research project. When a project is already being researched, this stage is automatically skipped.
 5. **End Year** — the only action that advances resource gathering, research, construction, population and city borders.
@@ -54,3 +54,5 @@ The top bar shows population as **total(assigned)**, such as **6(4)**. The resea
 A research technology takes its published *research work* to finish, rather than unlocking immediately when chosen. Every city produces base research per year; libraries, academies and science specialisation accelerate research. Research and construction run at the same time, each with only one active project.
 
 Existing version-3 browser saves are preserved and upgraded with empty research projects and an appropriate turn stage.
+
+A completed action does not consume the entire phase: moving one unit leaves all other unmoved units ready, and assigning one worker leaves all other unassigned citizens ready. A unit cannot move twice in the same year. You may also press **Next** to leave a phase early.
