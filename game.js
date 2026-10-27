@@ -2465,10 +2465,14 @@ function panelContents(){
   if(!e||!currentlyVisible(e.x,e.y))return "<p class='hint'>The encounter is no longer visible.</p>";
   const d=wildTypes[e.type];
   const readyAny=adjacentUnit(e,true,false),readyFighter=adjacentUnit(e,true,true),close=adjacentUnit(e,false,false);
-  const status=e.status==="friendly"?"Friendly":e.type==="village"?"Independent village":e.type==="raider"?"Hostile warrior":"Wildlife";
+  const easyPrey=["deer","boar","wolf","camel","kangaroo","llama","zebra"].includes(e.type);
+  const greatBeast=["lion","tiger","bear","elephant"].includes(e.type);
+  const status=e.status==="friendly"?"Friendly":e.type==="village"?"Independent village":e.type==="raider"?"Hostile warrior":
+   greatBeast?"⚠ Dangerous hunt":easyPrey?"Hunt: favourable":"Hunt: caution";
   output='<div class="encounter-heading"><span class="encounter-icon">'+d.icon+'</span><div><strong>'+d.name+'</strong><small>Location '+e.x+', '+e.y+' · '+status+'</small></div></div>';
   output+='<div class="combat-stats"><span>⚔ Attack '+e.attack+'</span><span>🛡 Defence '+e.defense+'</span><span>❤️ '+e.hp+' HP</span></div>';
   output+='<p class="hint">'+d.description+' '+(readyFighter?'Nearby fighter: '+unitTitle(readyFighter)+' · ⚔ '+unitAttack(readyFighter)+' · 🛡 '+unitDefense(readyFighter)+' · ❤️ '+unitHP(readyFighter)+' HP.':readyAny?'A friendly unit is adjacent. A fighter is needed to attack.':close?'An adjacent unit has already acted. End Year to act again.':'Move one of your units within one tile to interact.')+'</p>';
+  if(e.type!=="raider"&&e.type!=="village")output+='<p class="hint">'+(greatBeast?'⚠ A powerful beast. Bring a healthy fighter; it may take several strikes.':easyPrey?'✓ Normal game. A healthy Clubman is favoured, and defeated prey cannot retaliate.':'A more demanding hunt. Rest wounded hunters before the next attack.')+'</p>';
   if(e.type==="village"){
    output+=item("🤝 Befriend village","Receive food and wood now, +4 culture, and occasional supplies later.",btn("Befriend village","encounter:"+e.id+":befriend",!readyAny||e.status!=="neutral","primary"));
    output+=item("📜 Learn from villagers",e.learned?"Already learned their traditions.":"Gain 6 research points by learning their traditions.",btn(e.learned?"Knowledge learned":"Learn traditions","encounter:"+e.id+":learn",!readyAny||e.learned));
