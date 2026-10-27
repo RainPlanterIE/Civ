@@ -1272,7 +1272,13 @@ function doAction(a){
  if(a==="save")return manualSave();
  if(a==="openMainMenu")return showMainMenu();
  if(a==="restart"){if(confirm("Start a new world and replace your save?")){state=fresh();moving=null;menu="";selected=null;recalcBorders();center(15,15);save();renderUI();}return;}
- if(a.startsWith("unit:")){moving=a.slice(5);menu="";toast("Tap one adjacent tile to move.");renderUI();return;}
+ if(a.startsWith("unit:")){
+  const u=getUnit(a.slice(5));
+  if(!u||u.owner!=="player")return;
+  if(u.embarkedOn)return toast("This unit is aboard a Longship. Select the ship to unload it.");
+  if(u.moved)return toast("That unit has already acted this year.");
+  moving=u.id;menu="";toast("Tap a reachable tile to move "+unitTitle(u)+".");renderUI();return;
+ }
  if(a.startsWith("found:"))return found(getUnit(a.slice(6)));
  if(a.startsWith("attack:"))return attack(a.slice(7));
  if(a.startsWith("tech:"))return discover(a.slice(5));
