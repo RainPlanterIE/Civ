@@ -137,7 +137,15 @@ function deposit(x,y){
   const yieldBand=dice(x+161,y+37);
   return {type:"fish",max:Infinity,tech:"fishing",icon:yieldBand>.76?"🐟":"🎣",renewable:true};
  }
- return CIV_WORLD.deposit(x,y);
+ const d=CIV_WORLD.deposit(x,y);
+ // Sparse finite scrub wood and washed-up timber make coastal stone/forage
+ // settlements playable without inventing full forests or early caravans.
+ if(d?.type==="forage"&&dice(x+37,y+93)>.66){
+  let shore=false;
+  for(let dy=-1;dy<=1&&!shore;dy++)for(let dx=-1;dx<=1;dx++)if(isCoastalWater(x+dx,y+dy)){shore=true;break;}
+  if(shore)return {type:"wood",max:7+Math.floor(dice(x+44,y+76)*9),tech:"forestry",icon:"🪵",source:"Coastal scrub and driftwood"};
+ }
+ return d;
 }
 
 const wildTypes={
