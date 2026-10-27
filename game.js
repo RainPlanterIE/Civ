@@ -502,7 +502,7 @@ function move(x,y){
  const occupied=cityAt(x,y);
  if(occupied&&occupied.owner==="rival")return toast("Attack rival cities from a neighbouring tile.");
  u.x=x;u.y=y;u.moved=true;selected={x,y};moving=null;menu="";updateFog();
- record((u.type==="army"?"Army":"Settler")+" moves into new terrain.");
+ record(unitTitle(u)+" moves into new terrain.");
  autoAdvance("move");
  const nextReady=state.units.find(other=>other.owner==="player"&&!other.moved);
  if(state.stage==="move"&&nextReady){
@@ -805,15 +805,47 @@ function draw(){
  }
  for(const u of state.units){
   const p=screen(u.x,u.y),z=scale;
-  ctx.fillStyle="#071a1366";ctx.beginPath();ctx.ellipse(p.x,p.y+6*z,10*z,4*z,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=u.type==="army"?"#a96054":"#e1b684";ctx.fillRect(p.x-6*z,p.y-18*z,12*z,18*z);
+  if(!currentlyVisible(u.x,u.y)&&u.owner!=="player")continue;
+  const armed=fighter(u),club=u.type==="clubman",scout=u.type==="scout";
+  ctx.fillStyle="#071a1366";ctx.beginPath();ctx.ellipse(p.x,p.y+6*z,11*z,5*z,0,0,Math.PI*2);ctx.fill();
+  // Two legs, leather tunic, arms and head make unit silhouettes readable on mobile.
+  ctx.strokeStyle="#654e37";ctx.lineWidth=Math.max(2,3*z);ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(p.x-3*z,p.y-4*z);ctx.lineTo(p.x-5*z,p.y+7*z);
+  ctx.moveTo(p.x+3*z,p.y-4*z);ctx.lineTo(p.x+6*z,p.y+7*z);ctx.stroke();
+  ctx.fillStyle=scout?"#527d59":club?"#8c6645":u.type==="settler"?"#c8a36d":"#a15e4d";
+  ctx.fillRect(p.x-6*z,p.y-18*z,12*z,16*z);
+  ctx.strokeStyle="#cb9874";ctx.lineWidth=Math.max(2,3*z);
+  ctx.beginPath();ctx.moveTo(p.x-5*z,p.y-14*z);ctx.lineTo(p.x-11*z,p.y-4*z);
+  ctx.moveTo(p.x+5*z,p.y-14*z);ctx.lineTo(p.x+12*z,p.y-9*z);ctx.stroke();
   ctx.fillStyle="#e8c7a3";ctx.beginPath();ctx.arc(p.x,p.y-23*z,6*z,0,Math.PI*2);ctx.fill();
-  ctx.font="bold "+Math.max(10,12*z)+"px sans-serif";ctx.textAlign="center";ctx.fillStyle="#f9e4b6";ctx.fillText(u.type==="army"?"Army":"Settler",p.x,p.y-35*z);ctx.textAlign="left";
+  if(club||u.type==="army"){
+   // Thick wooden club in the right hand.
+   ctx.strokeStyle="#6b462e";ctx.lineWidth=Math.max(3,4*z);
+   ctx.beginPath();ctx.moveTo(p.x+11*z,p.y-9*z);ctx.lineTo(p.x+20*z,p.y-32*z);ctx.stroke();
+   ctx.fillStyle="#4d3928";ctx.beginPath();ctx.ellipse(p.x+21*z,p.y-34*z,5*z,9*z,-.3,0,Math.PI*2);ctx.fill();
+  }else if(u.type==="spearman"){
+   ctx.strokeStyle="#73583f";ctx.lineWidth=Math.max(2,2*z);
+   ctx.beginPath();ctx.moveTo(p.x+12*z,p.y+3*z);ctx.lineTo(p.x+16*z,p.y-43*z);ctx.stroke();
+   polygon([[p.x+11*z,p.y-38*z],[p.x+17*z,p.y-49*z],[p.x+21*z,p.y-38*z]],"#b5b8a7");
+  }else if(u.type==="archer"){
+   ctx.strokeStyle="#66472d";ctx.lineWidth=Math.max(2,2*z);
+   ctx.beginPath();ctx.arc(p.x+14*z,p.y-15*z,13*z,-1.7,1.7);ctx.stroke();
+   ctx.strokeStyle="#e8d3a8";ctx.lineWidth=1;ctx.beginPath();
+   ctx.moveTo(p.x+12*z,p.y-28*z);ctx.lineTo(p.x+12*z,p.y-2*z);ctx.stroke();
+  }else if(u.type==="swordsman"){
+   ctx.strokeStyle="#b6c0bf";ctx.lineWidth=Math.max(2,3*z);
+   ctx.beginPath();ctx.moveTo(p.x+12*z,p.y-9*z);ctx.lineTo(p.x+18*z,p.y-35*z);ctx.stroke();
+  }else if(scout){
+   ctx.fillStyle="#527d59";ctx.beginPath();ctx.moveTo(p.x-7*z,p.y-25*z);ctx.lineTo(p.x,p.y-35*z);ctx.lineTo(p.x+7*z,p.y-25*z);ctx.fill();
+  }
+  ctx.font="bold "+Math.max(10,12*z)+"px sans-serif";ctx.textAlign="center";ctx.fillStyle="#f9e4b6";
+  ctx.shadowColor="#10261a";ctx.shadowBlur=4;ctx.fillText(unitTitle(u),p.x,p.y-44*z);ctx.shadowBlur=0;ctx.textAlign="left";
   if(!u.moved&&activeUnit()?.id===u.id){
    ctx.beginPath();ctx.ellipse(p.x,p.y+3*z,14*z,7*z,0,0,Math.PI*2);
    ctx.strokeStyle="#ffe28d";ctx.lineWidth=Math.max(2,2.8*z);ctx.stroke();
   }
  }
+
  if(selected&&explored(selected.x,selected.y)){
   const p=screen(selected.x,selected.y);ctx.strokeStyle="#f8dc9a";ctx.lineWidth=2;
   ctx.beginPath();ctx.ellipse(p.x,p.y,20*scale,10*scale,0,0,Math.PI*2);ctx.stroke();
@@ -832,7 +864,7 @@ canvas.addEventListener("pointerup",e=>{
   const standing=state.units.find(u=>u.owner==="player"&&u.x===spot.x&&u.y===spot.y);
   if(standing){
     if(standing.moved)toast("That unit has already moved this year. Choose another ready unit.");
-    else{moving=standing.id;menu="";toast((standing.type==="army"?"Army":"Settler")+" selected. Tap an adjacent tile to move.");}
+    else{moving=standing.id;menu="";toast(unitTitle(standing)+" selected. Tap an adjacent tile to move.");}
     renderUI();return;
   }
   if((state.stage==="move"||moving)&&state.units.some(u=>u.owner==="player"&&!u.moved)){move(spot.x,spot.y);return;}
