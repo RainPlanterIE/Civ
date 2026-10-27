@@ -56,3 +56,11 @@ A research technology takes its published *research work* to finish, rather than
 Existing version-3 browser saves are preserved and upgraded with empty research projects and an appropriate turn stage.
 
 A completed action does not consume the entire phase: moving one unit leaves all other unmoved units ready, and assigning one worker leaves all other unassigned citizens ready. A unit cannot move twice in the same year. You may also press **Next** to leave a phase early.
+
+## Main menu and saving
+- Opening Civ displays a full-screen **main menu** before gameplay.
+- **Play** starts a fresh world with a single settler. If a valid saved world exists, the game asks for confirmation before replacing it.
+- **Continue** opens the saved world, including its year, cities, workers, research, construction and units. Continue is disabled when no valid save exists.
+- During gameplay, a persistent **💾 Save** button appears beside the map tools. It writes the current game to this browser's local storage and shows a confirmation. Automatic saves continue after gameplay actions.
+- The top-right **☰** opens Actions; from there, choose **Main menu**. When reopening the title screen from an active game, **Back to game** closes it without resetting progress.
+- Games are stored **on this device and in this browser only**. They are not yet synchronised between devices or backed up to an online account.
