@@ -9,6 +9,7 @@ const techs={
  agriculture:{name:"Agriculture",cost:6,desc:"Reveal fertile fields and cultivate renewable food."},
  geology:{name:"Geology",cost:10,desc:"Reveal stone reserves hidden among the hills."},
  writing:{name:"Writing",cost:15,need:"agriculture",desc:"Develop libraries for more research."},
+ commerce:{name:"Trade Routes",cost:27,need:"writing",desc:"Unlocks timber caravans from Year 30 onward and improves exchange."},
  husbandry:{name:"Animal Husbandry",cost:21,need:"agriculture",desc:"Reveal wild herds and create renewable pastures."},
  metalworking:{name:"Metalworking",cost:28,need:"geology",desc:"Reveal ore deposits and develop metals."},
  engineering:{name:"Engineering",cost:37,need:"geology",desc:"Increase yields from all worked resource tiles."},
@@ -68,6 +69,7 @@ const bonusText=id=>{
   agriculture:"🌾 Renewable farmland; +4 food per worked crop tile",
   geology:"🪨 Reveal quarries and stone resources",
   writing:"📚 Library (+3 research/year), Market (+1 crop food)",
+ commerce:"🐫 Timber caravans available from Year 30; Market improves timber exchange",
   husbandry:"🐂 Pasture +1 food/year; Stables improve livestock",
   metalworking:"⚔️ Ore, Forge, Swordsmen after Forge",
   engineering:"🛠️ +1 yield from each worked resource tile",
@@ -89,7 +91,7 @@ const techBranches=[
  {name:"🌊 Coast & Sailing",desc:"Feed seaside cities, then launch boats and explore the sea.",ids:["fishing","netmaking","seafaring","shipbuilding","navigation"]},
  {name:"🌾 Food & Farming",desc:"Grow sustainable food on land and domesticate animals.",ids:["agriculture","husbandry","hunting"]},
  {name:"🛠️ Materials & Industry",desc:"Find minerals, improve resources and build stronger defences.",ids:["geology","toolmaking","metalworking","engineering","masonry"]},
- {name:"📜 Knowledge & Military",desc:"Explore the land, improve research and train specialised fighters.",ids:["scouting","writing","archery","drill"]}
+ {name:"📜 Knowledge & Military",desc:"Explore the land, improve research and train specialised fighters.",ids:["scouting","writing","commerce","archery","drill"]}
 ];
 const dice=(x,y)=>CIV_WORLD.noise(x,y,42);
 const inMap=(x,y)=>CIV_WORLD.valid(x,y);
@@ -394,7 +396,7 @@ function fresh(scenario=CIV_WORLD.scenario()){
  const leader=scenario.player;
  return {version:4,world:"earth",worldSeed:scenario.seed,leader:{...leader},initialRivalCount:12,year:1,
  tech:["foraging","forestry",...(coastTile(leader.x,leader.y,2)?["fishing"]:[])],research:0,knowledge:0,culture:0,faith:0,military:0,
- resources:{food:32,wood:24,stone:14,ore:0,metal:0,animals:0},
+ resources:{food:32,wood:16,stone:14,ore:0,metal:0,animals:0},
  cities:scenario.rivals.map((c,i)=>({id:"r"+(i+1),x:c.x,y:c.y,name:c.capital,civId:c.id,civilisation:c.name,leader:c.leader,colour:c.color,pop:7,owner:"rival",army:6,culture:0,faith:0,buildings:{},growth:0,captives:0,unrest:0})),
  units:[{id:"u1",type:"settler",x:leader.x,y:leader.y,moved:false,owner:"player",strength:1,hp:6,xp:0},{id:"u2",type:"clubman",x:leader.x,y:leader.y,moved:false,owner:"player",strength:2,hp:6,xp:0}],
  works:{},builders:{},extracted:{},explored:{},encounters:initialEncounters(scenario),nextEncounterId:1000,
@@ -885,9 +887,16 @@ function endYear(){
  state.units.forEach(u=>u.moved=false);
  recalcBorders();state.stageYear=state.year;state.stage=availableFrom("move");menu="";save();renderUI();toast("Year "+state.year+" · Units can move again.");
 }
+function caravanAccess(){
+ if(state.year<30)return "Caravans become available in Year 30 ("+(30-state.year)+" years remaining).";
+ if(!known("commerce"))return "Research Trade Routes after Writing to unlock caravans.";
+ return "";
+}
 function tradeTimber(cityId){
  const c=getCity(cityId);
  if(!c||c.owner!=="player")return toast("Select one of your cities to trade.");
+ const access=caravanAccess();
+ if(access)return toast(access);
  const years=5-(state.year-(c.lastTimberTrade||-100));
  if(years>0)return toast("The timber caravan returns in "+years+" years.");
  const foodCost=upgrade(c,"market")?9:13,woodGain=upgrade(c,"market")?8:6;
@@ -1074,11 +1083,14 @@ function panelContents(){
   if(c.captives)output+='<p class="hint">Captive labour: '+c.captives+' · +'+(c.captives>0?1:0)+' construction work/year · Unrest '+(c.unrest||0)+' (escape risk and food upkeep). Captives are not citizens.</p>';
   output+='<p class="hint">All developments are built inside this city tile. Buildings now take several years even with builders. Extra builders help less after the first few, so keep some citizens gathering food and materials. Only one project runs across your civilisation.</p>';
   output+=item("🏗 Current project",projectLabel()+" · Current speed "+speed+" work/year",btn("👷 Assign builders","workers",false,"primary"));
-  const timberFood=upgrade(c,"market")?9:13,timberWood=upgrade(c,"market")?8:6;
-  const tradeWait=Math.max(0,5-(state.year-(c.lastTimberTrade||-100)));
-  const shortage=state.resources.food<timberFood;
-  const tradeDesc="Import timber from other regions: "+timberFood+" food → "+timberWood+" wood. "+(tradeWait?"Caravan next available in "+tradeWait+" years.":shortage?"Need "+(timberFood-state.resources.food)+" more food.":"Caravan available now.")+" More timber may be scarce in desert, mountain or grassland climates.";
-  output+=item("🛶 Timber caravan",tradeDesc,btn(tradeWait?"Caravan returning ("+tradeWait+"y)":shortage?"Need more food":"Trade food for wood","tradeWood:"+c.id,false,!tradeWait&&!shortage?"primary":"secondary"));
+  // Caravans are a later commercial institution, not a Year 1 shortcut.
+  if(!caravanAccess()){
+   const timberFood=upgrade(c,"market")?9:13,timberWood=upgrade(c,"market")?8:6;
+   const tradeWait=Math.max(0,5-(state.year-(c.lastTimberTrade||-100)));
+   const shortage=state.resources.food<timberFood;
+   const tradeDesc="Import timber: "+timberFood+" food → "+timberWood+" wood. "+(tradeWait?"Caravan next available in "+tradeWait+" years.":shortage?"Need "+(timberFood-state.resources.food)+" more food.":"Caravan available now.");
+   output+=item("🐫 Timber caravan",tradeDesc,btn(tradeWait?"Caravan returning ("+tradeWait+"y)":shortage?"Need more food":"Trade food for wood","tradeWood:"+c.id,false,!tradeWait&&!shortage?"primary":"secondary"));
+  }
 
   // Ready and affordable developments always come first, even while
   // another building occupies the construction slot.
