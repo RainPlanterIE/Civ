@@ -877,7 +877,7 @@ function advanceCourt(){
 }
 function courtMarkup(){
  const c=ensureCourt(),cooldown=c.lastCouncilYear===state.year;
- let output='<div class="court-head"><div><strong>👑 Crown legitimacy</strong><span class="court-score">'+c.legitimacy+'/100</span></div><div><strong>State of the realm</strong><span class="court-status">'+courtLevel()+'</span></div></div>';
+ let output=courtPreview(courtInterior())+'<div class="court-head"><div><strong>👑 Crown legitimacy</strong><span class="court-score">'+c.legitimacy+'/100</span></div><div><strong>State of the realm</strong><span class="court-status">'+courtLevel()+'</span></div></div>';
  output+='<p class="hint">Factions can grow through population, armies, temples and your decisions. A powerful but disloyal faction may plot to overthrow the ruler. Intrigue and legitimacy affect that danger. Council actions are limited to one per year.</p>';
  if(c.plot)output+='<div class="court-warning"><strong>⚠ Conspiracy — '+COURT_GROUPS[c.plot.faction].name+'</strong><span>Possible coup in Year '+c.plot.deadline+' · '+Math.max(0,c.plot.deadline-state.year)+' years remaining. Reduce their Threat below 48 to break the plot.</span></div>';
  const sorted=Object.keys(COURT_GROUPS).sort((a,b)=>factionRisk(b)-factionRisk(a));
@@ -944,13 +944,17 @@ function courtPreview(theme){
 function renderCourtScene(){
  const overlay=get("courtScene");if(!overlay)return;
  const c=ensureCourt(),p=c.pending,ended=state.overthrown;
- if(!inGame||!get("startScreen").classList.contains("hidden")||(!p&&!ended)){overlay.hidden=true;overlay.innerHTML="";return;}
+ if(!inGame||!get("startScreen").classList.contains("hidden")||(!p&&!ended)){overlay.hidden=true;overlay.innerHTML="";overlay.style.backgroundImage="";return;}
+ const theme=courtInterior();
  overlay.hidden=false;
+ overlay.style.backgroundImage="linear-gradient(180deg,rgba(11,22,17,.82),rgba(8,15,13,.92)),url("+theme.image+")";
+ overlay.style.backgroundSize="cover";
+ overlay.style.backgroundPosition="center";
  if(ended){
   const name=COURT_GROUPS[ended.faction]?.name||"The court";
   overlay.innerHTML='<div class="council-cinematic court-ended" role="dialog" aria-modal="true" aria-label="End of reign">'+
    '<div class="cinematic-eyebrow">YEAR '+ended.year+' · THE FALL OF A DYNASTY</div>'+
-   '<div class="advisor-stage"><div class="advisor-portrait">👑</div></div>'+
+   courtHero(theme,"👑",state.leader?.leader||"The Ruler")+
    '<h2>Your Reign Has Ended</h2><p class="council-quote">'+htmlSafe(ended.message)+'</p>'+
    '<p class="council-consequence">You were overthrown by '+htmlSafe(name)+'. Your civilisation still exists, but your ruler has lost control of it.</p>'+
    '<button id="courtRestart" class="council-choice royal-button">Begin a new reign</button></div>';
@@ -960,7 +964,7 @@ function renderCourtScene(){
  if(p.id==="aftermath"){
   overlay.innerHTML='<div class="council-cinematic council-aftermath" role="dialog" aria-modal="true" aria-label="Consequences of an earlier court decision">'+
    '<div class="cinematic-eyebrow">YEAR '+p.year+' · ECHOES OF THE COURT</div>'+
-   '<div class="advisor-stage"><div class="advisor-portrait">🕯️</div><span class="advisor-name">Royal Messenger</span></div>'+
+   courtHero(theme,"🕯️","Royal Messenger")+
    '<h2>An Old Decision Returns</h2>'+
    '<p class="council-quote">The consequences of "'+htmlSafe(p.title||"your earlier audience")+'" have reached the throne.</p>'+
    '<div class="council-background">'+htmlSafe(p.story||"The court awaits your attention.")+'</div>'+
@@ -973,7 +977,7 @@ function renderCourtScene(){
  const narrative=courtStory(p.id,p);
  overlay.innerHTML='<div class="council-cinematic" role="dialog" aria-modal="true" aria-label="An advisor brings news">'+
   '<div class="cinematic-eyebrow">YEAR '+p.year+' · A ROYAL AUDIENCE · '+htmlSafe(scene.type)+'</div>'+
-  '<div class="advisor-stage"><div class="advisor-portrait">'+scene.icon+'</div><span class="advisor-name">'+htmlSafe(scene.advisor)+'</span></div>'+
+  courtHero(theme,scene.icon,scene.advisor)+
   '<h2>'+htmlSafe(scene.title)+'</h2><p class="council-quote">'+htmlSafe(narrative.opening)+'</p>'+
   '<div class="council-background">'+htmlSafe(narrative.background)+'</div>'+
   '<div class="council-testimonies">'+narrative.counsel.map(line=>'<div class="council-testimony">'+htmlSafe(line)+'</div>').join("")+'</div>'+
