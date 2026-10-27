@@ -363,3 +363,61 @@ button:disabled{opacity:.42;cursor:default}
  .council-testimony{font-size:11px;line-height:1.4;padding:7px 9px}
  .council-afterword{font-size:11px;margin:7px 12px}
 }
+
+
+/* Civilisation-specific court illustrations (v18) */
+.council-room-hero{
+ position:relative;display:flex;flex-direction:column;justify-content:space-between;
+ height:216px;min-height:190px;background-size:cover;background-repeat:no-repeat;
+ background-position:center 52%;border-bottom:2px solid #c5a46e;overflow:hidden;
+}
+.council-room-hero::before{
+ content:"";position:absolute;inset:0;
+ background:linear-gradient(90deg,rgba(10,19,15,.34),transparent 31%,transparent 70%,rgba(10,19,15,.37));
+ pointer-events:none;
+}
+.council-room-label{
+ position:relative;z-index:1;align-self:flex-start;margin:12px 15px 4px;
+ padding:6px 10px;border:1px solid #e5c9929f;border-radius:5px;
+ background:rgba(18,27,21,.73);box-shadow:0 2px 13px #09100b6e;
+ color:#ffe6b9;font:600 13px Georgia,serif;letter-spacing:.02em;
+ text-shadow:0 2px 5px #09100b;
+}
+.council-room-hero .advisor-stage{
+ position:relative;z-index:1;min-height:76px;max-height:100px;
+ padding-bottom:5px;background:transparent;border:0;
+}
+.council-room-hero .advisor-portrait{
+ display:flex;align-items:center;justify-content:center;
+ width:61px;min-width:61px;height:55px;font-size:37px;
+ border-radius:50%;background:#192a23ba;border:1px solid #dac18b9e;
+ box-shadow:0 3px 14px #0c170f7a;backdrop-filter:blur(2px);
+}
+.council-room-hero .advisor-name{
+ display:inline-block;border-radius:4px;padding:3px 9px;
+ font-size:13px;background:#14241bbd;text-shadow:0 2px 3px #101510;
+}
+.court-preview{
+ min-height:150px;margin:9px 0 13px;display:flex;align-items:flex-end;
+ background-color:#26352d;background-size:cover;background-position:center 51%;
+ border:1px solid #bbaa7d;border-radius:11px;
+ box-shadow:inset 0 -50px 65px #101a15b8;overflow:hidden;
+}
+.court-preview-label{display:flex;flex-direction:column;gap:3px;width:100%;padding:12px 14px}
+.court-preview-label strong{
+ font:650 19px Georgia,serif;color:#ffe1ac;
+ text-shadow:0 2px 7px #081810;
+}
+.court-preview-label span{font-size:12px;color:#f3ead6;text-shadow:0 2px 5px #0c1912}
+.court-scene-overlay{background-repeat:no-repeat;background-position:center;background-size:cover}
+@media(max-width:650px){
+ .council-room-hero{height:149px;min-height:149px;background-position:center 48%}
+ .council-room-label{margin:7px 9px 4px;padding:4px 7px;font-size:11px}
+ .council-room-hero .advisor-stage{min-height:60px;max-height:72px;padding-bottom:2px}
+ .council-room-hero .advisor-portrait{width:45px;min-width:45px;height:42px;font-size:27px}
+ .council-room-hero .advisor-name{font-size:10px;padding:2px 7px}
+ .court-preview{min-height:125px;background-position:center 52%}
+ .court-preview-label{padding:10px}
+ .court-preview-label strong{font-size:16px}
+ .court-preview-label span{font-size:11px}
+}
