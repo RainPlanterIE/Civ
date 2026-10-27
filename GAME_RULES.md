@@ -93,7 +93,7 @@ You start with a Settler; your city can immediately train a **Clubman** (8 wood,
 Clubmen, Scouts, Spearmen, Archers and Swordsmen have distinguishable map sprites and strengths. The Warband remains tied to the War society path after Year 100. Tech-locked units and buildings are shown with their requirements in the City screen so you can plan ahead. Only one city development or unit may be constructed or trained at a time across the civilisation.
 
 ## Fog of war and exploration
-At the beginning only the nearby **two-tile radius around the Settler** is visible. Unexplored map tiles are dark and do not reveal enemy cities, resource deposits or influence borders. Units and city centres reveal their surroundings. Scouts extend vision further, and Lookout Towers increase sight from their city.
+At the beginning only the nearby **two-tile radius around your historically located Settler** is visible. Unexplored map tiles are dark and do not reveal enemy cities, resource deposits or influence borders. Units and city centres reveal their surroundings. Scouts extend vision further, and Lookout Towers increase sight from their city.
 
 Previously explored land remains dimmed when no friendly unit or city can currently see it. Dynamic resource information, rival cities and territory borders are hidden outside current sight until explored again. New exploration and work assignments are stored in the existing browser save; older saves are migrated to include the fog and builder records.
 
@@ -105,7 +105,7 @@ Population no longer rises simply because some food remains in storage. Each cit
 Starvation can decrease the population. Rival city growth is slowed too. The City panel shows its growth progress. Captives do **not** count as ordinary citizens or give natural population growth.
 
 ## Wildlife, wandering rivals and unit combat
-Initial map generation creates eight small independent villages, deer, boar, wolves and wandering rival warriors in the wilderness. Further wild animals and hostile warriors spawn on later turns on suitable free land, subject to per-type caps. Dangerous encounters may move or attack nearby units. Raiders can threaten cities, and city walls and local garrisons improve defence.
+Initial Earth map generation creates independent villages around civilisation centres, region-appropriate wildlife and wandering rival warriors in the wilderness. Further wild animals and hostile warriors spawn on later turns on suitable free land, subject to per-type caps. Dangerous encounters may move or attack nearby units. Raiders can threaten cities, and city walls and local garrisons improve defence.
 
 | Encounter | Behaviour | Outcome |
 |---|---|---|
@@ -157,3 +157,33 @@ Extra stockpiled materials provide no annual speed bonus; the materials are alre
 Longer projects encourage maintaining a dedicated builder group while other citizens continue food and timber collection. The active city's construction bar and estimated years remaining reflect the new totals and the currently assigned workers.
 
 Older save games and **construction projects already in progress** are supported. On loading an old project for the first time, its remaining work is scaled to the new total while preserving its existing percentage of completion; projects that were already completed stay completed. This migration runs only once per active project.
+
+## Earth map and historical leaders (v14)
+The old fictional 32×32 valley has been replaced by a **global Earth grid of 720 columns and 360 rows**, covering −180° to +180° longitude and −90° to +90° latitude, or **0.5° per tile**. A longitude span of 50° in Europe therefore occupies about 100 tiles. This is a latitude/longitude (equirectangular) gameplay grid, not an equal-area physical-distance projection; the physical east–west distance of a tile changes with latitude.
+
+### Sources and fidelity
+- **Coastlines, islands and land masks** use public-domain Natural Earth 1:110m land data.
+- **Major rivers** use Natural Earth 1:110m river centre-lines.
+- **Regional biomes** are deliberately broad, hand-tuned geographic approximations: tundra, temperate forests, tropical forests, savannas and plains, arid deserts, steppe and mountain ranges.
+- **Resources** follow the climate and landform: forestry favours wooded areas; fertile food lands favour plains and river floodplains; wild animal herds favour grazing country; stone favours hills; ores are biased toward broad, real-world mineral-bearing provinces. **These are regionally plausible gameplay distributions, not exact historical resource or geological maps.**
+- **Wildlife** differs by region: e.g. deer in northern forests, bison on North American plains, lions and zebras in African savannas, jaguars in tropical America, elephants in parts of Africa and India, camels in arid regions, llamas in the Andes and kangaroos in Australia.
+- Natural Earth data source: https://www.naturalearthdata.com/ and https://github.com/nvkelso/natural-earth-vector (public domain). The game includes a compact precomputed land/river raster, so the map works without downloading a map service when the page loads.
+
+### Historical civilisations
+Every new Play selects a **random historical leader and civilisation** out of 21 options (e.g. Julius Caesar of Rome, Cleopatra VII of Egypt, Mansa Musa of Mali, Pachacuti of the Inca, Ashoka of Maurya, Genghis Khan of the Mongols). The settler starts on land near that civilisation's historically associated capital. The other **12 opposing settlements** are selected from different civilisations in the same pool, distributed widely around the real world. Rival city labels and flags reflect their historical identity and are only revealed by exploring.
+
+Civilisations come from **different historical eras** in a deliberate alternate-history game world. These pairings are not claims that the empires coexisted or shared territory at the same time. The historical map depicts approximate geography, not changing period-accurate political frontiers.
+
+### World overview
+Tap the 🌍 icon in the top-right corner to open a navigable global overview. It shows the broad coastline silhouette and only marks friendly or currently sighted rival cities; unknown enemies and deposits are not shown. Tap anywhere on the overview to move the camera there, then use **Return to your civilisation** to recenter on your city or settler. This only moves the view: moving it does not remove fog of war or move a unit.
+
+The game now computes city influence in small circles around cities and draws **only tiles visible in the current viewport** rather than iterating over a quarter-million tiles every frame. This keeps the much larger map usable on mobile.
+
+### Building button fixes
+City buildings and units display their material cost, research prerequisites, any required training facility, society-path requirement and construction progress. **Previously some options were silently disabled** while a project was active or a technology was locked. They now remain tappable and explain the first blocking requirement (e.g. "Need 8 more wood", "Research Geology", or "Finish Housing first"). The game still allows **one active construction/training project across the civilisation**, and all building costs are taken up front.
+
+### Preventing local resource deadlocks
+Realistic regional scarcity means some starting civilisations (notably desert and river-valley cities) may have very little timber nearby. Cities therefore have a limited **Timber Caravan** exchange to obtain imported wood: 13 food for 6 timber once per five years, improved by a Market to 9 food for 8 timber. This gives dry-region players a workable alternative without inventing European-style forests around Egypt or Babylon.
+
+### Existing saves
+**Earth saves use a new browser key**, separate from the old valley key. Continuing an older v3 game imports its year, population, cities, buildings, stored resources, technologies, units, research, builders and partially completed construction into a region near its newly assigned historical leader. The old v3 save is preserved as a backup; tile-based worker assignments are repositioned when possible and may need some manual reassignment because old terrain coordinates cannot represent the new Earth geography. Newly created Earth saves record their scenario and leader and restore them on Continue.
