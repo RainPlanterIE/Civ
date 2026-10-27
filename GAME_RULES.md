@@ -321,3 +321,7 @@ For example, a public celebration may strengthen lasting goodwill or expose misu
 When an outcome becomes known, a **Royal Messenger** presents an *An Old Decision Returns* cutscene explaining what happened. The effects are already applied, and the player acknowledges the report before advancing to another year. Pending outcomes, already delivered reports and the ongoing political state persist through save and Continue.
 
 The goal is uncertainty grounded in each political choice, not arbitrary punishment. The ruler must judge competing testimonies and manage the consequences as the realm develops.
+
+
+### Small coastal timber sources
+Coastal land that would otherwise only offer natural forage may occasionally provide **coastal scrub or driftwood** instead. Such sites are uncommon and **finite** (a small handful of wood units rather than an entire forest). The change makes historically wood-scarce Mediterranean starts such as **Athens** capable of gathering a little local timber without receiving a large forest or unlocking a caravan in the opening years. Their worker yields still begin at +1 wood per year, and deposits still run out.
