@@ -764,6 +764,104 @@ const COURT_AFTERSHOCKS={
    {text:"Citizens independently form a loyalist watch that makes conspiratorial meetings harder to organise.",effect:{factions:{target:{intrigue:-8}},legitimacy:4}}]
  }
 };
+Object.assign(COURT_AFTERSHOCKS,{
+ granaryFire:{
+  guild:[{text:"The guild inquiry finds a neglected grain store. The workers repaired the doors, but evidence suggests someone within the workshops may have hidden the first signs of fire.",effect:{damageBuilding:"granary",factions:{workers:{intrigue:6}}}},
+   {text:"The guilds uncover a careless merchant's scheme and restore public confidence in the stores.",effect:{food:2,legitimacy:4,factions:{workers:{loyalty:5}}}}],
+  guard:[{text:"The garrison holds the stores, but clerks discover that repairs were postponed while troops argued over who controlled the keys.",effect:{damageBuilding:"granary",food:-2,factions:{military:{power:6}}}},
+   {text:"An armed patrol catches thieves in the grain yard and returns sacks to the city.",effect:{food:3,factions:{military:{loyalty:4}}}}],
+  rebuild:[{text:"The public rebuilding committee is praised for fairness, but the price of timber has risen because merchants control the repair contracts.",effect:{wood:-3,factions:{workers:{power:6}}}},
+   {text:"Workers begin regular inspections of the granary and uncover minor damage before another incident can spread.",effect:{legitimacy:5,factions:{workers:{loyalty:6}}}}]
+ },
+ worksite:{
+  pause:[{text:"The inspection finds that rotten beams were used in the foundations. The project needs further work before it can safely continue.",effect:{stallBuilding:2,wood:-2}},
+   {text:"Engineers discover a simpler method for supporting the masonry and the crews return to work with confidence.",effect:{wood:2,factions:{workers:{loyalty:6}}}}],
+  order:[{text:"The hurried scaffolding finally collapses. Workers abandon the site and several storehouses are damaged in the chaos.",effect:{stallBuilding:3,damageBuilding:"sawmill",factions:{workers:{intrigue:9}}}},
+   {text:"The building is completed under strict supervision, but guilds now send representatives to observe every royal order.",effect:{factions:{workers:{power:8,intrigue:5}}}}],
+  masters:[{text:"The master masons expose dishonest suppliers, recovering material paid for twice.",effect:{wood:3,stone:2,legitimacy:3}},
+   {text:"The new foremen are respected in the city, and some workers now look to them rather than to royal officials.",effect:{factions:{workers:{power:7,intrigue:4}}}}]
+ },
+ garrison:{
+  rations:[{text:"The Captain presents the soldiers' loyalty as a personal victory and begins selecting new officers without consultation.",effect:{factions:{military:{power:11,intrigue:7}}}},
+   {text:"Satisfied patrols return stolen grain found on the roads, saying the crown kept its promises.",effect:{food:3,factions:{military:{loyalty:7}}}}],
+  punish:[{text:"The harsh punishment divides the barracks. Rival groups of soldiers draw weapons; wounded men must recover before returning to service.",effect:{harmWarriors:2,harmCount:2,factions:{military:{intrigue:9,loyalty:-5}}}},
+   {text:"The example silences immediate opposition, but a quiet resentment lingers among officers.",effect:{factions:{military:{loyalty:-8,intrigue:8}}}}],
+  divide:[{text:"The rotating officers quarrel over who has authority to train new recruits.",effect:{stallTraining:2,factions:{military:{intrigue:6}}}},
+   {text:"No single officer can mobilise the garrison without help from the others. Their rivalry protects the throne.",effect:{factions:{military:{power:-6,intrigue:-5}}}}]
+ },
+ sacredGround:{
+  temple:[{text:"Priests widen their shrine grounds. Frustrated cart drivers now use a dangerous detour, damaging a storehouse on the way.",effect:{damageBuilding:"granary",factions:{workers:{loyalty:-6}}}},
+   {text:"Pilgrims begin bringing gifts and food to the shrine, easing tensions with the market.",effect:{food:3,factions:{faith:{loyalty:5}}}}],
+  road:[{text:"The priesthood refuses to repair the disused shrine, and the building falls into disrepair as factions argue over jurisdiction.",effect:{damageBuilding:"temple",factions:{faith:{intrigue:8}}}},
+   {text:"A practical new road shortens travel to the market and the merchants share some of their gains.",effect:{wood:3,legitimacy:3}}],
+  compromise:[{text:"The second road proves longer and more expensive than the builders anticipated.",effect:{wood:-3,stone:-1}},
+   {text:"The two groups agree to use separate routes on religious festivals; market trade improves.",effect:{food:2,legitimacy:5}}]
+ },
+ grainEdict:{
+  subsidy:[{text:"Families thank the crown for the grain price, but suppliers now demand compensation each season.",effect:{food:-3,factions:{workers:{power:6}}}},
+   {text:"The cheaper grain stabilises the market and merchants return after a period of uncertainty.",effect:{food:3,legitimacy:4}}],
+  inspect:[{text:"The warehouse inspection finds forged measures, but the storage doors are damaged during the search.",effect:{damageBuilding:"granary",factions:{workers:{loyalty:5}}}},
+   {text:"The accused merchants are cleared. Several offer new supplies to prove their goodwill.",effect:{food:3,legitimacy:3}}],
+  market:[{text:"Angry citizens force their way into the granary after prices rise yet again.",effect:{damageBuilding:"granary",food:-4,factions:{workers:{intrigue:10}}}},
+   {text:"The harvest improves and market prices fall without royal intervention. Some courtiers praise the earlier restraint.",effect:{legitimacy:4,food:2}}]
+ },
+ ironDebate:{
+  monopoly:[{text:"Officials demand so much iron for garrisons that smiths begin selling secret supplies on the side.",effect:{ore:-2,factions:{workers:{intrigue:10,loyalty:-7}}}},
+   {text:"The controlled foundries deliver a shipment of reliable tools for the army.",effect:{metal:2,factions:{military:{loyalty:5}}}}],
+  guild:[{text:"The smiths' guild negotiates exclusive access to ore and begins to dictate who can purchase armour.",effect:{factions:{workers:{power:10},military:{loyalty:-5}}}},
+   {text:"Independent foundries improve the quality of metal tools and share a small surplus with the palace.",effect:{metal:1,legitimacy:5}}],
+  mixed:[{text:"The oversight council is consumed by disputes about ownership, slowing supplies to the garrison.",effect:{stallTraining:2,factions:{military:{intrigue:6}}}},
+   {text:"The shared records reveal stolen ore and reduce mistrust between the smiths and soldiers.",effect:{ore:2,legitimacy:4}}]
+ },
+ scribes:{
+  seize:[{text:"A scribe destroys a chest of records rather than let soldiers search it. The archive suffers further damage.",effect:{damageBuilding:"library",factions:{workers:{intrigue:7}}}},
+   {text:"An official is found hiding land deeds and the lost documents are returned to the city.",effect:{legitimacy:4,factions:{workers:{loyalty:3}}}}],
+  copy:[{text:"The copied records survive a later flood; public respect for the palace's administration rises.",effect:{legitimacy:5}},
+   {text:"Several clerks demand higher wages after learning that their work is vital to the ruler.",effect:{food:-2,factions:{workers:{power:4}}}}],
+  public:[{text:"The public inquiry becomes a forum for arguing over ancient privileges, strengthening temple and guild voices.",effect:{factions:{workers:{power:6},faith:{power:6}}}},
+   {text:"The inquiry clears the scribes and uncovers missing supplies in an unrelated warehouse.",effect:{wood:3,legitimacy:3}}]
+ },
+ veteranLand:{
+  settle:[{text:"Farmers displaced by veteran land grants refuse to work for the new owners; some workshops are sabotaged.",effect:{damageBuilding:"granary",factions:{workers:{loyalty:-10,intrigue:9}}}},
+   {text:"The veterans farm their new holdings and contribute food to the capital.",effect:{food:4,factions:{military:{loyalty:5}}}}],
+  pay:[{text:"Veterans demand that the food allowance be renewed even though the original treasury grant has been spent.",effect:{food:-4,factions:{military:{power:5}}}},
+   {text:"A grateful veterans' association pledges to defend the city in an emergency.",effect:{factions:{military:{loyalty:8,intrigue:-5}}}}],
+  frontier:[{text:"A frontier patrol returns badly hurt after probing hostile country.",effect:{harmWarriors:2,harmCount:2}},
+   {text:"The veteran patrol establishes secure roads and discovers new supplies.",effect:{wood:3,food:2}}]
+ },
+ pilgrims:{
+  first:[{text:"The excluded worshippers gather outside the temple and damage its doors in protest.",effect:{damageBuilding:"temple",factions:{faith:{intrigue:9}}}},
+   {text:"The older festival draws donations from distant visitors to the capital.",effect:{food:3,legitimacy:3}}],
+  free:[{text:"Merchants report that the two festivals draw visitors who purchase local goods.",effect:{wood:3,legitimacy:3}},
+   {text:"Competing crowds block the market on the same day, spilling food and damaging public stores.",effect:{damageBuilding:"granary",food:-2}}],
+  quiet:[{text:"Priests stage a small procession without permission. Royal guards disperse it and several soldiers are wounded.",effect:{harmWarriors:1,factions:{faith:{intrigue:7}}}},
+   {text:"The delayed ceremonies are peaceful and leave the harvest undisturbed.",effect:{food:2,legitimacy:3}}]
+ },
+ caravanLoss:{
+  escort:[{text:"The escort recovers the lost carts, but an ambush wounds soldiers who led the pursuit.",effect:{wood:4,harmWarriors:2}},
+   {text:"The roads become safer and traders return to the capital.",effect:{wood:3,factions:{military:{loyalty:5}}}}],
+  audit:[{text:"Customs officers destroy their records to hide theft, and the archive is damaged in the resulting confusion.",effect:{damageBuilding:"library",wood:-1}},
+   {text:"An investigation uncovers a hidden store of confiscated tools.",effect:{wood:4,legitimacy:4}}],
+  pass:[{text:"Merchants abandon the route and supplies intended for new buildings do not arrive.",effect:{wood:-3,legitimacy:-2}},
+   {text:"A private trade guild negotiates new agreements and returns goods without royal assistance.",effect:{wood:2,factions:{workers:{power:7}}}}]
+ },
+ succession:{
+  council:[{text:"Members of the council begin holding private meetings to prepare the next ruler, expanding their power independently of the throne.",effect:{factions:{workers:{power:7,intrigue:5},faith:{power:5},military:{power:5}}}},
+   {text:"The council publicly renews its loyalty and calms uncertainty over the future.",effect:{legitimacy:6,factions:{workers:{loyalty:4},military:{loyalty:4},faith:{loyalty:4}}}}],
+  heir:[{text:"A disappointed claimant recruits officers to support a different candidate.",effect:{factions:{military:{intrigue:12,loyalty:-7}}}},
+   {text:"The declared heir gains respect after settling a dispute among the guilds.",effect:{legitimacy:5,factions:{workers:{loyalty:5}}}}],
+  delay:[{text:"A rumour of the ruler's failing health spreads. Several courtiers make private preparations for succession.",effect:{factions:{workers:{intrigue:7},military:{intrigue:7},faith:{intrigue:7}}}},
+   {text:"The ruler's continued strength quiets rumours for a few more seasons.",effect:{legitimacy:3}}]
+ },
+ kurultai:{
+  gather:[{text:"The great assembly confirms support for the Khan, but commanders demand a formal right to be consulted on future campaigns.",effect:{factions:{military:{power:9,loyalty:5}}}},
+   {text:"Rival camps settle their dispute at the assembly rather than on the battlefield.",effect:{legitimacy:6,factions:{military:{intrigue:-9}}}}],
+  command:[{text:"Dissenting captains lead an armed confrontation that leaves veterans wounded.",effect:{harmWarriors:3,harmCount:2,factions:{military:{intrigue:11}}}},
+   {text:"The most influential commanders submit after a decisive display of strength, though their loyalty is difficult to read.",effect:{factions:{military:{power:-7,loyalty:3}}}}],
+  envoys:[{text:"Gifts to rival commanders buy peace briefly, but several now expect royal favour in exchange for obedience.",effect:{food:-3,factions:{military:{power:9}}}},
+   {text:"The envoys negotiate a common oath that brings the camps together.",effect:{legitimacy:5,factions:{military:{loyalty:7,intrigue:-6}}}}]
+ }
+});
 function courtStory(sceneId,p){
  const scene=COURT_SCENES[sceneId],story=COURT_STORIES[sceneId];
  const resolve=text=>String(text||"").replaceAll("{leader}",state.leader?.leader||"Ruler")
