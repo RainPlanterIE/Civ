@@ -147,3 +147,33 @@ button:disabled{opacity:.42;cursor:default}
  .stage-buttons button{padding:8px 5px;font-size:10px}
  #actions .stage-label{letter-spacing:0}
 }
+
+/* Bigger decisions, resource labour and construction jobs */
+.worker-counter{display:flex;align-items:center;gap:13px;background:#354b38;border:1px solid #a9b588;border-radius:12px;padding:12px 14px;margin:10px 0 12px}
+.worker-number{display:block;min-width:54px;text-align:center;font:700 38px Georgia,serif;color:#f3d28e;line-height:1}
+.worker-counter strong{font-size:15px;color:#fff0cf;display:block}
+.worker-counter small{font-size:12px;color:#c9d6c6;display:block;margin-top:3px}
+.panel-section-title{font:600 17px Georgia,serif;color:#edd096;border-bottom:1px solid #89987555;padding:13px 1px 8px;margin:9px 0 3px}
+#panel .option{padding:13px 12px;margin:10px 0;border-radius:10px}
+#panel .option strong{font-size:15px}
+#panel .option p{font-size:13px;line-height:1.5}
+#panel .option .buttons button{min-height:47px;flex:1 1 100px;font-size:14px;font-weight:750;padding:10px 13px}
+#panel .option .buttons button.primary{border-width:2px}
+.stage-buttons .stage-cta{background:#bca16c;color:#1c2b22;border:2px solid #f3d392;font-weight:850;font-size:14px;padding:12px 13px;min-height:48px}
+.stage-buttons .stage-cta:hover{background:#e1be82}
+@media(max-width:650px){
+ #actions{max-width:59vw;min-width:0}
+ .stage-buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;width:100%}
+ .stage-buttons .stage-cta{grid-column:1 / -1;padding:12px 14px;font-size:14px;min-height:49px}
+ .stage-buttons .secondary:not(.stage-cta),.stage-buttons .primary{grid-row:2;padding:10px 8px;min-height:40px;font-size:12px}
+ .stage-buttons .primary:last-child{grid-column:2}
+ .stage-buttons .secondary:not(.stage-cta):first-child:last-of-type{grid-column:1}
+ #panel{bottom:calc(155px + env(safe-area-inset-bottom,0px));max-height:calc(100dvh - 225px)}
+ #summary{max-width:39vw}
+ .worker-counter{padding:11px 10px}
+ .worker-number{font-size:34px;min-width:44px}
+}
+@media(max-width:380px){
+ .stage-buttons .stage-cta{font-size:13px}
+ #panel .option .buttons button{font-size:13px}
+}
