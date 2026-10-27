@@ -1,7 +1,7 @@
 (()=>{
 "use strict";
 const canvas=document.getElementById("world"),ctx=canvas.getContext("2d"),get=id=>document.getElementById(id);
-const MAP_W=CIV_WORLD.W,MAP_H=CIV_WORLD.H,SIZE=MAP_W,TW=86,TH=43,STORE="civ-earth-v4",LEGACY_STORE="civ-influence-v3";
+const MAP_W=CIV_WORLD.W,MAP_H=CIV_WORLD.H,SIZE=MAP_W,TW=98,TH=49,STORE="civ-earth-v4",LEGACY_STORE="civ-influence-v3";
 const PALETTE={player:"#f2ca7e",rival:"#d7796c",ally:"#8cd2c8",contested:"#ede0ac"};
 let width=0,height=0,dpr=1,scale=1,camera={x:0,y:0},selected=null,menu="",moving=null,pointer=null,toastUntil=0;
 const paths={science:"🔬 Science",arts:"🎭 Arts",faith:"⛪ Faith",war:"⚔ War"};
@@ -2467,8 +2467,16 @@ function tile(x,y,color){
  const p=screen(x,y),w=TW/2*scale,h=TH/2*scale;
  polygon([[p.x,p.y-h],[p.x+w,p.y],[p.x,p.y+h],[p.x-w,p.y]],color);
 }
-function tree(x,y){
- const z=scale;ctx.fillStyle="#654832";ctx.fillRect(x-3*z,y-17*z,6*z,19*z);
+function tileOutline(x,y,seen){
+ if(scale<.45)return;
+ const p=screen(x,y),w=TW/2*scale,h=TH/2*scale;
+ ctx.beginPath();ctx.moveTo(p.x,p.y-h);ctx.lineTo(p.x+w,p.y);
+ ctx.lineTo(p.x,p.y+h);ctx.lineTo(p.x-w,p.y);ctx.closePath();
+ ctx.strokeStyle=seen?"#1a312e80":"#12232950";
+ ctx.lineWidth=Math.max(.6,.95*scale);ctx.stroke();
+}
+function tree(x,y,size=1){
+ const z=scale*size;ctx.fillStyle="#654832";ctx.fillRect(x-3*z,y-17*z,6*z,19*z);
  for(let j=0;j<3;j++){ctx.fillStyle=["#23533a","#2d6b43","#408653"][j];ctx.beginPath();ctx.ellipse(x+(j-1)*5*z,y-(19+j*8)*z,13*z,14*z,0,0,Math.PI*2);ctx.fill();}
 }
 function structure(x,y,c){
@@ -2552,11 +2560,12 @@ function draw(){
   }else tile(x,y,"#0e2027b8");
   render.push({x,y,p,t,seen});
  }
+ for(const o of render)tileOutline(o.x,o.y,o.seen);
  for(const o of render)if(o.seen)border(o.x,o.y,borders.get(pos(o.x,o.y)));
  for(const {x,y,p,t,seen} of render){
   if(!seen)continue;
   const z=scale;
-  if((t==="forest"||t==="jungle")&&scale>.58){tree(p.x-9*z,p.y+6*z);if(dice(x+3,y)>.45)tree(p.x+12*z,p.y+8*z);}
+  if((t==="forest"||t==="jungle")&&scale>.58&&dice(x+3,y+7)>.24)tree(p.x,p.y+7*z,.72);
   if(t==="hill")polygon([[p.x-24*z,p.y+8*z],[p.x-3*z,p.y-24*z],[p.x+19*z,p.y+8*z]],"#8d9484","#697d6b");
   if(t==="water"){ctx.strokeStyle="#9ed1da60";ctx.beginPath();ctx.moveTo(p.x-13*z,p.y+1*z);ctx.lineTo(p.x+7*z,p.y+1*z);ctx.stroke();}
   if(CIV_WORLD.river(x,y)&&t!=="water"){ctx.strokeStyle="#6eb2cdba";ctx.lineWidth=Math.max(1,2*z);ctx.beginPath();ctx.moveTo(p.x-9*z,p.y);ctx.lineTo(p.x+9*z,p.y+2*z);ctx.stroke();}
