@@ -211,6 +211,7 @@ function endYear(){
   const scienceGained=myCities().length+myCities().reduce((n,c)=>n+3*upgrade(c,"library")+6*upgrade(c,"academy"),0)+(state.path==="science"?2:0);state.research+=scienceGained;state.knowledge+=scienceGained;
   state.culture+=myCities().reduce((n,c)=>n+5*upgrade(c,"theatre"),0)+(state.path==="arts"?1:0);
   state.faith+=myCities().reduce((n,c)=>n+5*upgrade(c,"temple"),0)+(state.path==="faith"?1:0);
+  state.military+=myCities().reduce((n,c)=>n+2*upgrade(c,"barracks"),0);
   changePopulation();progressBuilding();pathGrowth();
   if(state.resources.food===0)record("Food shortages: work more forage or fertile tiles.");
  }
