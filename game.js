@@ -671,9 +671,9 @@ function resolveCourtAftershock(){
  const event=c.aftershocks.splice(index,1)[0];
  const result=COURT_AFTERSHOCKS[event.scene]?.[event.choice]?.[event.variant];
  if(!result)return false;
- applyCourtEffect(result.effect,event.target);
+ const consequences=applyCourtEffect(result.effect,event.target);
  const past=COURT_SCENES[event.scene],label=past?.title||"An old decision";
- c.pending={id:"aftermath",year:state.year,story:result.text,
+ c.pending={id:"aftermath",year:state.year,story:result.text+(consequences.length?" "+consequences.join(" "):""),
   title:label,target:event.target||null};
  c.history.unshift({year:state.year,scene:event.scene,choice:"Aftermath: "+label,target:event.target||null});
  c.history=c.history.slice(0,30);
@@ -746,6 +746,26 @@ function applyCourtEffect(effect,target){
  if(effect.freeCaptives){
   for(const city of myCities()){city.captives=0;city.unrest=Math.max(0,(city.unrest||0)-10);}
  }
+ const consequences=[];
+ if(effect.damageBuilding){
+  const selected=damageCityBuilding(effect.damageBuilding);
+  if(selected)consequences.push((buildings[selected.type]?.name||selected.type)+" at "+selected.city.name+" was damaged; repair it in Buildings.");
+  else{state.resources.wood=Math.max(0,state.resources.wood-2);consequences.push("No buildings could be targeted. Saboteurs stole 2 wood instead.");}
+ }
+ if(effect.harmWarriors){
+  const injured=woundCourtUnits(effect.harmWarriors,Math.max(1,effect.harmCount||1));
+  if(injured)consequences.push(injured+" soldier"+(injured===1?" was":"s were")+" injured. Rest units to recover HP.");
+  else{const c=firstCity();if(c)c.unrest=(c.unrest||0)+3;consequences.push("No troops could be harmed; disorder increased instead.");}
+ }
+ if(effect.stallBuilding&&state.project){
+  state.project.stalledUntil=Math.max(state.project.stalledUntil||0,state.year+effect.stallBuilding);
+  consequences.push("Building work suspended through Year "+state.project.stalledUntil+".");
+ }
+ if(effect.stallTraining&&state.unitProject){
+  state.unitProject.stalledUntil=Math.max(state.unitProject.stalledUntil||0,state.year+effect.stallTraining);
+  consequences.push("Unit training interrupted through Year "+state.unitProject.stalledUntil+".");
+ }
+ return consequences;
 }
 function courtEffectText(effect,target){
  const parts=[];
@@ -775,12 +795,13 @@ function chooseCourtOption(choiceId){
  const scene=COURT_SCENES[p.id],choice=scene?.choices.find(v=>v.id===choiceId);
  if(!choice)return;
  if(!costAvailable(choice.effect))return toast("You lack the resources for that decision.");
- applyCourtEffect(choice.effect,p.target);
+ const consequences=applyCourtEffect(choice.effect,p.target);
  scheduleCourtAftershock(p.id,choice.id,p.target);
  c.history.unshift({year:state.year,scene:p.id,choice:choice.label,target:p.target||null});
  c.history=c.history.slice(0,30);
  c.pending=null;
  record("Court decision: "+choice.label+".");
+ for(const event of consequences)record("Court consequence: "+event);
  if(c.plot&&factionRisk(c.plot.faction)<48){
   record("The conspiracy loses support and its members disperse.");
   c.plot=null;
@@ -1174,7 +1195,35 @@ function autoAdvance(stage){
 }
 
 function remaining(x,y){const d=deposit(x,y);return d?Math.max(0,d.max-(state.extracted[pos(x,y)]||0)):0;}
-function upgrade(c,id){return (c&&c.buildings[id])||0;}
+function upgrade(c,id){
+ return Math.max(0,((c&&c.buildings[id])||0)-((c&&c.damagedBuildings?.[id])||0));
+}
+function damagedBuildingCount(c){return Object.values(c?.damagedBuildings||{}).reduce((sum,n)=>sum+(n||0),0);}
+function damageCityBuilding(preferred){
+ const cities=myCities().filter(c=>Object.keys(c.buildings||{}).some(k=>upgrade(c,k)>0));
+ if(!cities.length)return null;
+ const priorities=preferred?[preferred,"granary","sawmill","fishingHut","barracks","temple","house"]:[];
+ const targets=cities.map(c=>{
+  const type=priorities.find(k=>upgrade(c,k)>0)||Object.keys(c.buildings).find(k=>upgrade(c,k)>0);
+  return {city:c,type};
+ }).filter(x=>x.type);
+ if(!targets.length)return null;
+ const chosen=targets.sort((a,b)=>(a.type===preferred?-1:0)-(b.type===preferred?-1:0))[0];
+ chosen.city.damagedBuildings??={};
+ chosen.city.damagedBuildings[chosen.type]=(chosen.city.damagedBuildings[chosen.type]||0)+1;
+ record("⚠ "+(buildings[chosen.type]?.name||chosen.type)+" at "+chosen.city.name+" has been damaged! Its benefits are suspended until repaired.");
+ return chosen;
+}
+function woundCourtUnits(amount=2,number=1){
+ const soldiers=state.units.filter(u=>u.owner==="player"&&fighter(u)&&unitHP(u)>1)
+  .sort((a,b)=>unitHP(b)-unitHP(a));
+ let hit=0;for(const u of soldiers.slice(0,number)){
+  u.hp=Math.max(1,unitHP(u)-amount);
+  hit++;
+  record("⚠ "+unitTitle(u)+" was wounded by internal unrest (−"+amount+" HP). Rest to heal.");
+ }
+ return hit;
+}
 function populationCap(c){return 6+4*upgrade(c,"house");}
 function influenceRadius(c){
  const n=c.pop;
