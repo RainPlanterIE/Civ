@@ -251,3 +251,7 @@ button:disabled{opacity:.42;cursor:default}
  .tech-status{font-size:9px}
  .tech-quick-picks{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+.tech-node.busy{border-left-color:#a8a57c;background:#33473b}
+.tech-node.busy .tech-status{background:#636b48;color:#f6e8be}
+.tech-quick-picks:empty::after{content:"No new discoveries are currently available";font-size:12px;color:#c9d7c8}
