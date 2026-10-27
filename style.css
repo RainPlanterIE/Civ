@@ -1,0 +1,57 @@
+*{box-sizing:border-box}
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f4ecd8;background:#183a36}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+button{font:inherit;cursor:pointer;touch-action:manipulation}
+button:disabled{opacity:.42;cursor:default}
+#world{display:block;width:100vw;height:100dvh;touch-action:none}
+#overlay{position:fixed;inset:0;pointer-events:none}
+#overlay button,.panel{pointer-events:auto}
+#top{position:absolute;left:0;right:0;top:0;display:flex;align-items:start;justify-content:space-between;gap:10px;padding:calc(8px + env(safe-area-inset-top,0px)) 10px 8px;background:linear-gradient(#091d19cf,#091d1900)}
+#logo{font:700 26px Georgia,serif;letter-spacing:5px;color:#f9d593;text-shadow:0 2px 8px #111}
+#stats{display:flex;gap:5px;flex-wrap:wrap;justify-content:end;max-width:82%}
+.chip{font-size:12px;background:#172c25d9;border:1px solid #bbab785c;padding:7px 8px;border-radius:8px;white-space:nowrap;box-shadow:0 3px 10px #0003}
+.chip b{color:#f2d18f}
+#tools{position:absolute;right:10px;top:82px;display:flex;flex-direction:column;gap:7px}
+.smallbtn{background:#1d352ceb;color:#f1e5cf;border:1px solid #8c92727d;border-radius:8px;min-width:42px;height:43px;font-size:18px}
+#footer{position:absolute;left:10px;right:10px;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;align-items:end;justify-content:space-between;gap:9px}
+.panel{background:#162b24ef;border:1px solid #c3ad795e;border-radius:12px;box-shadow:0 12px 35px #0c1819b2;backdrop-filter:blur(10px)}
+#summary{max-width:min(47vw,370px);padding:10px 12px}
+#summary h2{font:500 18px Georgia,serif;color:#f3d198;margin:0 0 4px}
+#summary p{font-size:12px;line-height:1.45;color:#d1d9cc;margin:0}
+#summary .tag{margin-top:4px;font-size:11px;color:#ebc88b}
+#actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:end}
+.primary,.secondary{border-radius:8px;padding:11px 14px;font-weight:700;font-size:13px}
+.primary{background:#d3ac73;border:1px solid #f1cf9b;color:#1d2921}
+.secondary{background:#365042;border:1px solid #7c937b;color:#f3eedc}
+#panel{position:absolute;right:10px;bottom:calc(82px + env(safe-area-inset-bottom,0px));width:min(360px,calc(100vw - 20px));max-height:calc(100dvh - 180px);overflow-y:auto;padding:13px;display:none;overscroll-behavior:contain}
+#panel.open{display:block}
+.panelhead{display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:-13px;padding:9px 0;background:#162b24;z-index:2;border-bottom:1px solid #576e58}
+.panelhead strong{font:500 21px Georgia,serif;color:#f8d699}
+.panelhead button{border:1px solid #718472;color:#f6e9d4;background:#385246;border-radius:8px;width:38px;height:38px;font-size:22px}
+.option{padding:11px;margin-top:9px;border-radius:9px;background:#294237;border:1px solid #56735c}
+.option strong{font-size:14px;display:block;color:#f4eddd}
+.option p{font-size:12px;color:#c9d5c7;line-height:1.45;margin:5px 0 9px}
+.option .buttons{display:flex;gap:7px;flex-wrap:wrap}
+.option .buttons button{font-size:12px;padding:9px 10px}
+.hint{font-size:12px;line-height:1.5;color:#c7d6c7}
+.resource{color:#f0ce90;font-weight:700}
+#toast{position:absolute;top:95px;left:50%;transform:translateX(-50%);border:1px solid #aa9e71;background:#1b3026e8;color:#f6e9c9;border-radius:9px;padding:10px 15px;max-width:min(85vw,460px);text-align:center;font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}
+#notice{padding:12px 0;font-size:12px;color:#bbd0be}
+.event{padding:7px 0;font-size:12px;border-bottom:1px solid #395244;color:#ced7c9}
+#chosen{border:1px solid #e1c08088;border-radius:8px;background:#75623d55;padding:8px}
+@media(max-width:650px){
+#logo{font-size:21px}
+#top{gap:5px}
+#stats{gap:3px;max-width:80%}
+.chip{padding:5px 6px;font-size:10px}
+#footer{align-items:end}
+#summary{max-width:39vw;padding:8px}
+#summary h2{font-size:15px}
+#summary p{display:none}
+#summary .tag{font-size:10px}
+#actions{gap:5px}
+.primary,.secondary{font-size:12px;padding:10px 8px}
+#panel{bottom:calc(76px + env(safe-area-inset-bottom,0px));max-height:65dvh}
+#tools{top:76px}
+}
