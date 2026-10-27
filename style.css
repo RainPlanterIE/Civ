@@ -55,3 +55,30 @@ button:disabled{opacity:.42;cursor:default}
 #panel{bottom:calc(76px + env(safe-area-inset-bottom,0px));max-height:65dvh}
 #tools{top:76px}
 }
+/* Year-phase controls and persistent research progress */
+#summary{width:min(44vw,320px);max-width:320px;min-height:70px;outline-offset:3px;user-select:none}
+#summary:focus-visible{outline:2px solid #f4c981}
+.progress-heading{font:500 15px Georgia,serif;color:#f1d195;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.progress-caption{font-size:11px;color:#cad4c5;line-height:1.35;margin-top:6px}
+.meter{height:7px;width:100%;background:#435c49;border:1px solid #84907666;border-radius:20px;margin-top:9px;overflow:hidden}
+.meter-fill{height:100%;border-radius:20px;transition:width .24s ease}
+.research-fill{background:linear-gradient(90deg,#73b4bd,#a7e0d3)}
+#actions{display:flex;flex-direction:column;gap:5px;align-items:flex-end;justify-content:end;flex-wrap:nowrap}
+.stage-label{font-size:11px;letter-spacing:.06em;color:#f6ddaf;background:#182d25cc;border:1px solid #9888664b;border-radius:7px;padding:4px 8px;white-space:nowrap}
+.stage-buttons{display:flex;gap:6px;align-items:center}
+.stage-buttons button{white-space:nowrap}
+@media(max-width:650px){
+#summary{width:42vw;min-height:69px;padding:9px}
+.progress-heading{font-size:13px}
+.progress-caption{font-size:10px;line-height:1.3}
+#actions{gap:4px;min-width:45vw}
+.stage-label{font-size:10px;padding:4px 7px}
+.stage-buttons{gap:5px}
+.stage-buttons button{padding:10px 10px;font-size:12px}
+#panel{bottom:calc(97px + env(safe-area-inset-bottom,0px));max-height:62dvh}
+}
+@media(max-width:380px){
+#summary{width:39vw}
+#actions{min-width:50vw}
+.stage-buttons button{padding:9px 7px;font-size:11px}
+}
