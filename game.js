@@ -1118,33 +1118,109 @@ function workTile(x,y){
  if(remaining(x,y)<=0&&d.type!=="animals"&&d.type!=="food"&&d.type!=="fish"){toast("This deposit is exhausted.");return;}
  state.works[key]=c.id;record(c.name+" assigns one worker to "+d.type+".");autoAdvance("workers");if(state.stage!=="workers"&&(menu==="workers"||menu==="tile"))menu="";save();renderUI();
 }
+function workedYield(c,d){
+ if(!d)return 0;
+ let n=1; // Unimproved workers yield exactly one per year.
+ if(d.type==="fish")n+=upgrade(c,"fishingHut")+upgrade(c,"smokehouse")+upgrade(c,"harbor")+(known("netmaking")?1:0);
+ else if(d.type==="wood")n+=upgrade(c,"sawmill")+upgrade(c,"workshop");
+ else if(d.type==="stone")n+=upgrade(c,"stoneworks")+upgrade(c,"workshop");
+ else if(d.type==="ore")n+=upgrade(c,"forge");
+ else if(d.type==="animals")n+=upgrade(c,"stable");
+ else if(d.type==="food")n+=upgrade(c,"granary")+upgrade(c,"market");
+ else if(d.type==="forage")n+=upgrade(c,"huntingLodge");
+ if(known("engineering"))n++;
+ return Math.max(1,n);
+}
+function yearlyProduction(){
+ const gains={food:0,wood:0,stone:0,ore:0,animals:0};
+ for(const [key,id] of Object.entries(state.works)){
+  const c=getCity(id),[x,y]=decode(key),d=deposit(x,y);
+  if(!c||c.owner!=="player"||borders.get(key)!==id||!d||!known(d.tech))continue;
+  const amt=workedYield(c,d);
+  if(d.type==="food"||d.type==="fish")gains.food+=amt;
+  else if(d.type==="forage")gains.food+=Math.min(amt,remaining(x,y));
+  else if(d.type==="animals")gains.food+=1;
+  else gains[d.type]+=Math.min(amt,remaining(x,y));
+ }
+ return gains;
+}
+function resourceUpkeep(year=state.year){
+ const assigned=assignedWorkers(),fighters=state.units.filter(u=>u.owner==="player"&&fighter(u)).length;
+ const ships=state.units.filter(u=>u.owner==="player"&&isNaval(u)).length;
+ const civilians=state.units.filter(u=>u.owner==="player"&&!fighter(u)&&!isNaval(u)).length;
+ const captives=myCities().reduce((n,c)=>n+(c.captives||0),0);
+ const project=state.project,projectDef=project&&(buildings[project.kind]||unitDef(project.kind));
+ const built=myCities().reduce((n,c)=>n+Object.values(c.buildings||{}).reduce((k,v)=>k+v,0),0);
+ const mining=Object.keys(state.works).some(key=>["stone","ore"].includes(deposit(...decode(key))?.type));
+ const gear=year%4===0?Math.ceil(fighters/3):0;
+ const shipRepair=year%3===0?Math.ceil(ships/2):0;
+ const civicWood=year%5===0?Math.floor(built/3):0;
+ const projectWood=project&&year%2===0?1:0;
+ const projectStone=project&&projectDef?.stone>0&&year%4===0?1:0;
+ const civicStone=year%6===0?myCities().reduce((n,c)=>n+Math.floor((upgrade(c,"walls")+upgrade(c,"stoneworks")+upgrade(c,"forge")+upgrade(c,"harbor"))/3),0):0;
+ const miningWood=year%5===0&&mining?1:0;
+ return {year,upkeep:{
+   food:Math.ceil(assigned/3)+fighters+ships+Math.ceil(civilians/3)+captives,
+   wood:projectWood+gear+shipRepair+civicWood+miningWood,
+   stone:projectStone+civicStone
+  },details:{assigned,fighters,ships,civilians,captives,projectWood,projectStone,gear,shipRepair,civicWood,civicStone,miningWood}};
+}
+function economyForecast(year=state.year+1){
+ const production=yearlyProduction(),cost=resourceUpkeep(year);
+ return {year,production,upkeep:cost.upkeep,details:cost.details,
+  net:{food:production.food-cost.upkeep.food,wood:production.wood-cost.upkeep.wood,
+    stone:production.stone-cost.upkeep.stone,ore:production.ore,animals:production.animals}};
+}
 function harvestResources(){
  const gains={food:0,wood:0,stone:0,ore:0,animals:0};
  for(const [key,id] of Object.entries(state.works)){
   const c=getCity(id),[x,y]=decode(key),d=deposit(x,y);
   if(!c||c.owner!=="player"||borders.get(key)!==id||!d||!known(d.tech)){delete state.works[key];continue;}
-  let output=d.type==="fish"?4+2*upgrade(c,"fishingHut")+upgrade(c,"smokehouse")+upgrade(c,"harbor")+(known("netmaking")?2:0):
-   d.type==="wood"?3+upgrade(c,"sawmill")+upgrade(c,"workshop"):d.type==="stone"?2+upgrade(c,"stoneworks")+upgrade(c,"workshop"):d.type==="ore"?2+upgrade(c,"forge"):d.type==="animals"?1+upgrade(c,"stable"):d.type==="food"?4+upgrade(c,"granary")+upgrade(c,"market"):4+upgrade(c,"granary")+2*upgrade(c,"huntingLodge");
-  if(known("engineering"))output++;
-  if((d.type==="food"&&known("agriculture"))||(d.type==="fish"&&known("fishing"))){gains.food+=output;continue;}
-  if(d.type==="animals"&&known("husbandry")){
+  if(d.type==="animals"){
    if(remaining(x,y)<=0)continue;
-   if(!state.extracted[key])state.extracted[key]=1; // domestication uses one wild animal
-   gains.food+=1; if(state.year%3===0)gains.animals+=1+upgrade(c,"stable");
+   if(!state.extracted[key])state.extracted[key]=1;
+   gains.food+=1;
+   if(state.year%4===0)gains.animals+=1+upgrade(c,"stable");
    continue;
   }
-  const extracted=Math.min(output,remaining(x,y));
-  state.extracted[key]=(state.extracted[key]||0)+extracted;
-  gains[d.type==="forage"?"food":d.type]+=extracted;
-  // Exhausted natural deposits release the worker for reassignment next year.
+  const output=workedYield(c,d);
+  if(d.type==="food"||d.type==="fish"){gains.food+=output;continue;}
+  const amount=Math.min(output,remaining(x,y));
+  state.extracted[key]=(state.extracted[key]||0)+amount;
+  gains[d.type==="forage"?"food":d.type]+=amount;
   if(remaining(x,y)===0)delete state.works[key];
  }
- for(const [r,n] of Object.entries(gains))state.resources[r]+=n;
+ for(const [res,n] of Object.entries(gains))state.resources[res]=(state.resources[res]||0)+n;
  const forges=myCities().reduce((n,c)=>n+upgrade(c,"forge"),0);
  const smelt=Math.min(forges,Math.floor(state.resources.ore/3),state.resources.wood);
  if(smelt>0){state.resources.ore-=smelt*3;state.resources.wood-=smelt;state.resources.metal+=smelt;}
  return gains;
 }
+function payUpkeep(){
+ const plan=resourceUpkeep(state.year),paid={},shortages={};
+ for(const res of ["food","wood","stone"]){
+  const need=plan.upkeep[res],have=state.resources[res]||0;
+  paid[res]=Math.min(have,need);shortages[res]=Math.max(0,need-have);
+  state.resources[res]=Math.max(0,have-need);
+ }
+ if(shortages.food){
+  const court=ensureCourt();
+  court.legitimacy=courtClamp(court.legitimacy-2);
+  court.factions.workers.loyalty=courtClamp(court.factions.workers.loyalty-3);
+  record("Food rations run short by "+shortages.food+"; the people and army grow uneasy.");
+ }
+ if(shortages.wood&&state.year%3===0){
+  const court=ensureCourt();court.factions.military.loyalty=courtClamp(court.factions.military.loyalty-2);
+  record("Timber shortages hinder repairs and equipment.");
+ }
+ if(shortages.stone&&state.project)record("Stone shortage: construction cannot advance this year.");
+ state.economyLast={year:state.year,production:state.economyHarvest||{},upkeep:plan.upkeep,paid,shortages,details:plan.details};
+ // Materials paid to start construction cover the structure itself;
+ // yearly wood/stone represent tools, scaffolding and incidental supplies.
+ if(state.project&&((plan.details.projectWood>0&&shortages.wood>0)||(plan.details.projectStone>0&&shortages.stone>0)))state.project.stalledYear=state.year;
+ return state.economyLast;
+}
+
 function progressBuilding(){
  const p=state.project;if(!p)return;
  const c=getCity(p.city);if(!c||c.owner!=="player"){state.project=null;return;}
