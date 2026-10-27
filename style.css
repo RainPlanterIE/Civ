@@ -82,3 +82,44 @@ button:disabled{opacity:.42;cursor:default}
 #actions{min-width:50vw}
 .stage-buttons button{padding:9px 7px;font-size:11px}
 }
+
+/* Main menu — designed to feel like a strategy game title screen */
+#startScreen{
+  position:fixed;inset:0;z-index:60;pointer-events:auto;
+  display:flex;align-items:center;justify-content:center;
+  padding:calc(22px + env(safe-area-inset-top,0px)) 18px calc(22px + env(safe-area-inset-bottom,0px));
+  background:radial-gradient(circle at 50% 36%,#426750ee 0%,#1e3730f4 48%,#0b201bfa 100%);
+}
+#startScreen.hidden{display:none}
+.main-menu{
+ width:min(440px,100%);max-height:100%;overflow-y:auto;text-align:center;
+ background:linear-gradient(160deg,#293d31f5,#152a22fc);
+ border:2px solid #a18a5a;border-radius:18px;
+ box-shadow:0 26px 85px #000b,inset 0 0 0 3px #d3c09614;
+ padding:clamp(23px,6vw,38px);
+}
+.menu-eyebrow{letter-spacing:.3em;font-size:10px;font-weight:700;color:#d0be8f}
+.main-menu h1{font:500 clamp(58px,15vw,85px) Georgia,serif;letter-spacing:.15em;margin:7px 0 0;color:#f4d494;text-shadow:0 4px 0 #664d3299}
+.menu-subtitle{font:italic 16px Georgia,serif;color:#e1d6bd;margin:7px 0 14px}
+.menu-rule{height:1px;background:linear-gradient(90deg,transparent,#baa474,transparent);margin:20px 0 24px}
+.menu-choice{display:flex;gap:14px;align-items:center;text-align:left;width:100%;margin:10px 0;padding:14px 18px;font-size:19px;box-shadow:0 2px 9px #0c151344}
+.menu-choice>span{font-size:23px;width:24px}
+.menu-choice small{font-size:11px;display:block;font-weight:500;opacity:.83;margin-left:auto;text-align:right;max-width:145px}
+.menu-status{font-size:12px;color:#d8c89d;margin:16px 0 10px}
+.menu-note{font-size:11px;color:#aebfb1;line-height:1.5;margin:0}
+.save-game{height:auto;padding:9px 8px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:4px;min-width:55px}
+.save-game span{font-weight:700}
+@media(max-width:650px){
+ #tools{top:73px}
+ .main-menu{padding:22px}
+ .main-menu h1{font-size:65px}
+ .menu-choice{font-size:17px;padding:13px 12px}
+ .menu-choice small{font-size:10px}
+ .menu-subtitle{font-size:14px}
+}
+@media(max-height:480px){
+ .main-menu{padding:16px}
+ .main-menu h1{font-size:44px}
+ .menu-rule{margin:10px 0}
+ .menu-choice{margin:6px 0;padding:9px 14px}
+}
