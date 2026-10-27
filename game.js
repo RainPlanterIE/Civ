@@ -1140,7 +1140,7 @@ function yearlyProduction(){
   const amt=workedYield(c,d);
   if(d.type==="food"||d.type==="fish")gains.food+=amt;
   else if(d.type==="forage")gains.food+=Math.min(amt,remaining(x,y));
-  else if(d.type==="animals")gains.food+=1;
+  else if(d.type==="animals")gains.food+=amt;
   else gains[d.type]+=Math.min(amt,remaining(x,y));
  }
  return gains;
@@ -1180,7 +1180,7 @@ function harvestResources(){
   if(d.type==="animals"){
    if(remaining(x,y)<=0)continue;
    if(!state.extracted[key])state.extracted[key]=1;
-   gains.food+=1;
+   gains.food+=workedYield(c,d);
    if(state.year%4===0)gains.animals+=1+upgrade(c,"stable");
    continue;
   }
@@ -1196,6 +1196,26 @@ function harvestResources(){
  const smelt=Math.min(forges,Math.floor(state.resources.ore/3),state.resources.wood);
  if(smelt>0){state.resources.ore-=smelt*3;state.resources.wood-=smelt;state.resources.metal+=smelt;}
  return gains;
+}
+function economyPanel(){
+ const f=economyForecast(state.year+1),d=f.details,latest=state.economyLast;
+ let out='<div class="economic-head"><strong>📊 Next year\'s resource balance</strong><span>Year '+f.year+' estimate</span></div>';
+ out+='<p class="hint">Every unimproved resource worker brings in +1 a year. Improved buildings and research add yields. Workers, soldiers and construction consume supplies at End Year. Figures are forecasts: raids, exhausted deposits and new projects can change them.</p>';
+ for(const [res,icon] of [["food","🍲"],["wood","🪵"],["stone","🪨"]]){
+  const produced=f.production[res]||0,used=f.upkeep[res]||0,balance=f.net[res]||0;
+  out+='<div class="economic-line"><strong>'+icon+' '+res[0].toUpperCase()+res.slice(1)+'</strong><span>+'+produced+' gathered · −'+used+' upkeep</span><b class="'+(balance<0?"economic-loss":balance>0?"economic-gain":"economic-even")+'">'+(balance>0?"+":"")+balance+'/year</b></div>';
+ }
+ out+='<div class="economic-explainer"><strong>Who uses the food?</strong><p>'+d.assigned+' assigned citizens: '+Math.ceil(d.assigned/3)+' food · '+d.fighters+' warriors: '+d.fighters+' food · '+d.ships+' ship crews: '+d.ships+' food · '+d.civilians+' explorers/settlers: '+Math.ceil(d.civilians/3)+' food · '+d.captives+' captives: '+d.captives+' food.</p></div>';
+ out+='<div class="economic-explainer"><strong>Timber and stone wear and tear</strong><p>Ongoing construction needs 1 wood every two years and 1 stone every four years for stone-built projects. Military equipment uses wood every four years; ships every three. Large numbers of buildings need periodic repairs and mining uses tools.</p></div>';
+ if(state.project)out+='<div class="economic-explainer"><strong>🏗 Active project</strong><p>'+htmlSafe(projectLabel())+(state.project.stalledYear===state.year?" · Work stalled this year for lack of supplies.":"")+'</p></div>';
+ if(latest){
+  out+='<div class="economic-explainer"><strong>Last Year '+latest.year+' actual costs</strong>';
+  out+='<p>Food: −'+(latest.paid?.food||0)+' · Wood: −'+(latest.paid?.wood||0)+' · Stone: −'+(latest.paid?.stone||0)+'.</p>';
+  for(const [res,missing] of Object.entries(latest.shortages||{}))if(missing)out+='<p class="economic-loss">⚠ '+missing+' '+res+' could not be supplied.</p>';
+  out+='</div>';
+ }
+ out+=item("👥 Assign workers","Move workers between food, wood and stone to improve your forecast.",btn("Manage jobs","workers",false,"primary"));
+ return out;
 }
 function payUpkeep(){
  const plan=resourceUpkeep(state.year),paid={},shortages={};
@@ -1469,6 +1489,7 @@ function panelContents(){
  if(menu==="actions"){
   output="<p class='hint'>Everything is managed through one city tile and the land it influences.</p>";
   output+=item("📋 This year's actions","Return to skipped stages before ending the year.",btn("Review turn","turnMenu"));
+  if(firstCity())output+=item("📊 Resource economy","See what your workers produce and what armies, construction and maintenance will consume next year.",btn("See yearly balance","economy",false,"primary"));
   if(firstCity())output+=item("👑 Royal court & intrigue","Crown legitimacy "+ensureCourt().legitimacy+"/100 · "+courtLevel()+". "+(ensureCourt().plot?"⚠ A "+COURT_GROUPS[ensureCourt().plot.faction].name+" conspiracy threatens your reign in Year "+ensureCourt().plot.deadline+". ":"")+"Manage competing guilds, generals and priests before their influence becomes a threat.",btn("Enter royal court","court",false,"primary"));
   if(firstCity()){
    output+=item("🏛 City","Construct developments inside a city tile; one project at a time.",btn("🏗 Construct","city",false,"primary"));
@@ -1483,6 +1504,7 @@ function panelContents(){
   output+=item("💾 Save game","Save the current turn on this device.",btn("Save now","save"));
  }
  if(menu==="court")output=courtMarkup();
+ if(menu==="economy")output=economyPanel();
  if(menu==="workers"){
   const free=unassignedWorkers(),assigned=assignedWorkers();
   output='<div class="worker-counter"><span class="worker-number">'+free+'</span><span><strong>Workers remaining</strong><small>'+assigned+' assigned / '+citizens()+' citizens</small></span></div>';
@@ -1516,6 +1538,8 @@ function panelContents(){
   if(c.captives)output+='<p class="hint">Captive labour: '+c.captives+' · +'+(c.captives>0?1:0)+' construction work/year · Unrest '+(c.unrest||0)+' (escape risk and food upkeep). Captives are not citizens.</p>';
   output+='<p class="hint">All developments are built inside this city tile. Buildings now take several years even with builders. Extra builders help less after the first few, so keep some citizens gathering food and materials. Only one project runs across your civilisation.</p>';
   output+=item("🏗 Current project",projectLabel()+" · Current speed "+speed+" work/year",btn("👷 Assign builders","workers",false,"primary"));
+  const balance=economyForecast(state.year+1);
+  output+=item("📊 Resource balance next year","Food "+(balance.net.food>0?"+":"")+balance.net.food+" · Wood "+(balance.net.wood>0?"+":"")+balance.net.wood+" · Stone "+(balance.net.stone>0?"+":"")+balance.net.stone+" (includes ongoing upkeep).",btn("See details","economy"));
   // Caravans are a later commercial institution, not a Year 1 shortcut.
   if(!caravanAccess()){
    const timberFood=upgrade(c,"market")?9:13,timberWood=upgrade(c,"market")?8:6;
@@ -1669,7 +1693,12 @@ function renderUI(){
  syncStage();
  const res=state.resources;
  const total=citizens(),assigned=assignedWorkers();
- get("stats").innerHTML=(firstCity()?'<span class="chip" title="Stored food">🍲 <b>'+res.food+'</b></span><span class="chip">🪵 <b>'+res.wood+'</b></span><span class="chip">🪨 <b>'+res.stone+'</b></span><span class="chip">👥 <b>'+total+'('+assigned+')</b></span>':"")+'<span class="chip">Year <b>'+state.year+'</b></span>';
+ const forecast=firstCity()?economyForecast(state.year+1):null;
+ const chip=(icon,key)=>{
+  const net=forecast.net[key],sign=net>0?"+":"";
+  return '<button class="chip economy-chip" data-action="economy" title="Next year: '+sign+net+' '+key+' · Tap for resource economy">'+icon+' <b>'+res[key]+'</b><small class="'+(net<0?"economic-loss":net>0?"economic-gain":"economic-even")+'">'+sign+net+'</small></button>';
+ };
+ get("stats").innerHTML=(firstCity()?chip("🍲","food")+chip("🪵","wood")+chip("🪨","stone")+'<span class="chip">👥 <b>'+total+'('+assigned+')</b></span>':"")+'<span class="chip">Year <b>'+state.year+'</b></span>';
  const head=get("summary"),actions=get("actions"),rp=state.researchProject,court=ensureCourt();
  const courtBadge=get("courtBadge");
  courtBadge.hidden=!firstCity();
@@ -1693,7 +1722,7 @@ function renderUI(){
  const stageAction=state.stage==="end"?"":btn(state.stage==="move"?"🚶 Move units":state.stage==="workers"?"👥 Assign workers":state.stage==="construction"?"🏗 Construct":"🔬 Choose tech","stageAction",false,"secondary stage-cta");
  actions.innerHTML='<button class="stage-label" data-action="turnMenu" title="Revisit any turn step">☰ '+stepLabel+' ▾</button><div class="stage-buttons">'+stageAction+nextButton+endButton+'</div>';
  const panel=get("panel");panel.classList.toggle("open",!!menu);
- panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game",turn:"This year",encounter:"Encounter",court:"Royal court"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
+ panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game",turn:"This year",encounter:"Encounter",court:"Royal court",economy:"Resource economy"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
  panel.querySelector("#closePanel")?.addEventListener("click",()=>{menu="";renderUI();});
  document.querySelectorAll("[data-action]").forEach(b=>b.addEventListener("click",()=>doAction(b.dataset.action)));
  renderCourtScene();
@@ -1703,6 +1732,7 @@ function doAction(a){
  if(ensureCourt().pending)return toast("Choose a response in the royal advisor audience first.");
  if(a==="endYear")return endYear();
  if(a==="court"){menu="court";renderUI();return;}
+ if(a==="economy"){menu="economy";renderUI();return;}
  if(a.startsWith("council:")){
   const [group,action]=a.slice(8).split(":");
   return courtCouncilAction(group,action);
@@ -1726,7 +1756,7 @@ function doAction(a){
  if(a==="turnMenu"){menu=menu==="turn"?"":"turn";renderUI();return;}
  if(a.startsWith("focus:"))return focusStage(a.slice(6));
  if(a==="actions"||a==="main"){menu=menu===a?"":a;renderUI();return;}
- if(["city","tile","tech","path","units","workers","history","court"].includes(a)){menu=a;renderUI();return;}
+ if(["city","tile","tech","path","units","workers","history","court","economy"].includes(a)){menu=a;renderUI();return;}
  if(a==="work"&&selected)return workTile(selected.x,selected.y);
  if(a==="assignAll")return assignAllWorkers();
  if(a.startsWith("builder:")){const [cityId,delta]=a.slice(8).split(":");return assignBuilder(cityId,Number(delta));}
