@@ -20,7 +20,7 @@ Population determines the baseline **Chebyshev radius** (diagonal tiles count):
 
 A city's influence is a coloured map overlay with a border. When influence overlaps, the stronger city's local claim wins; equally strong claims become contested. City-centre tiles always remain with their owner. Workers are unassigned if influence is lost.
 
-New population requires adequate stored food and spare housing capacity. Housing developments increase capacity by four. Food is consumed every year. Population typically increases every three years; arts allows faster growth.
+New population requires adequate stored food and spare housing capacity. Housing developments increase capacity by four. Food is consumed every year. Population grows through a food-supported growth meter instead of every three years; arts slightly accelerates this progress.
 
 ## Society directions (Year 100 onward)
 The player can choose **one defining path** from Year 100 onward.
@@ -31,13 +31,13 @@ The player can choose **one defining path** from Year 100 onward.
 - **War:** the player can train armies after choosing war. An army must move adjacent to an opposing city and overcome its defensive strength to capture its centre and influence. Capturing all rival centres wins.
 
 ## Neighbouring cities
-Three AI-owned city centres begin on the map, slowly gaining population and borders. Their city centres remain distinct, contested border tiles are not workable, and all cities use the same local influence calculation.
+Three AI-owned city centres begin on the map, slowly gaining population and borders (about once every 17 years). Their city centres remain distinct, contested border tiles are not workable, and all cities use the same local influence calculation.
 
 ## Controls
 The map fills the entire screen. Tap a tile to inspect it; tap your own city tile to manage its developments. The bottom controls show the current phase and **Next**; End Year appears during the final phase. The top-right menu provides the full set of actions. Every panel has a visible close button. The game saves to the browser locally.
 
 ## Current prototype boundaries
-This version implements deterministic turn rules and simplified rival city growth. Rivals do not yet build autonomous structures, send their own field armies, or trade. Paths have distinct victory conditions, but their balance and the illustrated map will need testing and refinement on mobile.
+This version implements deterministic turn rules and simplified rival city growth. Rival cities do not yet train their own armies or trade as full civilisations; independent roaming enemy warriors now patrol and raid. Paths have distinct victory conditions, but their balance and the illustrated map will need testing and refinement on mobile.
 
 ## Guided stages within each year
 Each year is broken into five sequential stages:
@@ -97,4 +97,38 @@ At the beginning only the nearby **two-tile radius around the Settler** is visib
 
 Previously explored land remains dimmed when no friendly unit or city can currently see it. Dynamic resource information, rival cities and territory borders are hidden outside current sight until explored again. New exploration and work assignments are stored in the existing browser save; older saves are migrated to include the fog and builder records.
 
-The full rival AI and defensive combat system are not implemented yet; City Walls establish the prerequisite building for defensive bonuses in later battles.
+Full rival empire AI is not yet implemented, but walls now provide four real defence points during sieges and roaming-warrior attacks.
+
+## Slower population growth and food requirements
+Population no longer rises simply because some food remains in storage. Each city accumulates growth points only when it has spare housing, a healthy reserve of food after yearly consumption and **real food production from worked tiles**. The growth threshold is 12 plus twice the population, slightly lower with the Arts specialisation. Food-rich cities accumulate growth points faster, but growth is normally many years apart instead of every three turns.
+
+Starvation can decrease the population. Rival city growth is slowed too. The City panel shows its growth progress. Captives do **not** count as ordinary citizens or give natural population growth.
+
+## Wildlife, wandering rivals and unit combat
+Initial map generation creates eight small independent villages, deer, boar, wolves and wandering rival warriors in the wilderness. Further wild animals and hostile warriors spawn on later turns on suitable free land, subject to per-type caps. Dangerous encounters may move or attack nearby units. Raiders can threaten cities, and city walls and local garrisons improve defence.
+
+| Encounter | Behaviour | Outcome |
+|---|---|---|
+| Deer | Low attack and defence | Food from hunting |
+| Wild boar | More dangerous wildlife | More food, risk of wounds |
+| Wolf | Predator | Dangerous bite, some meat |
+| Rival warrior | Roams the map | Fights travellers, steals food from undefended cities, yields supplies when defeated |
+| Independent village | Defended small village | Learn, befriend, trade or attack and seize captives |
+
+**Attack and defence** are now separate game statistics for both units and cities. Units have hit points and earn experience; fights compare attack and defence and may take multiple annual actions. A defeated unit disappears. Injured units can **Rest and heal**, using an action to regain two health, or three next to a friendly city.
+
+City defence reflects population, garrison, friendly fighters stationed nearby, Lookout Towers and City Walls (four extra defence). Cities also have attack points for retaliating against siege attacks. Conquest of full rival city centres still requires the War path after Year 100; hunting and village interactions work much earlier.
+
+## Village encounters: choices and consequences
+Move within one tile of a village and tap its little house on the revealed map:
+
+- **Learn traditions**: One-time six research points from that village, which can also progress an active technology project.
+- **Befriend**: Receive an initial gift of food and wood plus four culture, with further periodic supplies and trading opportunities.
+- **Attack and enslave**: Fight village defenders; victory yields supplies and two captive construction labourers in your nearest city. Captives cannot be assigned to resource jobs and are not population growth. They consume additional food, increase unrest and can eventually escape. Raiding also reduces culture, especially if you attack a previously friendly village.
+
+Villages remain small sites, not opponent cities or territorial borders. A unit needs a remaining action to interact. Full enemy-city diplomacy and tactical warfare are future expansions.
+
+## Fog of war and saving encounters
+All animals, raiders and villages are hidden until they enter current sight. Map icons show their positions and remaining health when visible. Previously explored land remains dim, but unseen encounter movements are hidden.
+
+Wildlife health, rival units, village relationships, city unrest and captives, unit health and experience, and growth meters are stored in the browser save. Older saves are automatically migrated to initialise the new mechanics.
