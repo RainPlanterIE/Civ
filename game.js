@@ -437,7 +437,7 @@ function panelContents(){
  }
  if(menu==="units"){
   const ready=state.units.filter(u=>u.owner==="player"&&!u.moved).length,total=state.units.filter(u=>u.owner==="player").length;
-  output="<p class='hint'>"+ready+" of "+total+" units ready. You can move <b>every unit</b> once before advancing the year. Select a ready unit, tap an adjacent tile, then select another. The stage ends when all have acted or you press Next.</p>";
+  output="<p class='hint'>"+ready+" of "+total+" units ready. You can move <b>every unit</b> once before advancing the year. Tap a ready unit on the map (or select it below), then tap an adjacent tile. Repeat for every unit. The stage ends when all have acted or you press Next.</p>";
   for(const u of state.units.filter(u=>u.owner==="player")){
    output+=item((u.type==="army"?"⚔ Army":"🚶 Settler")+" at "+u.x+", "+u.y,u.moved?"Already moved this year":u.type==="army"?"Ready · Strength "+u.strength:"Ready to move",btn(u.moved?"Already moved":"Select to move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,u.moved,"primary"):""));
   }
@@ -586,6 +586,10 @@ function draw(){
   ctx.fillStyle=u.type==="army"?"#a96054":"#e1b684";ctx.fillRect(p.x-6*z,p.y-18*z,12*z,18*z);
   ctx.fillStyle="#e8c7a3";ctx.beginPath();ctx.arc(p.x,p.y-23*z,6*z,0,Math.PI*2);ctx.fill();
   ctx.font="bold "+Math.max(10,12*z)+"px sans-serif";ctx.textAlign="center";ctx.fillStyle="#f9e4b6";ctx.fillText(u.type==="army"?"Army":"Settler",p.x,p.y-35*z);ctx.textAlign="left";
+  if(state.stage==="move"&&!u.moved&&activeUnit()?.id===u.id){
+   ctx.beginPath();ctx.ellipse(p.x,p.y+3*z,14*z,7*z,0,0,Math.PI*2);
+   ctx.strokeStyle="#ffe28d";ctx.lineWidth=Math.max(2,2.8*z);ctx.stroke();
+  }
  }
  if(selected){
   const p=screen(selected.x,selected.y);ctx.strokeStyle="#f8dc9a";ctx.lineWidth=2;
@@ -601,7 +605,15 @@ canvas.addEventListener("pointerup",e=>{
  if(!pointer)return;const p=pointer;pointer=null;if(p.moved)return;
  const spot=hit(e.clientX,e.clientY);if(!spot)return;
  selected=spot;
- if(!firstCity()||moving){move(spot.x,spot.y);return;}
+ if(state.stage==="move"){
+  const standing=state.units.find(u=>u.owner==="player"&&u.x===spot.x&&u.y===spot.y);
+  if(standing){
+    if(standing.moved)toast("That unit has already moved this year. Choose another ready unit.");
+    else{moving=standing.id;menu="";toast((standing.type==="army"?"Army":"Settler")+" selected. Tap an adjacent tile to move.");}
+    renderUI();return;
+  }
+  if(state.units.some(u=>u.owner==="player"&&!u.moved)){move(spot.x,spot.y);return;}
+ }
  menu=cityAt(spot.x,spot.y)&&cityAt(spot.x,spot.y).owner==="player"?"city":"tile";renderUI();
 });
 canvas.addEventListener("wheel",e=>{e.preventDefault();scale=Math.min(2.3,Math.max(.55,scale+(e.deltaY<0?.12:-.12)));},{passive:false});
