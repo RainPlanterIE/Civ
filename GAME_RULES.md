@@ -61,7 +61,7 @@ A completed action does not consume the entire phase: moving one unit leaves all
 
 ## Main menu and saving
 - Opening Civ displays a full-screen **main menu** before gameplay.
-- **Play** starts a fresh world with a single settler. If a valid saved world exists, the game asks for confirmation before replacing it.
+- **Play** starts a fresh world with both a Settler and a Clubman. If a valid saved world exists, the game asks for confirmation before replacing it.
 - **Continue** opens the saved world, including its year, cities, workers, research, construction and units. Continue is disabled when no valid save exists.
 - During gameplay, a persistent **💾 Save** button appears beside the map tools. It writes the current game to this browser's local storage and shows a confirmation. Automatic saves continue after gameplay actions.
 - The top-right **☰** opens Actions; from there, choose **Main menu**. When reopening the title screen from an active game, **Back to game** closes it without resetting progress.
@@ -73,7 +73,7 @@ The Workers page prominently shows **Workers remaining**, counting people not as
 The worker and construction buttons are larger, with high-contrast actions on the mobile game page. Workers can be reassigned at any time before End Year. The population counter includes both resource workers and builders: **6(4)** means four total assigned citizens.
 
 ## New research, city improvements and military units
-You start with a Settler; your city can immediately train a **Clubman** (8 wood, 3 food, four construction work). Clubmen are basic club-wielding fighters drawn on the map. Additional technologies and their functional unlocks:
+You start with a Settler **and a Clubman**; your city can also train further **Clubmen** (8 wood, 3 food, eight construction work). Clubmen are basic club-wielding fighters drawn on the map. Additional technologies and their functional unlocks:
 
 | Technology | New unlock or bonus |
 |---|---|
@@ -187,3 +187,48 @@ Realistic regional scarcity means some starting civilisations (notably desert an
 
 ### Existing saves
 **Earth saves use a new browser key**, separate from the old valley key. Continuing an older v3 game imports its year, population, cities, buildings, stored resources, technologies, units, research, builders and partially completed construction into a region near its newly assigned historical leader. The old v3 save is preserved as a backup; tile-based worker assignments are repositioned when possible and may need some manual reassignment because old terrain coordinates cannot represent the new Earth geography. Newly created Earth saves record their scenario and leader and restore them on Continue.
+
+
+## Fishing, sailing and technology-tree overhaul (v15)
+
+### Starting units and hunting
+Every new game starts with two ready units beside the historical starting capital: a **Settler** and a **Clubman**. You can found the initial city and also explore or hunt with the Clubman in the same year. A legacy Earth save that is still on Year 1 with only an unspent Settler is granted one Clubman once; other saved games retain their existing roster.
+
+Hunting wild animals with a Clubman or other fighter adds food immediately to the civilisation's **shared food stockpile**, described in the combat log as a delivery to the nearest friendly city. The log shows the exact food gained. No return-to-city movement is necessary: this is an abstraction representing supplies brought home. Hunting technology adds +2 food to kills.
+
+### Fisheries and Norse/coastal viability
+Civ now treats **coastal water inside a city's influence border as a renewable worked resource** when Fishing is known. Basic fishing provides **4 food per worker per year**, consumed/stockpiled alongside farmland and forage. Unlike depleted forest or forage deposits, fishing sites do not run out.
+
+Coastal starting leaders whose capital is within two tiles of the shore—including **Harald Bluetooth of the Norse Kingdoms, starting near Jelling in Denmark**—begin knowing **Fishing**; older coastal saves gain that basic starting knowledge on Continue. Inland civilisations may research it.
+
+Workers can be assigned manually to 🎣/🐟 coastal tiles in the Workers panel or by tapping a fishing tile. **Assign all resource workers** counts fishing as food and prioritises enough food workers to sustain the city.
+
+The bonuses stack as follows:
+
+| Feature | Unlock condition | Exact food effect |
+|---|---|---|
+| Basic Fishing | Coastal starting knowledge or research Fishing (6 work) | +4 food per worked coastal fishing tile/year |
+| Fishing Hut | Fishing, build in a coastal city | +2 food per worked fish tile/year |
+| Net Making | Research after Fishing (14 work) | +2 food per worked fish tile/year |
+| Smokehouse | Net Making, coastal city | +1 food per worked fish tile/year |
+| Harbour | Seafaring, coastal city | +1 food per worked fish tile/year; enables Fishing Boats |
+| Engineering | After Geology | +1 from every worked tile, including fish |
+
+Food bonuses apply to that city's own assigned fishing tiles, not every city globally.
+
+### Ships, fishing trips and land transport
+- **Seafaring** (19 research work, after Fishing) unlocks the **Harbour** and **Fishing Boat**. A Harbour is built inside a coastal city, and ships are launched onto adjacent free coastal water. Ships cannot start from inland cities.
+- **Fishing Boat** requires a Harbour, costs 14 wood and 2 food and takes 18 construction work. It moves two water tiles per year and can spend its action fishing for **+6 food immediately**, with another +2 after Net Making.
+- **Shipbuilding** (30 research work, after Seafaring) unlocks the **Shipyard** and **Longship**. The Longship requires a Shipyard, moves **three water tiles per year**, catches 3 food per fishing action (plus 2 after Net Making), and can carry **one Settler or land military unit**.
+- **Navigation** (42 research work, after Shipbuilding) unlocks open-ocean voyages, +1 movement tile per year for ships, +2 ship vision and the **Lighthouse** (+2 city sight).
+
+Before Navigation, ships are restricted to coastal water and cannot sail across open sea or through land. Land units cannot walk onto water.
+
+**Longship transport:** Position a land unit next to a Longship and choose **Embark Longship** from the Units panel. Embarking uses that passenger's action. Move the Longship on its own turn; the passenger travels aboard without moving independently. Once the ship is ready on a later year, choose a **Disembark to x,y** option in the Units panel to place the passenger onto an adjacent land tile. Unloading uses both the passenger's and ship's actions. Occupied enemy cities and encounters cannot be disembark destinations.
+
+Ships, passengers and known fishing technologies are part of the browser save. This is a first sailing system; open-sea warfare and trade routes are future development areas.
+
+### More readable tech tree and construction list
+Technology research now appears as **four themed branches**: Coast & Sailing, Food & Farming, Materials & Industry and Knowledge & Military. Each technology displays its prerequisite, research cost, current availability, and a concrete unlock or numerical production bonus. The page displays an **Available discoveries** group for research that can be started right now, and a progress bar for any active discovery. Existing one-at-a-time research rules remain.
+
+The City construction screen now sorts **currently affordable and eligible buildings first**, then those needing materials, then those locked behind technologies, society paths or prerequisites. When a build is underway, future affordable choices remain near the top to help plan the next project. Training units uses the same sorting rule. Buttons still explain exactly what prevents a choice from starting; the game continues to allow only one construction/training project at a time.
