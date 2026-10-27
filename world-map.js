@@ -73,8 +73,10 @@ const CIV_WORLD=(()=>{
    return n<oreLikelihood?{type:"ore",max:16+Math.floor(noise(x,y,8)*34),tech:"metalworking",icon:"⚒"}:
       {type:"stone",max:25+Math.floor(noise(x,y,9)*53),tech:"geology",icon:"🪨"};
   }
-  if(biome==="forest"||biome==="jungle")
+  if(biome==="forest"||biome==="jungle"){
+   if(n<(biome==="jungle"?.25:.12))return {type:"forage",max:20+Math.floor(noise(x,y,17)*28),tech:"foraging",icon:"🍓"};
    return {type:"wood",max:(biome==="jungle"?55:44)+Math.floor(noise(x,y,10)*65),tech:"forestry",icon:"🌲"};
+  }
   if(biome==="tundra")
    return n<.23?{type:"wood",max:14,tech:"forestry",icon:"🌲"}:n<.45?{type:"forage",max:14,tech:"foraging",icon:"🍓"}:null;
   if(biome==="desert"){
