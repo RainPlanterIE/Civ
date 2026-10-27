@@ -79,7 +79,7 @@ You start with a Settler **and a Clubman**; your city can also train further **C
 |---|---|
 | Agriculture | Reveal fertile cropland and renew farm food |
 | Geology | Reveal stone deposits |
-| Hunting | Hunting Lodge: +2 wild-food output |
+| Hunting | Hunting Lodge: +1 wild-food output |
 | Scouting | Scout (four-tile vision, moves two tiles per year), Lookout Tower (two extra city-sight tiles) |
 | Writing | Library (+3 research/year) and Market (+1 cultivated-food yield) |
 | Animal Husbandry | Stables and renewable domesticated animal production |
@@ -197,7 +197,7 @@ Every new game starts with two ready units beside the historical starting capita
 Hunting wild animals with a Clubman or other fighter adds food immediately to the civilisation's **shared food stockpile**, described in the combat log as a delivery to the nearest friendly city. The log shows the exact food gained. No return-to-city movement is necessary: this is an abstraction representing supplies brought home. Hunting technology adds +2 food to kills.
 
 ### Fisheries and Norse/coastal viability
-Civ now treats **coastal water inside a city's influence border as a renewable worked resource** when Fishing is known. Basic fishing provides **4 food per worker per year**, consumed/stockpiled alongside farmland and forage. Unlike depleted forest or forage deposits, fishing sites do not run out.
+Civ now treats **coastal water inside a city's influence border as a renewable worked resource** when Fishing is known. Basic fishing provides **1 food per worker per year**, consumed/stockpiled alongside farmland and forage. Unlike depleted forest or forage deposits, fishing sites do not run out.
 
 Coastal starting leaders whose capital is within two tiles of the shore—including **Harald Bluetooth of the Norse Kingdoms, starting near Jelling in Denmark**—begin knowing **Fishing**; older coastal saves gain that basic starting knowledge on Continue. Inland civilisations may research it.
 
@@ -207,9 +207,9 @@ The bonuses stack as follows:
 
 | Feature | Unlock condition | Exact food effect |
 |---|---|---|
-| Basic Fishing | Coastal starting knowledge or research Fishing (6 work) | +4 food per worked coastal fishing tile/year |
-| Fishing Hut | Fishing, build in a coastal city | +2 food per worked fish tile/year |
-| Net Making | Research after Fishing (14 work) | +2 food per worked fish tile/year |
+| Basic Fishing | Coastal starting knowledge or research Fishing (6 work) | +1 food per worked coastal fishing tile/year |
+| Fishing Hut | Fishing, build in a coastal city | +1 food per worked fish tile/year |
+| Net Making | Research after Fishing (14 work) | +1 food per worked fish tile/year |
 | Smokehouse | Net Making, coastal city | +1 food per worked fish tile/year |
 | Harbour | Seafaring, coastal city | +1 food per worked fish tile/year; enables Fishing Boats |
 | Engineering | After Geology | +1 from every worked tile, including fish |
@@ -218,8 +218,8 @@ Food bonuses apply to that city's own assigned fishing tiles, not every city glo
 
 ### Ships, fishing trips and land transport
 - **Seafaring** (19 research work, after Fishing) unlocks the **Harbour** and **Fishing Boat**. A Harbour is built inside a coastal city, and ships are launched onto adjacent free coastal water. Ships cannot start from inland cities.
-- **Fishing Boat** requires a Harbour, costs 14 wood and 2 food and takes 18 construction work. It moves two water tiles per year and can spend its action fishing for **+6 food immediately**, with another +2 after Net Making.
-- **Shipbuilding** (30 research work, after Seafaring) unlocks the **Shipyard** and **Longship**. The Longship requires a Shipyard, moves **three water tiles per year**, catches 3 food per fishing action (plus 2 after Net Making), and can carry **one Settler or land military unit**.
+- **Fishing Boat** requires a Harbour, costs 14 wood and 2 food and takes 18 construction work. It moves two water tiles per year and can spend its action fishing for **+2 food immediately**, with another +1 after Net Making.
+- **Shipbuilding** (30 research work, after Seafaring) unlocks the **Shipyard** and **Longship**. The Longship requires a Shipyard, moves **three water tiles per year**, catches 1 food per fishing action (plus 1 after Net Making), and can carry **one Settler or land military unit**.
 - **Navigation** (42 research work, after Shipbuilding) unlocks open-ocean voyages, +1 movement tile per year for ships, +2 ship vision and the **Lighthouse** (+2 city sight).
 
 Before Navigation, ships are restricted to coastal water and cannot sail across open sea or through land. Land units cannot walk onto water.
@@ -243,7 +243,7 @@ Civ now includes a persistent **Royal Court** and a cutscene-style **advisor aud
 - The City screen hides the caravan action until all prerequisites are met, so it does not dominate the beginning of the game. The new Trade Routes node is visible in the Knowledge & Military branch of the technology tree.
 
 ### Advisor audiences and genuine choices
-A cinematic advisor overlay opens at major moments (first expected in Year 8, and roughly every 7–10 years thereafter; some urgent shortages may bring it forward). Each scene introduces an advisor, the problem, and **three consequential choices** with their exact resource costs, legitimacy and faction effects shown before selection.
+A cinematic advisor overlay opens at major moments (first expected in Year 8, and roughly every 7–10 years thereafter; some urgent shortages may bring it forward). Each scene introduces an advisor, the problem, and **three consequential choices** without precise previews of legitimacy, power or intrigue changes.
 
 Typical audiences are the Steward warning about a hungry winter, the Guild Speaker demanding political representation, a War Captain becoming too popular, a High Priestess requesting authority, a Master Builder seeking timber, and a Royal Spymaster uncovering secret meetings. Choices can consume food or wood, grant supplies, reward or offend factions, and reduce or encourage scheming.
 
@@ -261,8 +261,8 @@ Open **👑 Court** from the leader heading badge or the Actions panel. The Roya
 Each faction has **Influence (power), Loyalty and Scheming (intrigue)** ratings from 0 to 100. Faction strength grows over years through buildings, population and troops. The **Threat** rating combines influence, disloyalty, intrigue and the monarch's legitimacy. High power alone is not enough to trigger a coup: an influential *loyal* group can support the ruler.
 
 The Court offers **one royal order per year**. For each faction:
-- **Reward (9 food):** +14 loyalty, +4 influence, −8 intrigue and +2 legitimacy.
-- **Investigate (5 food):** −18 intrigue, −5 loyalty, +1 legitimacy; useful against existing plots.
+- **Reward (4 food):** +14 loyalty, +4 influence, −8 intrigue and +2 legitimacy.
+- **Investigate (2 food):** −18 intrigue, −5 loyalty, +1 legitimacy; useful against existing plots.
 - **Restrict influence (free):** −14 influence, −12 loyalty, +7 intrigue and −3 legitimacy, effective but potentially inflammatory.
 
 Choices during the advisor cutscenes supply additional ways to keep factions balanced. Food scarcity, unrest among captives, or aggressive acts can erode loyalty and legitimacy.
@@ -273,3 +273,51 @@ If a faction's Threat rating reaches **66**, a special Spymaster cutscene announ
 The coup can be carried out by the **workers' leadership, the army's general, or a religious leader**. Failure is a genuine game-over, not merely a flavour notification; the resulting end-of-reign scene explains who overthrew the player. You may start a fresh game from the main menu. Overthrow, pending advisor audiences, faction values, royal orders and court history persist in saves.
 
 This is a first political-dynamics system, not a character-by-character court simulation: three power centres are tracked, rather than individually simulated named aristocrats with private genealogies or multiplayer diplomacy. It provides the foundation for later court characters, alliances, succession and espionage mechanics.
+
+
+## Scarce resources and political uncertainty (v17)
+
+### Smaller starting stores and production
+New civilisations begin with **18 food, 16 wood and 8 stone**. Existing saves retain their stockpiles, but the new yearly production and maintenance rules apply.
+
+Each resource worker on an unimproved tile produces **+1 unit per year**. This applies to forest wood, stone, ore, crops, forage and fish. Upgrades give modest per-worker improvements:
+
+| Resource | Base worker yield | Extra production |
+|---|---:|---|
+| Wood | +1/year | +1 Sawmill, +1 Workshop, +1 Engineering |
+| Stone | +1/year | +1 Stoneworks, +1 Workshop, +1 Engineering |
+| Crops | +1/year | +1 Granary, +1 Market, +1 Engineering |
+| Forage | +1/year | +1 Hunting Lodge, +1 Engineering |
+| Coastal fish | +1/year | +1 Fishing Hut, +1 Net Making, +1 Smokehouse, +1 Harbour, +1 Engineering |
+| Ore | +1/year | +1 Forge, +1 Engineering |
+
+Crop fields and fishing grounds renew, but forest and mineral deposits may be depleted. Hunting animal food bounties and village gift supplies are reduced as well. Fishing Boat actions now land +2 food (with Net Making +1), and Longships land +1 food (with Net Making +1).
+
+### Annual upkeep
+After yearly production, the civilisation must pay:
+- **1 food for every 3 assigned workers**, rounded up.
+- **1 food for each warrior or ship crew** every year.
+- **1 food for each captive**, plus modest provisions for civilian explorers/settlers.
+- **1 wood in every second year of active construction**, plus **1 stone in every fourth year** of construction of a stone-using development.
+- Periodic wood for maintaining soldiers' equipment, ships, large collections of buildings and mining tools. Some developed masonry needs stone for repairs.
+
+The construction materials paid up front are separate from these operating costs. If due wood or stone for an active project cannot be provided, construction **stalls for that year**. Food shortages harm royal legitimacy and worker loyalty, and sustained shortages may reduce population.
+
+Example: **three working citizens**, with two fishing and one gathering wood, produce +2 food and +1 wood a year. The three workers cost **1 food** and their Clubman costs **1 food**, leaving **zero net food**. A second Clubman turns the balance negative until the player creates new food income. Growth requires a genuine food surplus and sufficient reserves.
+
+### Visible resource forecast
+The food, wood and stone badges show the projected **net change next year**, including recurring costs. Tap them, or use **Resource economy** in the Actions panel, to see gross production, annual upkeep, periodic tools/equipment expenses, the workforce and troop food costs, the last actual year's expenses, and any shortage or construction stall. Forecasts reflect the current worker assignments, units and projects; events and enemy raids may change the outcome.
+
+### Less obvious and more detailed court dilemmas
+The ten royal advisor scenarios now give a fuller description of the political problem and **conflicting testimony from multiple advisers**, followed by three responses written as plausible policies rather than clear numerical optimisations. The exact legitimacy, loyalty, influence and scheming changes are **no longer previewed** in the advisor options. Unaffordable choices remain disabled, but there is always at least one valid response.
+
+Manual court orders still state their upfront resource cost (Rewards now cost 4 food, Investigations cost 2 food) without listing exact political gains or losses. Faction standing remains visible in the Royal Court after the consequences occur.
+
+### Unexpected consequences years later
+Most decisions have a chance (approximately **60%**) to create a **delayed outcome** appearing **2–5 years later**. The political response may be beneficial or harmful, selected deterministically from the world seed, decision and year, and recorded in the save.
+
+For example, a public celebration may strengthen lasting goodwill or expose misuse of supplies; giving guilds seats on the council may prevent unrest while allowing them to organise independently; honouring a general may strengthen loyalty or make that general more popular than the monarch; an investigation may uncover plotters or anger innocent families.
+
+When an outcome becomes known, a **Royal Messenger** presents an *An Old Decision Returns* cutscene explaining what happened. The effects are already applied, and the player acknowledges the report before advancing to another year. Pending outcomes, already delivered reports and the ongoing political state persist through save and Continue.
+
+The goal is uncertainty grounded in each political choice, not arbitrary punishment. The ruler must judge competing testimonies and manage the consequences as the realm develops.
