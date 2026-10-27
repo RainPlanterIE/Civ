@@ -150,19 +150,19 @@ function deposit(x,y){
 
 const wildTypes={
  deer:{name:"Deer",icon:"🦌",hp:3,attack:1,defense:1,food:7,description:"A shy animal. Hunting yields food."},
- boar:{name:"Wild boar",icon:"🐗",hp:5,attack:3,defense:2,food:10,description:"Dangerous wild game; may injure a hunter."},
- wolf:{name:"Wolf",icon:"🐺",hp:5,attack:4,defense:2,food:4,description:"A dangerous predator that may attack nearby units."},
+ boar:{name:"Wild boar",icon:"🐗",hp:4,attack:2,defense:1,food:10,description:"Dangerous wild game; may injure a hunter."},
+ wolf:{name:"Wolf",icon:"🐺",hp:4,attack:3,defense:2,food:4,description:"A dangerous predator that may attack nearby units."},
  raider:{name:"Rival warrior",icon:"⚔️",hp:6,attack:4,defense:3,food:4,wood:5,description:"An armed wanderer who can raid travellers and cities."},
  camel:{name:"Wild camel",icon:"🐪",hp:5,attack:2,defense:2,food:7,description:"A desert animal found in dry environments."},
  kangaroo:{name:"Kangaroo",icon:"🦘",hp:4,attack:2,defense:2,food:7,description:"Native to Australia."},
  llama:{name:"Llama",icon:"🦙",hp:4,attack:1,defense:2,food:7,description:"An Andean animal native to the South American highlands."},
- jaguar:{name:"Jaguar",icon:"🐆",hp:6,attack:4,defense:3,food:5,description:"Dangerous predator of tropical American forests."},
- bison:{name:"Bison",icon:"🦬",hp:7,attack:4,defense:3,food:14,description:"Large grazing animals of North American grasslands."},
+ jaguar:{name:"Jaguar",icon:"🐆",hp:5,attack:4,defense:2,food:5,description:"Dangerous predator of tropical American forests."},
+ bison:{name:"Bison",icon:"🦬",hp:6,attack:3,defense:2,food:14,description:"Large grazing animals of North American grasslands."},
  zebra:{name:"Zebra",icon:"🦓",hp:5,attack:2,defense:2,food:10,description:"Grazing animal from African savannas."},
- lion:{name:"Lion",icon:"🦁",hp:7,attack:5,defense:3,food:7,description:"Savanna predator capable of attacking travellers."},
- elephant:{name:"Elephant",icon:"🐘",hp:12,attack:6,defense:5,food:18,description:"Large elephant requiring several strikes to hunt."},
- tiger:{name:"Tiger",icon:"🐅",hp:8,attack:5,defense:4,food:7,description:"Dangerous predator of Asian forests."},
- bear:{name:"Bear",icon:"🐻",hp:9,attack:5,defense:4,food:10,description:"Powerful predator of cool forests."},
+ lion:{name:"Lion",icon:"🦁",hp:6,attack:4,defense:3,food:7,description:"Savanna predator capable of attacking travellers."},
+ elephant:{name:"Elephant",icon:"🐘",hp:9,attack:5,defense:4,food:18,description:"Large elephant requiring several strikes to hunt."},
+ tiger:{name:"Tiger",icon:"🐅",hp:7,attack:4,defense:3,food:7,description:"Dangerous predator of Asian forests."},
+ bear:{name:"Bear",icon:"🐻",hp:7,attack:4,defense:3,food:10,description:"Powerful predator of cool forests."},
   village:{name:"Independent village",icon:"🏘️",hp:8,attack:3,defense:4,food:8,wood:8,stone:3,description:"An independent community. Trade, learn, befriend or raid it."}
 };
 function makeEncounter(type,x,y,id){
@@ -298,10 +298,17 @@ function encounterAction(id,action){
   if(action==="fight"&&e.type==="village")return toast("Choose raid if you wish to attack a village.");
   if(e.type==="village"&&e.status==="friendly"){state.culture=Math.max(0,state.culture-12);}
   ready.moved=true;
-  const strike=unitAttack(ready)+Math.floor(eventRng(Number(id.replace(/\D/g,""))||1)*3);
+  const wildlife=e.type!=="raider"&&e.type!=="village";
+  // Hunters have the initiative. Clubmen should defeat normal game easily;
+  // great predators remain risky without being repeatedly lethal by default.
+  const huntBonus=wildlife?(ready.type==="clubman"?2:1)+(known("hunting")?1:0):0;
+  const strike=unitAttack(ready)+Math.floor(eventRng(Number(id.replace(/\D/g,""))||1)*3)+huntBonus;
   const inflicted=Math.max(1,strike-e.defense+2);
   e.hp-=inflicted;
-  const retaliation=Math.max(0,e.attack+Math.floor(eventRng(ready.x*71+ready.y*13)*2)-unitDefense(ready));
+  e.lastHuntedYear=state.year;
+  // Crucial: prey killed by the initial blow cannot strike back.
+  const rawRetaliation=Math.max(0,e.attack+Math.floor(eventRng(ready.x*71+ready.y*13)*2)-unitDefense(ready));
+  const retaliation=e.hp>0?(wildlife?Math.min(fighter(ready)?2:3,rawRetaliation):rawRetaliation):0;
   ready.hp=Math.max(0,unitHP(ready)-retaliation);
   if(e.hp<=0){
    if(e.type==="village"){
@@ -320,7 +327,7 @@ function encounterAction(id,action){
    }
    ready.xp=(ready.xp||0)+2;
    state.encounters=state.encounters.filter(item=>item.id!==id);
-  }else record(unitTitle(ready)+" strikes "+wildTypes[e.type].name+" for "+inflicted+" damage. "+e.hp+" health remains.");
+  }else record(unitTitle(ready)+" strikes "+wildTypes[e.type].name+" for "+inflicted+" damage. "+e.hp+" health remains."+(retaliation?" The "+wildTypes[e.type].name+" wounds your hunter for "+retaliation+" HP.":""));
   if(ready.hp<=0)dropUnit(ready,unitTitle(ready)+" falls in combat.");
  }
  autoAdvance("move");updateFog();menu="";save();renderUI();
@@ -353,12 +360,23 @@ function roamEnemies(){
  // Each year, hostile warriors and predators may approach the player's units.
  for(const e of state.encounters||[]){
   if(!["raider","wolf","boar","jaguar","lion","tiger","bear"].includes(e.type))continue;
-  const victim=state.units.filter(u=>u.owner==="player"&&!u.embarkedOn&&!isNaval(u)&&distance(u.x,u.y,e.x,e.y)<=1).sort((a,b)=>unitHP(a)-unitHP(b))[0];
-  if(victim&&eventRng(e.x*7+e.y*11)>(e.type==="raider"?.32:.72)){
-   const damage=Math.max(1,e.attack-unitDefense(victim)+Math.floor(eventRng(e.x*11)*2));
-   victim.hp=Math.max(0,unitHP(victim)-damage);
-   if(victim.hp<=0)dropUnit(victim,unitTitle(victim)+" was defeated by "+wildTypes[e.type].name+".");
-   else record(wildTypes[e.type].name+" attacks "+unitTitle(victim)+" for "+damage+" damage.");
+  const victim=state.units.filter(u=>u.owner==="player"&&!u.embarkedOn&&!isNaval(u)&&distance(u.x,u.y,e.x,e.y)<=1)
+   .sort((a,b)=>unitHP(a)-unitHP(b))[0];
+  const enemy=e.type==="raider";
+  const protectedByCity=victim&&myCities().some(c=>distance(c.x,c.y,victim.x,victim.y)<=1);
+  // Wildlife avoids guarded towns and retreats temporarily after being hunted.
+  const wildlifeWary=!enemy&&(protectedByCity||(e.lastHuntedYear!=null&&state.year<=e.lastHuntedYear+1));
+  const chance=enemy?.68:["lion","tiger","bear","jaguar"].includes(e.type)?.18:.1;
+  if(victim&&!wildlifeWary&&eventRng(e.x*7+e.y*11)<chance){
+   const raw=Math.max(0,e.attack-unitDefense(victim)+Math.floor(eventRng(e.x*11)*2));
+   // Passive wildlife may injure an unwary traveller but cannot silently
+   // wipe out a starting unit between turns. A deliberate hunt can still kill.
+   const damage=enemy?Math.max(1,raw):Math.min(2,raw,Math.max(0,unitHP(victim)-1));
+   if(damage>0){
+    victim.hp=Math.max(0,unitHP(victim)-damage);
+    if(victim.hp<=0)dropUnit(victim,unitTitle(victim)+" was defeated by "+wildTypes[e.type].name+".");
+    else record(wildTypes[e.type].name+" wounds "+unitTitle(victim)+" for "+damage+" damage.");
+   }
    continue;
   }
   if(e.type==="raider"&&state.year%3===0){
