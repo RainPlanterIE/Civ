@@ -555,6 +555,133 @@ const COURT_STORIES={
   choices:{negotiate:"Send a trusted envoy with terms that might reopen dialogue. The leaders could accept—or treat the offer as evidence that you are afraid.",expose:"Read the accusations before the assembly and name the suspected organisers. Their influence might collapse, or their followers might rally.",reconcile:"Ask citizens from every faction to stand for a public renewal of the realm. It may rebuild trust without addressing the hidden network."}
  }
 };
+
+// Historically inspired, state-dependent dilemmas. These are scenarios and
+// design inspirations, not claims that every culture experienced identical events.
+Object.assign(COURT_SCENES,{
+ granaryFire:{
+  advisor:"Keeper of Stores",icon:"🔥",type:"Civic crisis",title:"Smoke from the Granary",
+  text:"An alarm has sounded at {capital}. Grain merchants report smoke near the public stores. Some blame accidental sparks; others accuse a guild overseer who recently argued with the crown.",
+  choices:[
+   {id:"guild",label:"Let the guilds investigate",detail:"Entrust the inquiry to the people most familiar with the stores.",effect:{food:-2,legitimacy:2,factions:{workers:{power:7,loyalty:10,intrigue:-4}}}},
+   {id:"guard",label:"Place the garrison in charge",detail:"A swift armed response may prevent disorder but antagonise the storekeepers.",effect:{damageBuilding:"granary",legitimacy:-3,factions:{workers:{loyalty:-12,intrigue:8},military:{power:8,loyalty:8}}}},
+   {id:"rebuild",label:"Open the records and offer compensation",detail:"An independent inquiry costs supplies and might uncover negligence at court.",effect:{wood:-4,food:-3,legitimacy:7,factions:{workers:{loyalty:9},faith:{power:2}}}}
+  ]
+ },
+ worksite:{
+  advisor:"Master Builder",icon:"🪓",type:"Labour",title:"The Cracked Scaffolding",
+  text:"A half-finished project in {capital} has suffered a fall of timber and stone. Workers complain about unsafe conditions while the Captain argues that new delays threaten the realm.",
+  choices:[
+   {id:"pause",label:"Halt work for an inspection",detail:"A safety review could prevent another accident but will set back the project.",effect:{stallBuilding:2,legitimacy:3,factions:{workers:{loyalty:12,intrigue:-5},military:{loyalty:-4}}}},
+   {id:"order",label:"Order the builders to press on",detail:"Ignore the guild petition and keep the deadline. The price of speed may be paid later.",effect:{wood:2,legitimacy:-4,factions:{workers:{loyalty:-14,intrigue:12}}}},
+   {id:"masters",label:"Bring in independent master masons",detail:"Seek technical advice and spend materials now to preserve public confidence.",effect:{wood:-3,stone:-2,legitimacy:6,factions:{workers:{loyalty:7,power:4}}}}
+  ]
+ },
+ garrison:{
+  advisor:"War Captain",icon:"⚔️",type:"Military",title:"A Mutiny at the Barracks",
+  text:"An officer refuses to lead the next patrol, saying that the troops' provisions are inadequate. The soldiers remain armed. If the matter is mishandled, seasoned fighters may turn against each other.",
+  choices:[
+   {id:"rations",label:"Provide fresh provisions and listen",detail:"The soldiers may return to duty, but the Captain's standing will grow.",effect:{food:-5,legitimacy:2,factions:{military:{loyalty:12,power:8,intrigue:-7}}}},
+   {id:"punish",label:"Punish the officers publicly",detail:"Demonstrate that orders cannot be refused, even if discipline turns to resentment.",effect:{harmWarriors:2,harmCount:2,legitimacy:-4,factions:{military:{power:-5,loyalty:-14,intrigue:12}}}},
+   {id:"divide",label:"Rotate the units between commanders",detail:"Reduce the opportunity for a single mutiny, while adding confusion to the ranks.",effect:{stallTraining:2,legitimacy:1,factions:{military:{power:-8,loyalty:-6,intrigue:3}}}}
+  ]
+ },
+ sacredGround:{
+  advisor:"High Priestess",icon:"🕯️",type:"Faith",title:"The Temple on Contested Ground",
+  text:"A new shrine has been built beside a busy road. The priests call it holy land; the guilds say it blocks carts carrying grain and timber. Neither side wishes to give way without a ruling.",
+  choices:[
+   {id:"temple",label:"Confirm the priesthood's claim",detail:"Protect sacred space and risk alienating the people whose work feeds the city.",effect:{legitimacy:1,factions:{faith:{power:12,loyalty:10},workers:{loyalty:-9,intrigue:6}}}},
+   {id:"road",label:"Keep the road open",detail:"Place commerce before the shrine. Some worshippers may see this as sacrilege.",effect:{damageBuilding:"temple",wood:2,legitimacy:3,factions:{workers:{loyalty:8},faith:{loyalty:-14,intrigue:11}}}},
+   {id:"compromise",label:"Pay to build a second road",detail:"A costly compromise might satisfy both parties, or invite another petition.",effect:{wood:-4,stone:-2,legitimacy:6,factions:{faith:{loyalty:5},workers:{loyalty:5}}}}
+  ]
+ },
+ grainEdict:{
+  advisor:"Keeper of the Grain",icon:"🌾",type:"Provision",title:"A Crowd at the Grain Market",
+  text:"Grain prices are rising near {capital}. Families gather in front of the stores while merchants accuse officials of interfering with trade. In the Roman world, disputed grain distribution could shake an entire city; this court now faces its own version of that puzzle.",
+  choices:[
+   {id:"subsidy",label:"Offer grain at a controlled price",detail:"Help the poorest households while forcing the court to bear the shortfall.",effect:{food:-6,legitimacy:8,factions:{workers:{loyalty:13,power:5}}}},
+   {id:"inspect",label:"Investigate warehouses for hoarding",detail:"The evidence may expose fraud, or just provoke merchants who kept legitimate reserves.",effect:{wood:-1,legitimacy:2,factions:{workers:{loyalty:4,intrigue:-7}}}},
+   {id:"market",label:"Leave prices to the market",detail:"Save the granaries and accept that not every family can buy bread.",effect:{legitimacy:-5,factions:{workers:{loyalty:-12,intrigue:8},faith:{loyalty:-3}}}}
+  ]
+ },
+ ironDebate:{
+  advisor:"Imperial Treasurer",icon:"⚖️",type:"Policy",title:"Who Controls the Iron?",
+  text:"The treasury proposes controlling iron production to pay for soldiers and walls. Artisans protest that the metal they smelt belongs to the people who worked for it. Like the famous Han debate over salt and iron monopolies, the question pits state power against private livelihoods.",
+  choices:[
+   {id:"monopoly",label:"Reserve the forges for the state",detail:"Public arms and tools would take priority, but merchants may find new ways around royal inspectors.",effect:{ore:3,metal:1,legitimacy:-4,factions:{military:{loyalty:9,power:8},workers:{loyalty:-10,intrigue:9}}}},
+   {id:"guild",label:"Permit guilds to regulate production",detail:"Rely on craftsmen's expertise, at the price of expanding their authority.",effect:{metal:1,legitimacy:4,factions:{workers:{loyalty:11,power:12},military:{loyalty:-5}}}},
+   {id:"mixed",label:"Create shared oversight",detail:"Demand independent records and inspections before any privilege is granted.",effect:{wood:-3,legitimacy:7,factions:{workers:{loyalty:4},military:{loyalty:4},faith:{power:3}}}}
+  ]
+ },
+ scribes:{
+  advisor:"Royal Archivist",icon:"📜",type:"Knowledge",title:"The Missing Royal Records",
+  text:"A collection of treaties and tax records has disappeared from the archives of {capital}. The scribes suspect a court official, but some papers may have been damaged by damp and neglect.",
+  choices:[
+   {id:"seize",label:"Search the scribes' homes",detail:"Recover evidence swiftly while risking a backlash from the learned class.",effect:{legitimacy:-3,factions:{workers:{loyalty:-7,intrigue:8}},damageBuilding:"library"}},
+   {id:"copy",label:"Commission duplicate records",detail:"Protect the future at the expense of scarce writing supplies and labour.",effect:{wood:-3,legitimacy:5,factions:{workers:{loyalty:7}}}},
+   {id:"public",label:"Invite an independent public inquiry",detail:"Ask the guilds and temples to examine the records together.",effect:{legitimacy:7,factions:{workers:{power:5},faith:{power:5},military:{loyalty:-3}}}}
+  ]
+ },
+ veteranLand:{
+  advisor:"War Captain",icon:"🏕️",type:"Settlement",title:"Land Promised to Veterans",
+  text:"Soldiers who defended the realm request fields close to {capital}. Local farming families have worked those plots for generations. The Captain insists that service must be rewarded, while the Steward warns of a new land dispute.",
+  choices:[
+   {id:"settle",label:"Grant fields to the veterans",detail:"Provide for loyal soldiers at the cost of angering established workers.",effect:{food:3,legitimacy:-4,factions:{military:{loyalty:16,power:10},workers:{loyalty:-14,intrigue:9}}}},
+   {id:"pay",label:"Offer provisions instead of land",detail:"Keep existing ownership intact but create ongoing expectations of royal generosity.",effect:{food:-6,legitimacy:3,factions:{military:{loyalty:9},workers:{loyalty:4}}}},
+   {id:"frontier",label:"Ask veterans to defend the frontier",detail:"Promise future settlements if they can secure new territory; patrols may become less reliable in the meantime.",effect:{stallTraining:2,legitimacy:5,factions:{military:{power:-5,loyalty:4}}}}
+  ]
+ },
+ pilgrims:{
+  advisor:"Temple Custodian",icon:"☀️",type:"Religion",title:"Two Competing Festivals",
+  text:"Rival priests have each announced a festival on the same day, while farmers say both celebrations will draw workers away from harvests. Religious leaders demand that the crown recognise one ceremony as the more sacred.",
+  choices:[
+   {id:"first",label:"Recognise the older temple",detail:"Support an established institution, though the rejected priests may gather allies.",effect:{legitimacy:1,factions:{faith:{power:10,loyalty:8,intrigue:9}},damageBuilding:"granary"}},
+   {id:"free",label:"Protect both celebrations",detail:"Accept some disorder to keep different congregations under a common law.",effect:{food:-3,legitimacy:8,factions:{faith:{power:-5,loyalty:-5},workers:{loyalty:6}}}},
+   {id:"quiet",label:"Postpone celebrations until harvest ends",detail:"Prioritise food production but risk appearing indifferent to faith.",effect:{food:3,legitimacy:2,factions:{faith:{loyalty:-12,intrigue:10},workers:{loyalty:8}}}}
+  ]
+ },
+ caravanLoss:{
+  advisor:"Foreign Envoy",icon:"🐫",type:"Trade",title:"A Caravan Missing on the Road",
+  text:"Several supply carts have failed to arrive at {capital}. Traders blame raiders, but the Captain says a customs official may have diverted the caravan. The loss threatens supplies needed for construction.",
+  choices:[
+   {id:"escort",label:"Send soldiers to guard the road",detail:"Restore confidence at the risk of drawing troops away from other duties.",effect:{food:-3,wood:2,harmWarriors:1,legitimacy:4,factions:{military:{loyalty:8,power:5}}}},
+   {id:"audit",label:"Investigate the customs officials",detail:"Pursue missing goods through paperwork and witnesses. The merchants may resent the delay.",effect:{wood:-2,legitimacy:5,factions:{workers:{loyalty:4,intrigue:-5}}}},
+   {id:"pass",label:"Leave the merchants to settle it",detail:"Conserve public resources, but some traders may stop using your city.",effect:{wood:-3,legitimacy:-4,factions:{workers:{loyalty:-9,intrigue:8}}}}
+  ]
+ },
+ succession:{
+  advisor:"Royal Spymaster",icon:"👑",type:"Dynasty",title:"Who Speaks When the Throne Is Empty?",
+  text:"The palace has no agreed rule for what happens when a ruler is absent or dies. Generals favour a warrior of proven strength; priests invoke older rituals; guilds ask for a council. The disagreement echoes real dynastic struggles from steppe courts to imperial palaces.",
+  choices:[
+   {id:"council",label:"Establish a council of electors",detail:"Spread responsibility among several groups, though the council may eventually govern without its ruler.",effect:{legitimacy:7,factions:{workers:{power:10,loyalty:8},faith:{power:8},military:{power:8}}}},
+   {id:"heir",label:"Name a single chosen heir",detail:"Offer clarity while risking hostility from families who expected a say.",effect:{legitimacy:4,factions:{military:{loyalty:7},faith:{loyalty:-7},workers:{intrigue:9}}}},
+   {id:"delay",label:"Refuse to discuss succession",detail:"Preserve the current ruler's freedom while leaving a question every courtier will ask privately.",effect:{legitimacy:-8,factions:{workers:{intrigue:9},military:{intrigue:10},faith:{intrigue:9}}}}
+  ]
+ },
+ kurultai:{
+  advisor:"Steppe Herald",icon:"🐎",type:"Imperial council",title:"A Summons to the Great Assembly",
+  text:"Commanders of the Mongol realm call for a gathering to confirm authority and settle rival claims. Some expect you to seek their public consent; others urge you to rule through the strongest camp. Failure to negotiate the assembly could divide the army.",
+  choices:[
+   {id:"gather",label:"Invite all commanders to a great council",detail:"Gain their consent through discussion, but acknowledge their right to judge a ruler.",effect:{food:-5,legitimacy:8,factions:{military:{loyalty:12,power:9},workers:{loyalty:3}}}},
+   {id:"command",label:"Declare that the Khan commands alone",detail:"Assert a single will and challenge the camps that insist on consultation.",effect:{legitimacy:-5,harmWarriors:2,factions:{military:{loyalty:-15,intrigue:15,power:-6}}}},
+   {id:"envoys",label:"Send gifts and envoys to rival camps",detail:"Avoid an immediate confrontation by asking powerful captains to pledge loyalty privately.",effect:{food:-4,wood:-3,legitimacy:4,factions:{military:{loyalty:8,intrigue:-8,power:7}}}}
+  ]
+ }
+});
+Object.assign(COURT_STORIES,{
+ granaryFire:{context:"Witnesses disagree over the smoke: a trader claims he saw a lamp fall, a guard remembers unfamiliar men near the storehouse, and the guild refuses to name its foreman. The grain saved today may mean little if the stores themselves are lost.",counsel:["Keeper of Stores: The doors must be guarded, but we cannot accuse a man because a soldier dislikes him.","Guild Speaker: No worker will speak freely while armed men stand over the ruined grain."],choices:{guild:"Let the workers establish what happened. They know the granaries, but may protect one of their own.",guard:"Put soldiers at every door and treat the fire as an attack. Quick certainty can become its own danger.",rebuild:"Pay for a public inquiry and recovery of the stores, knowing that food and timber are already scarce."}},
+ worksite:{context:"The fallen scaffolding lies beside unfinished masonry. Guild leaders demand a pause; the War Captain demands completion before further enemy incursions. Neither admits responsibility for the collapsed beams.",counsel:["Master Builder: If I cannot examine the foundations, the next collapse will be worse.","War Captain: A city whose walls stand half built is inviting attack."],choices:{pause:"Stop work while specialists investigate the accident.",order:"Demand the original construction deadline be met despite the warning.",masters:"Hire experienced builders to inspect the site and advise the palace."}},
+ garrison:{context:"A patrol has returned without permission. Armed soldiers complain that food has gone to public works while their camp goes hungry. The Captain claims he can restore discipline if the palace gives him a freer hand.",counsel:["War Captain: They have endured hardships no clerk understands; they must see that service matters.","Guild Speaker: Our workers have eaten no better, yet nobody carries swords into the market to bargain."],choices:{rations:"Spend scarce grain now and hear the officers' complaints.",punish:"Make an example of the mutineers and risk a clash among armed comrades.",divide:"Move soldiers between commanders to break the emerging loyalty to one captain."}},
+ sacredGround:{context:"At dawn, workmen preparing a new road find the route blocked by a growing shrine. Priests claim older sacred rights and ask the ruler to intervene. Merchants insist that goods are spoiling while carts wait.",counsel:["High Priestess: A temple ignored today becomes a grievance remembered for generations.","Guild Speaker: If grain cannot move through the city, the gods will not fill our bowls."],choices:{temple:"Defend the shrine as sacred ground and require merchants to find another route.",road:"Open the road and refuse special exemptions for the temple.",compromise:"Spend public supplies on another route and hope neither side asks for more."}},
+ grainEdict:{context:"The market is crowded but few families can afford grain. Some blame wealthy traders who control the stores; others say public intervention will cause even fewer merchants to arrive next season. The rulers of Rome confronted similar tensions around public grain distribution.",counsel:["Keeper of Grain: The crowd believes grain exists somewhere. It is the price, not the harvest, they are shouting about.","Treasurer: Once the crown promises cheap grain, the people will expect it every year."],choices:{subsidy:"Release royal grain at a lower price for households in need.",inspect:"Open merchant storehouses to inspectors and demand evidence before imposing prices.",market:"Let traders set the price and keep the treasury out of the exchange."}},
+ ironDebate:{context:"The treasurer estimates that state control of iron could supply the army with better equipment. Smiths warn that no workshop will prosper under officials who determine every sale. The Han court once argued over a remarkably similar question.",counsel:["Treasurer: If a border city falls for want of weapons, who will thank us for protecting the smiths' profits?","Master Smith: If the court claims every furnace, men will hide their skill rather than sell it."],choices:{monopoly:"Give the crown first rights to metal and its manufacture.",guild:"Let independent smiths manage production and pay agreed dues.",mixed:"Require shared records and oversight without granting either side a monopoly."}},
+ scribes:{context:"The archivist finds blank spaces where royal oaths and tax tallies should have been kept. The priests insist on ritual truth; the guilds say that important ledgers have been used as weapons against ordinary families.",counsel:["Royal Archivist: An altered record can change who owns a field, a wall or the right to command an army.","Guild Speaker: The scribes answer to the people who pay their wages, or they should."],choices:{seize:"Search the homes of clerks and treat the missing papers as sabotage.",copy:"Fund a new system of duplicate books kept in different places.",public:"Appoint an inquiry involving the guilds and the temples."}},
+ veteranLand:{context:"The soldiers who fought for the city are asking to settle on prosperous land. Some fields are already claimed by families with no military service. Granting land may build a loyal frontier army—or create angry workers inside the gates.",counsel:["War Captain: Men who defended the harvest deserve to share it.","Steward: A grant that pleases one soldier can dispossess three farmers."],choices:{settle:"Grant fields to those who fought, despite longstanding claims.",pay:"Offer food and pensions instead of farmland.",frontier:"Promise new holdings beyond the frontier in return for continued service."}},
+ pilgrims:{context:"Competing temple processions threaten the harvest schedule. Farmers need hands in the fields, but every priest expects recognition by the throne. An apparently ceremonial choice may define which leader speaks for the gods.",counsel:["High Priestess: Divided holy days can unite a kingdom if rulers are patient.","Guild Speaker: Nobody can harvest grain by watching two processions pass."],choices:{first:"Support the older priestly tradition and instruct the others to yield.",free:"Allow the two festivals to take place, even if work slows down.",quiet:"Put the harvest first and delay public celebrations."}},
+ caravanLoss:{context:"Three carts have disappeared, bringing rumours of raiders, corrupt customs officers and merchant insurance schemes. The Captain requests more escorts, while the treasurer asks who signed the original trade agreement.",counsel:["Foreign Envoy: A road is only a trade route while people believe it is safe.","War Captain: I can guard merchants, but not every mile of empty countryside."],choices:{escort:"Send troops to protect the route and recover the lost goods.",audit:"Search the manifests and tax records for signs of fraud.",pass:"Leave the caravan guild to absorb the loss and decide if the route is worth maintaining."}},
+ succession:{context:"One day the ruler will not be present to settle disputes. The commander says strength must decide; the temple favours sacred precedent; the guilds call for an agreement written before any crisis.",counsel:["Royal Spymaster: The danger is not who sits on the throne, but who believes they had the right to choose.","High Priestess: A law written while the ruler is alive may spare us a war when the ruler is not."],choices:{council:"Give powerful factions a recognised voice in deciding succession.",heir:"Name an heir and require public oaths of recognition.",delay:"Avoid binding the throne to a rule that future circumstances may not allow."}},
+ kurultai:{context:"Some steppe commanders have travelled far expecting consultation in a great assembly. Others argue that open meetings invite intrigue. In the Mongol Empire, succession and consultation were practical questions of imperial survival.",counsel:["Steppe Herald: The camps are watching for respect as much as orders.","War Captain: A divided army is a feast for an enemy who approaches quietly."],choices:{gather:"Call a public council of powerful clan and army leaders.",command:"Refuse to allow commanders any vote on the authority of the Khan.",envoys:"Negotiate promises of loyalty with each camp separately."}}
+});
 const COURT_AFTERSHOCKS={
  founding:{
   listen:[{text:"The open council is praised in the streets, though some members have begun to meet without royal officials. Their new habits may last longer than the ruler expected.",effect:{legitimacy:3,factions:{workers:{power:7,intrigue:3}}}},
