@@ -117,6 +117,17 @@ function coastTile(x,y,r=2){
  return null;
 }
 function cityHasSea(c){return !!(c&&coastTile(c.x,c.y,influenceRadius(c)));}
+function launchWater(c){
+ if(!c)return null;
+ const radius=influenceRadius(c),options=[];
+ for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++){
+  const x=c.x+dx,y=c.y+dy;
+  if(!isCoastalWater(x,y)||state.units.some(u=>u.owner==="player"&&isNaval(u)&&u.x===x&&u.y===y))continue;
+  options.push({x,y,distance:Math.max(Math.abs(dx),Math.abs(dy))});
+ }
+ options.sort((a,b)=>a.distance-b.distance);
+ return options[0]||null;
+}
 function isNaval(u){return !!unitDef(u?.type)?.naval;}
 function deposit(x,y){
  if(!inMap(x,y))return null;
@@ -180,6 +191,18 @@ function initialEncounters(scenario){
 }
 function unitHP(u){return Math.max(0,u.hp??unitMaxHP(u));}
 function unitMaxHP(u){return 6+Math.max(0,(unitDef(u?.type)?.strength||1)-2);}
+function fishAtSea(unitId){
+ const u=state.units.find(z=>z.id===unitId&&z.owner==="player");
+ if(!u||!isNaval(u))return toast("Choose a fishing boat or longship.");
+ if(u.moved)return toast("This ship has already acted this year.");
+ if(terrain(u.x,u.y)!=="water")return toast("The ship must be at sea to fish.");
+ if(!isCoastalWater(u.x,u.y)&&!known("navigation"))return toast("Open-sea fishing requires Navigation.");
+ const catchSize=(u.type==="fishingBoat"?6:3)+(known("netmaking")?2:0);
+ state.resources.food+=catchSize;u.moved=true;
+ const home=closestCity(u.x,u.y),where=home?.name||"your civilisation";
+ record("🎣 "+unitTitle(u)+" brings "+catchSize+" food from the sea to "+where+".");
+ autoAdvance("move");save();renderUI();
+}
 function restUnit(unitId){
  const u=state.units.find(u=>u.id===unitId&&u.owner==="player");
  if(!u)return;
@@ -421,11 +444,11 @@ function updateFog(){
    }
  };
  for(const city of state.cities){
-  if(city.owner==="player")reveal(city.x,city.y,Math.max(2,influenceRadius(city))+upgrade(city,"lookout")*2);
+  if(city.owner==="player")reveal(city.x,city.y,Math.max(2,influenceRadius(city))+upgrade(city,"lookout")*2+upgrade(city,"lighthouse")*2);
   else if(city.owner==="ally")reveal(city.x,city.y,2);
  }
  for(const unit of state.units)if(unit.owner==="player")
-  reveal(unit.x,unit.y,(unitDef(unit.type)?.vision||2)+(known("scouting")&&unit.type==="settler"?1:0));
+  reveal(unit.x,unit.y,(unitDef(unit.type)?.vision||2)+(known("scouting")&&unit.type==="settler"?1:0)+(isNaval(unit)&&known("navigation")?2:0));
 }
 
 function myCities(){return state.cities.filter(c=>c.owner==="player");}
@@ -734,7 +757,11 @@ function progressBuilding(){
  if(p.left===0){
   if(unitDef(p.kind)){
    const d=unitDef(p.kind);
-   state.units.push({id:"u"+state.nextId++,type:p.kind,x:c.x,y:c.y,moved:true,owner:"player",hp:6+Math.max(0,d.strength-2),xp:0,strength:d.strength+upgrade(c,"training")+(p.kind==="archer"?upgrade(c,"range"):0)});
+   const port=d.naval?launchWater(c):null;
+   if(d.naval&&!port){
+    p.left=1;record("A harbour berth must be freed before "+d.name+" can launch.");return;
+   }
+   state.units.push({id:"u"+state.nextId++,type:p.kind,x:port?.x??c.x,y:port?.y??c.y,moved:true,owner:"player",hp:6+Math.max(0,d.strength-2),xp:0,strength:d.strength+upgrade(c,"training")+(p.kind==="archer"?upgrade(c,"range"):0)});
    updateFog();
   }else{
    c.buildings[p.kind]=(c.buildings[p.kind]||0)+1;
@@ -854,13 +881,24 @@ function move(x,y){
  syncStage();
  const u=activeUnit();if(!u)return toast("Select a unit first.");
  if(u.moved)return toast("This unit already moved this year.");
- if(!inMap(x,y)||terrain(x,y)==="water")return toast("That tile is impassable.");
- const step=distance(u.x,u.y,x,y),range=u.type==="scout"?2:1;
- if(step<1||step>range)return toast("This unit can move "+range+" tile"+(range===1?"":"s")+" per year.");
- if(step===2){
-  const midX=Math.round((u.x+x)/2),midY=Math.round((u.y+y)/2);
-  if(terrain(midX,midY)==="water")return toast("The route crosses impassable water.");
-  const midway=cityAt(midX,midY);if(midway&&midway.owner==="rival")return toast("You cannot pass through a rival city.");
+ if(!inMap(x,y))return toast("That tile is outside the world.");
+ const naval=isNaval(u),water=terrain(x,y)==="water";
+ if(naval&&!water)return toast("Ships travel on water. They need a harbour to land.");
+ if(!naval&&water)return toast("Land units cannot walk on water. Train a ship at a Harbour.");
+ if(naval&&!known("navigation")&&!isCoastalWater(x,y))return toast("Open sea requires Navigation. Sail along the coast for now.");
+ const step=distance(u.x,u.y,x,y),range=unitDef(u.type)?.range||(u.type==="scout"?2:1);
+ if(step<1||step>range)return toast("This unit can travel up to "+range+" tile"+(range===1?"":"s")+" per year.");
+ for(let k=1;k<=step;k++){
+  const px=Math.round(u.x+(x-u.x)*k/step),py=Math.round(u.y+(y-u.y)*k/step);
+  const sea=terrain(px,py)==="water";
+  if(naval){
+   if(!sea)return toast("Ships cannot sail through land.");
+   if(!known("navigation")&&!isCoastalWater(px,py))return toast("Learn Navigation for ocean crossings.");
+   if(state.units.some(other=>other.id!==u.id&&other.owner==="player"&&isNaval(other)&&other.x===px&&other.y===py)&&k===step)return toast("Another ship occupies that sea tile.");
+  }else{
+   if(sea)return toast("Your route crosses water.");
+   const midway=cityAt(px,py);if(midway&&midway.owner==="rival")return toast("You cannot pass through a rival city.");
+  }
  }
  const e=encounterAt(x,y);
  if(e&&currentlyVisible(x,y)){selected={x,y};menu="encounter";renderUI();return toast("Encounter: "+wildTypes[e.type].name+". Choose how to approach it.");}
@@ -911,6 +949,8 @@ function projectRequirements(c,id){
  if(def.need&&!known(def.need))missing.push("Research "+(techs[def.need]?.name||def.need));
  if(def.path&&state.path!==def.path)missing.push("Choose "+(paths[def.path]||def.path)+" path");
  if(def.requires&&!upgrade(c,def.requires))missing.push("Build "+(buildings[def.requires]?.name||def.requires)+" first");
+ if(def.coastal&&!cityHasSea(c))missing.push("Requires a coastal city with sea inside its influence");
+ if(def.naval&&!launchWater(c))missing.push("Requires a free coastal water tile to launch the ship");
  for(const r of ["wood","stone","food","metal"]){
   const deficit=(def[r]||0)-(state.resources[r]||0);
   if(deficit>0)missing.push("Need "+deficit+" more "+r);
@@ -1067,7 +1107,7 @@ function panelContents(){
    const d=unitDef(u.type);
    const nearby=(state.encounters||[]).find(e=>currentlyVisible(e.x,e.y)&&distance(u.x,u.y,e.x,e.y)<=1);
    output+=item((d?.icon||"🚶")+" "+unitTitle(u)+" at "+u.x+", "+u.y,(u.moved?"Already acted this year":"Ready")+" · ⚔ "+unitAttack(u)+" · 🛡 "+unitDefense(u)+" · ❤️ "+unitHP(u)+"/"+unitMaxHP(u)+" · XP "+(u.xp||0)+" · Vision "+(d?.vision||2),
-     btn(u.moved?"Already acted":"Select to move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,u.moved,"primary"):"")+(unitHP(u)<unitMaxHP(u)?btn("❤️ Rest & heal","rest:"+u.id,u.moved):"")+(nearby?btn("View "+wildTypes[nearby.type].name,"inspect:"+nearby.id):""));
+     btn(u.moved?"Already acted":"Select to move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,u.moved,"primary"):"")+(unitHP(u)<unitMaxHP(u)?btn("❤️ Rest & heal","rest:"+u.id,u.moved):"")+(isNaval(u)?btn("🎣 Fish for food","fishShip:"+u.id,u.moved||terrain(u.x,u.y)!=="water","primary"):"")+(nearby?btn("View "+wildTypes[nearby.type].name,"inspect:"+nearby.id):""));
   }
  }
  if(menu==="history")output=state.events.map(e=>"<div class='event'>"+htmlSafe(e)+"</div>").join("");
@@ -1108,6 +1148,7 @@ function doAction(a){
  if(a.startsWith("tradeWood:"))return tradeTimber(a.slice(10));
  if(a==="worldMap")return showWorldMap();
  if(a.startsWith("rest:"))return restUnit(a.slice(5));
+ if(a.startsWith("fishShip:"))return fishAtSea(a.slice(9));
  if(a.startsWith("inspect:")){
   const e=(state.encounters||[]).find(e=>e.id===a.slice(8));
   if(e&&currentlyVisible(e.x,e.y)){selected={x:e.x,y:e.y};menu="encounter";renderUI();}
@@ -1279,6 +1320,16 @@ function draw(){
  for(const u of state.units){
   const p=screen(u.x,u.y),z=scale;
   if(!currentlyVisible(u.x,u.y)&&u.owner!=="player")continue;
+  if(isNaval(u)){
+   ctx.fillStyle="#142e34ad";ctx.beginPath();ctx.ellipse(p.x,p.y+8*z,23*z,8*z,0,0,Math.PI*2);ctx.fill();
+   polygon([[p.x-23*z,p.y],[p.x,p.y+12*z],[p.x+23*z,p.y],[p.x+14*z,p.y+11*z],[p.x-12*z,p.y+11*z]],u.type==="longship"?"#8b4c35":"#976c48","#583d2c");
+   ctx.strokeStyle="#745337";ctx.lineWidth=Math.max(2,3*z);ctx.beginPath();ctx.moveTo(p.x,p.y+2*z);ctx.lineTo(p.x,p.y-37*z);ctx.stroke();
+   polygon([[p.x+2*z,p.y-35*z],[p.x+22*z,p.y-7*z],[p.x+2*z,p.y-7*z]],u.type==="longship"?"#e0ae86":"#f4e2b8");
+   if(u.type==="longship"){ctx.strokeStyle="#d9bea4";ctx.lineWidth=2*z;ctx.beginPath();ctx.moveTo(p.x-9*z,p.y-4*z);ctx.lineTo(p.x-13*z,p.y-18*z);ctx.stroke();}
+   ctx.font="bold "+Math.max(10,12*z)+"px sans-serif";ctx.textAlign="center";ctx.fillStyle="#ffe9b8";ctx.fillText(unitTitle(u),p.x,p.y-44*z);ctx.textAlign="left";
+   if(!u.moved&&activeUnit()?.id===u.id){ctx.strokeStyle="#ffe28d";ctx.lineWidth=2*z;ctx.beginPath();ctx.ellipse(p.x,p.y+8*z,27*z,11*z,0,0,Math.PI*2);ctx.stroke();}
+   continue;
+  }
   const armed=fighter(u),club=u.type==="clubman",scout=u.type==="scout";
   ctx.fillStyle="#071a1366";ctx.beginPath();ctx.ellipse(p.x,p.y+6*z,11*z,5*z,0,0,Math.PI*2);ctx.fill();
   // Two legs, leather tunic, arms and head make unit silhouettes readable on mobile.
