@@ -528,7 +528,7 @@ function courtLevel(){
 }
 function costAvailable(effect){
  if(!effect)return false;
- return ["wood","stone","food","metal","ore","animals"].every(k=>(state.resources[k]||0)+((effect.resources||{})[k]||0)>=0)
+ return ["wood","stone","food","metal","ore","animals"].every(k=>(state.resources[k]||0)+((effect.resources||{})[k]||0)+(k==="wood"?(effect.wood||0):k==="food"?(effect.food||0):0)>=0)
    &&(state.research||0)+((effect.resources||{}).research||0)>=0;
 }
 function applyCourtEffect(effect,target){
@@ -674,7 +674,7 @@ function advanceCourt(){
  if(!c.pending){
   const urgent=state.year>=5&&state.year-c.lastSceneYear>=4&&state.resources.food===0;
   if(state.year>=c.nextSceneYear||urgent){
-   const scene=urgent?"food":chooseRandomCourtScene();
+   const scene=urgent?"food":c.lastSceneYear===0?"founding":chooseRandomCourtScene();
    presentCourtScene(scene);
   }
  }
@@ -708,7 +708,7 @@ function courtMarkup(){
 function renderCourtScene(){
  const overlay=get("courtScene");if(!overlay)return;
  const c=ensureCourt(),p=c.pending,ended=state.overthrown;
- if(!inGame||(!p&&!ended)){overlay.hidden=true;overlay.innerHTML="";return;}
+ if(!inGame||!get("startScreen").classList.contains("hidden")||(!p&&!ended)){overlay.hidden=true;overlay.innerHTML="";return;}
  overlay.hidden=false;
  if(ended){
   const name=COURT_GROUPS[ended.faction]?.name||"The court";
@@ -1212,6 +1212,8 @@ function pathGrowth(){
  if(state.victory)record(state.victory);
 }
 function endYear(){
+ if(state.overthrown)return toast("Your reign has ended. Start a new game from the main menu.");
+ if(ensureCourt().pending)return toast("Your advisor awaits a decision. Choose a response before End Year.");
  syncStage(); // End Year is the only irreversible yearly action.
  state.year++;
  if(myCities().length){
@@ -1235,7 +1237,7 @@ function endYear(){
  }
  villageYearlyEffects();roamEnemies();spawnEncounters();
  state.units.forEach(u=>u.moved=false);
- recalcBorders();state.stageYear=state.year;state.stage=availableFrom("move");menu="";save();renderUI();toast("Year "+state.year+" · Units can move again.");
+ recalcBorders();advanceCourt();state.stageYear=state.year;state.stage=availableFrom("move");menu="";save();renderUI();if(!state.overthrown&&!state.court.pending)toast("Year "+state.year+" · Units can move again.");
 }
 function caravanAccess(){
  if(state.year<30)return "Caravans become available in Year 30 ("+(30-state.year)+" years remaining).";
@@ -1388,6 +1390,7 @@ function panelContents(){
  if(menu==="actions"){
   output="<p class='hint'>Everything is managed through one city tile and the land it influences.</p>";
   output+=item("📋 This year's actions","Return to skipped stages before ending the year.",btn("Review turn","turnMenu"));
+  if(firstCity())output+=item("👑 Royal court & intrigue","Crown legitimacy "+ensureCourt().legitimacy+"/100 · "+courtLevel()+". Manage competing guilds, generals and priests before their influence becomes a threat.",btn("Enter royal court","court",false,"primary"));
   if(firstCity()){
    output+=item("🏛 City","Construct developments inside a city tile; one project at a time.",btn("🏗 Construct","city",false,"primary"));
    output+=item("🌿 Workers","Population: "+citizens()+"("+assignedWorkers()+") assigned. "+unassignedWorkers()+" still available for resources or construction.",btn("👥 Assign workers","workers",false,"primary"));
@@ -1400,6 +1403,7 @@ function panelContents(){
   output+=item("🏠 Main menu","Play a new game or continue from your save.",btn("Open main menu","openMainMenu"));
   output+=item("💾 Save game","Save the current turn on this device.",btn("Save now","save"));
  }
+ if(menu==="court")output=courtMarkup();
  if(menu==="workers"){
   const free=unassignedWorkers(),assigned=assignedWorkers();
   output='<div class="worker-counter"><span class="worker-number">'+free+'</span><span><strong>Workers remaining</strong><small>'+assigned+' assigned / '+citizens()+' citizens</small></span></div>';
@@ -1587,7 +1591,11 @@ function renderUI(){
  const res=state.resources;
  const total=citizens(),assigned=assignedWorkers();
  get("stats").innerHTML=(firstCity()?'<span class="chip" title="Stored food">🍲 <b>'+res.food+'</b></span><span class="chip">🪵 <b>'+res.wood+'</b></span><span class="chip">🪨 <b>'+res.stone+'</b></span><span class="chip">👥 <b>'+total+'('+assigned+')</b></span>':"")+'<span class="chip">Year <b>'+state.year+'</b></span>';
- const head=get("summary"),actions=get("actions"),rp=state.researchProject;
+ const head=get("summary"),actions=get("actions"),rp=state.researchProject,court=ensureCourt();
+ const courtBadge=get("courtBadge");
+ courtBadge.hidden=!firstCity();
+ courtBadge.innerHTML='👑 Court <b>'+court.legitimacy+'</b>'+(court.plot?' ⚠':'');
+ courtBadge.classList.toggle("court-danger",!!court.plot||courtLevel()==="High risk");
  get("leaderName").textContent=(state.leader?.leader||"Leader")+" · "+(state.leader?.name||"Civilisation");
  if(!firstCity()){
   head.innerHTML='<div class="progress-heading">🔬 Research</div><div class="progress-caption">Found your first city to begin discovering technologies.</div>';
@@ -1606,12 +1614,20 @@ function renderUI(){
  const stageAction=state.stage==="end"?"":btn(state.stage==="move"?"🚶 Move units":state.stage==="workers"?"👥 Assign workers":state.stage==="construction"?"🏗 Construct":"🔬 Choose tech","stageAction",false,"secondary stage-cta");
  actions.innerHTML='<button class="stage-label" data-action="turnMenu" title="Revisit any turn step">☰ '+stepLabel+' ▾</button><div class="stage-buttons">'+stageAction+nextButton+endButton+'</div>';
  const panel=get("panel");panel.classList.toggle("open",!!menu);
- panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game",turn:"This year",encounter:"Encounter"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
+ panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game",turn:"This year",encounter:"Encounter",court:"Royal court"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
  panel.querySelector("#closePanel")?.addEventListener("click",()=>{menu="";renderUI();});
  document.querySelectorAll("[data-action]").forEach(b=>b.addEventListener("click",()=>doAction(b.dataset.action)));
+ renderCourtScene();
 }
 function doAction(a){
+ if(state.overthrown)return toast("Your reign has ended. Start a new game.");
+ if(ensureCourt().pending)return toast("Choose a response in the royal advisor audience first.");
  if(a==="endYear")return endYear();
+ if(a==="court"){menu="court";renderUI();return;}
+ if(a.startsWith("council:")){
+  const [group,action]=a.slice(8).split(":");
+  return courtCouncilAction(group,action);
+ }
  if(a.startsWith("tradeWood:"))return tradeTimber(a.slice(10));
  if(a==="worldMap")return showWorldMap();
  if(a.startsWith("rest:"))return restUnit(a.slice(5));
@@ -1631,7 +1647,7 @@ function doAction(a){
  if(a==="turnMenu"){menu=menu==="turn"?"":"turn";renderUI();return;}
  if(a.startsWith("focus:"))return focusStage(a.slice(6));
  if(a==="actions"||a==="main"){menu=menu===a?"":a;renderUI();return;}
- if(["city","tile","tech","path","units","workers","history"].includes(a)){menu=a;renderUI();return;}
+ if(["city","tile","tech","path","units","workers","history","court"].includes(a)){menu=a;renderUI();return;}
  if(a==="work"&&selected)return workTile(selected.x,selected.y);
  if(a==="assignAll")return assignAllWorkers();
  if(a.startsWith("builder:")){const [cityId,delta]=a.slice(8).split(":");return assignBuilder(cityId,Number(delta));}
@@ -1645,7 +1661,7 @@ function doAction(a){
  }
  if(a==="save")return manualSave();
  if(a==="openMainMenu")return showMainMenu();
- if(a==="restart"){if(confirm("Start a new world and replace your save?")){state=fresh();moving=null;menu="";selected=null;recalcBorders();center(15,15);save();renderUI();}return;}
+ if(a==="restart"){if(confirm("Start a new world and replace your save?")){state=fresh();moving=null;menu="";selected=null;recalcBorders();center(state.leader.x,state.leader.y);save();renderUI();}return;}
  if(a.startsWith("unit:")){
   const u=getUnit(a.slice(5));
   if(!u||u.owner!=="player")return;
@@ -1917,6 +1933,7 @@ canvas.addEventListener("touchend",()=>twoFinger=0);
 get("zoomIn").onclick=()=>scale=Math.min(2.3,scale+.18);
 get("zoomOut").onclick=()=>scale=Math.max(.55,scale-.18);
 get("menu").onclick=()=>{menu=menu==="actions"?"":"actions";renderUI();};
+get("courtBadge").onclick=()=>doAction("court");
 get("mapBtn").onclick=showWorldMap;
 get("closeWorld").onclick=hideWorldMap;
 get("homeView").onclick=()=>{
