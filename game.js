@@ -2117,7 +2117,7 @@ function panelContents(){
   const summaries={
    move:ready+" unit"+(ready===1?"":"s")+" still able to move",
    workers:unassignedWorkers()+" citizens unassigned · "+assignedWorkers()+" working",
-   construction:state.project?projectLabel():"No building under construction",
+   construction:"🏗 "+projectLabel()+" · ⚔ "+projectLabel("unitProject"),
    research:state.researchProject?researchLabel():"No technology being researched"
   };
   for(const stage of STAGES){
@@ -2494,19 +2494,26 @@ function structure(x,y,c){
  ctx.shadowColor="#0a2416";ctx.shadowBlur=5;ctx.fillText(c.name,x,y-high-33*z);ctx.shadowBlur=0;ctx.textAlign="left";
 }
 function drawConstructionProgress(x,y,c){
- const p=state.project;if(!p||p.city!==c.id)return;
- const z=scale,w=Math.max(86,112*z),bh=Math.max(6,8*z),cy=y+Math.max(32,35*z);
- const pct=Math.max(0,Math.min(1,1-p.left/Math.max(1,p.total)));
- const remaining=estimateWork(p.left,constructionRate(c,p.kind));
- ctx.fillStyle="#17291fe8";ctx.fillRect(x-w/2-6,cy-24,w+12,34);
- ctx.strokeStyle="#c5a870a6";ctx.lineWidth=1;ctx.strokeRect(x-w/2-6,cy-24,w+12,34);
- ctx.textAlign="center";ctx.textBaseline="alphabetic";
- ctx.font="bold "+Math.max(10,11*z)+"px sans-serif";ctx.fillStyle="#f4dfb5";
- ctx.fillText("🏗 "+(buildings[p.kind]?.name||p.kind)+" · "+remaining+"y",x,cy-12);
- ctx.fillStyle="#495c4e";ctx.fillRect(x-w/2,cy-6,w,bh);
- ctx.fillStyle="#ebbe71";ctx.fillRect(x-w/2,cy-6,w*pct,bh);
+ const active=[{slot:"project",icon:"🏗",colour:"#ebbe71"},{slot:"unitProject",icon:"⚔",colour:"#89caac"}]
+   .filter(entry=>state[entry.slot]?.city===c.id);
+ if(!active.length)return;
+ const z=scale,w=Math.max(91,113*z),rowHeight=Math.max(21,25*z),cy=y+Math.max(32,35*z);
+ const top=cy-17,pad=5,h=active.length*rowHeight+5;
+ ctx.fillStyle="#17291fec";ctx.fillRect(x-w/2-pad,top,w+2*pad,h);
+ ctx.strokeStyle="#c5a870a6";ctx.lineWidth=1;ctx.strokeRect(x-w/2-pad,top,w+2*pad,h);
+ for(let idx=0;idx<active.length;idx++){
+  const {slot,icon,colour}=active[idx],p=state[slot],desc=projectDef(p.kind),yy=top+idx*rowHeight+2;
+  const progress=Math.max(0,Math.min(1,1-p.left/Math.max(1,p.total)));
+  const years=estimateWork(p.left,projectRate(c,p.kind));
+  ctx.fillStyle="#f2dfb9";ctx.textAlign="center";ctx.textBaseline="alphabetic";
+  ctx.font="bold "+Math.max(9,10*z)+"px sans-serif";
+  ctx.fillText(icon+" "+(desc?.name||p.kind)+" · "+years+"y",x,yy+11,Math.max(85,w-3));
+  ctx.fillStyle="#495c4e";ctx.fillRect(x-w/2,yy+15,w,Math.max(4,5*z));
+  ctx.fillStyle=colour;ctx.fillRect(x-w/2,yy+15,w*progress,Math.max(4,5*z));
+ }
  ctx.textAlign="left";
 }
+
 function border(x,y,id){
  if(!id)return;
  const p=screen(x,y),w=TW/2*scale,h=TH/2*scale;
