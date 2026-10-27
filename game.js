@@ -746,6 +746,18 @@ function endYear(){
  state.units.forEach(u=>u.moved=false);
  recalcBorders();state.stageYear=state.year;state.stage=availableFrom("move");menu="";save();renderUI();toast("Year "+state.year+" · Units can move again.");
 }
+function tradeTimber(cityId){
+ const c=getCity(cityId);
+ if(!c||c.owner!=="player")return toast("Select one of your cities to trade.");
+ const years=5-(state.year-(c.lastTimberTrade||-100));
+ if(years>0)return toast("The timber caravan returns in "+years+" years.");
+ const foodCost=upgrade(c,"market")?9:13,woodGain=upgrade(c,"market")?8:6;
+ if(state.resources.food<foodCost)return toast("Need "+(foodCost-state.resources.food)+" more food to import timber.");
+ state.resources.food-=foodCost;state.resources.wood+=woodGain;
+ c.lastTimberTrade=state.year;
+ record(c.name+" imports "+woodGain+" timber in exchange for "+foodCost+" food.");
+ save();renderUI();
+}
 function startConstruction(kind,cityId){
  syncStage();
  const c=getCity(cityId);if(!c||c.owner!=="player")return;
@@ -907,6 +919,12 @@ function panelContents(){
   if(c.captives)output+='<p class="hint">Captive labour: '+c.captives+' · +'+(c.captives>0?1:0)+' construction work/year · Unrest '+(c.unrest||0)+' (escape risk and food upkeep). Captives are not citizens.</p>';
   output+='<p class="hint">All developments are built inside this city tile. Buildings now take several years even with builders. Extra builders help less after the first few, so keep some citizens gathering food and materials. Only one project runs across your civilisation.</p>';
   output+=item("🏗 Current project",projectLabel()+" · Current speed "+speed+" work/year",btn("👷 Assign builders","workers",false,"primary"));
+  const timberFood=upgrade(c,"market")?9:13,timberWood=upgrade(c,"market")?8:6;
+  const tradeWait=Math.max(0,5-(state.year-(c.lastTimberTrade||-100)));
+  const shortage=state.resources.food<timberFood;
+  const tradeDesc="Import timber from other regions: "+timberFood+" food → "+timberWood+" wood. "+(tradeWait?"Caravan next available in "+tradeWait+" years.":shortage?"Need "+(timberFood-state.resources.food)+" more food.":"Caravan available now.")+" More timber may be scarce in desert, mountain or grassland climates.";
+  output+=item("🛶 Timber caravan",tradeDesc,btn(tradeWait?"Caravan returning ("+tradeWait+"y)":shortage?"Need more food":"Trade food for wood","tradeWood:"+c.id,false,!tradeWait&&!shortage?"primary":"secondary"));
+
   output+='<h4 class="panel-section-title">Buildings</h4>';
   for(const [id,d] of Object.entries(buildings)){
    const req=projectRequirements(c,id),cost=["wood","stone","food","metal"].filter(k=>d[k]).map(k=>d[k]+" "+k).join(" · ");
@@ -1019,6 +1037,7 @@ function renderUI(){
 }
 function doAction(a){
  if(a==="endYear")return endYear();
+ if(a.startsWith("tradeWood:"))return tradeTimber(a.slice(10));
  if(a==="worldMap")return showWorldMap();
  if(a.startsWith("rest:"))return restUnit(a.slice(5));
  if(a.startsWith("inspect:")){
