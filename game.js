@@ -241,7 +241,7 @@ function restUnit(unitId){
 }
 function unitAttack(u){return Math.max(1,(u.strength||unitDef(u.type)?.strength||1)+1+Math.floor((u.xp||0)/3));}
 function unitDefense(u){return Math.max(1,Math.ceil((u.strength||1)/2)+1+(u.type==="spearman"?2:0));}
-function cityDefense(c){return 3+Math.ceil(c.pop/2)+Math.floor((c.army||0)/3)+4*upgrade(c,"walls")+upgrade(c,"lookout")+(c.owner==="player"?state.units.filter(u=>u.owner==="player"&&fighter(u)&&distance(u.x,u.y,c.x,c.y)<=1).reduce((n,u)=>n+Math.ceil(unitDefense(u)/2),0):0);}
+function cityDefense(c){return 3+Math.ceil(c.pop/2)+Math.floor((c.army||0)/3)+4*upgrade(c,"walls")+upgrade(c,"lookout")+(c.owner==="player"?state.units.filter(u=>u.owner==="player"&&!u.embarkedOn&&fighter(u)&&distance(u.x,u.y,c.x,c.y)<=1).reduce((n,u)=>n+Math.ceil(unitDefense(u)/2),0):0);}
 function cityAttack(c){return 1+Math.floor(c.pop/4)+upgrade(c,"barracks")+upgrade(c,"training");}
 function encounterAt(x,y){return (state.encounters||[]).find(e=>e.x===x&&e.y===y&&e.hp>0);}
 function eventRng(seed){return dice(seed*17+state.year*11,seed*31+state.year*19);}
@@ -342,7 +342,7 @@ function roamEnemies(){
  // Each year, hostile warriors and predators may approach the player's units.
  for(const e of state.encounters||[]){
   if(!["raider","wolf","boar","jaguar","lion","tiger","bear"].includes(e.type))continue;
-  const victim=state.units.filter(u=>u.owner==="player"&&distance(u.x,u.y,e.x,e.y)<=1).sort((a,b)=>unitHP(a)-unitHP(b))[0];
+  const victim=state.units.filter(u=>u.owner==="player"&&!u.embarkedOn&&!isNaval(u)&&distance(u.x,u.y,e.x,e.y)<=1).sort((a,b)=>unitHP(a)-unitHP(b))[0];
   if(victim&&eventRng(e.x*7+e.y*11)>(e.type==="raider"?.32:.72)){
    const damage=Math.max(1,e.attack-unitDefense(victim)+Math.floor(eventRng(e.x*11)*2));
    victim.hp=Math.max(0,unitHP(victim)-damage);
