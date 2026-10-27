@@ -167,26 +167,32 @@ function assignAllWorkers(){
  let count=0;
  for(const c of myCities()){
   const options=availableWorkTiles(c);
-  // Feed the city first, then spread jobs across wood, stone and other resources.
-  const foodNeed=Math.max(1,Math.ceil(c.pop/4));
-  const foodJobs=Object.entries(state.works).filter(([key,id])=>id===c.id&&["forage","food","animals"].includes(deposit(...decode(key))?.type)).length;
-  options.sort((a,b)=>{
-   const weight=t=>{
-    if(["food","forage","animals"].includes(t.kind))return foodJobs<foodNeed?0:3;
-    if(t.kind==="wood")return 1;
-    if(t.kind==="stone")return 2;
-    return 4;
+  const foodTarget=Math.max(1,Math.ceil(c.pop/4));
+  const totals={food:0,wood:0,stone:0,ore:0,animals:0};
+  for(const [key,id] of Object.entries(state.works)){
+   if(id!==c.id)continue;
+   const kind=deposit(...decode(key))?.type;
+   if(kind==="food"||kind==="forage")totals.food++;
+   else if(kind&&totals[kind]!==undefined)totals[kind]++;
+  }
+  while(freeWorkers(c)>0&&options.length){
+   // Choose again after each assignment to balance food with timber and stone.
+   const score=t=>{
+    if(t.kind==="food"||t.kind==="forage")return totals.food<foodTarget?0:9+totals.food;
+    if(t.kind==="wood")return totals.wood===0?1:5+totals.wood;
+    if(t.kind==="stone")return totals.stone===0?2:6+totals.stone;
+    return 7+(totals[t.kind]||0);
    };
-   return weight(a)-weight(b);
-  });
-  for(const tile of options){
-   if(freeWorkers(c)===0)break;
-   state.works[tile.key]=c.id;count++;
+   options.sort((a,b)=>score(a)-score(b));
+   const tile=options.shift();state.works[tile.key]=c.id;count++;
+   const kind=tile.kind==="forage"?"food":tile.kind;totals[kind]=(totals[kind]||0)+1;
   }
  }
  if(count)record("Assigned "+count+" available worker"+(count===1?"":"s")+" to nearby resources.");
  else toast("There are no available workers or workable resource tiles.");
- syncStage();save();renderUI();
+ syncStage();
+ if(state.stage!=="workers"&&menu==="workers")menu="";
+ save();renderUI();
 }
 function save(){try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){}}
 function toast(msg){get("toast").textContent=msg;get("toast").classList.add("show");toastUntil=Date.now()+2900;}
@@ -210,7 +216,7 @@ function workTile(x,y){
  if(state.stage!=="workers")return toast("Assign new workers during the worker step.");
  if(freeWorkers(c)<=0){toast("All citizens already have jobs.");return;}
  if(remaining(x,y)<=0&&d.type!=="animals"&&d.type!=="food"){toast("This deposit is exhausted.");return;}
- state.works[key]=c.id;record(c.name+" assigns one worker to "+d.type+".");syncStage();save();renderUI();
+ state.works[key]=c.id;record(c.name+" assigns one worker to "+d.type+".");syncStage();if(state.stage!=="workers"&&(menu==="workers"||menu==="tile"))menu="";save();renderUI();
 }
 function harvestResources(){
  const gains={food:0,wood:0,stone:0,ore:0,animals:0};
@@ -229,6 +235,8 @@ function harvestResources(){
   const extracted=Math.min(output,remaining(x,y));
   state.extracted[key]=(state.extracted[key]||0)+extracted;
   gains[d.type==="forage"?"food":d.type]+=extracted;
+  // Exhausted natural deposits release the worker for reassignment next year.
+  if(remaining(x,y)===0)delete state.works[key];
  }
  for(const [r,n] of Object.entries(gains))state.resources[r]+=n;
  const forges=myCities().reduce((n,c)=>n+upgrade(c,"forge"),0);
