@@ -107,7 +107,19 @@ function initialEncounters(){
  }
  return result;
 }
-function unitHP(u){return Math.max(0,u.hp??unitDef(u.type)?.hp??6);}
+function unitHP(u){return Math.max(0,u.hp??unitMaxHP(u));}
+function unitMaxHP(u){return 6+Math.max(0,(unitDef(u?.type)?.strength||1)-2);}
+function restUnit(unitId){
+ const u=state.units.find(u=>u.id===unitId&&u.owner==="player");
+ if(!u)return;
+ if(u.moved)return toast("This unit has already acted this year.");
+ if(unitHP(u)>=unitMaxHP(u))return toast("This unit is already at full health.");
+ const nearCity=myCities().some(c=>distance(c.x,c.y,u.x,u.y)<=1);
+ const healed=Math.min(unitMaxHP(u)-unitHP(u),nearCity?3:2);
+ u.hp=unitHP(u)+healed;u.moved=true;
+ record(unitTitle(u)+" rests and recovers "+healed+" health.");
+ autoAdvance("move");save();renderUI();
+}
 function unitAttack(u){return Math.max(1,(u.strength||unitDef(u.type)?.strength||1)+1+Math.floor((u.xp||0)/3));}
 function unitDefense(u){return Math.max(1,Math.ceil((u.strength||1)/2)+1+(u.type==="spearman"?2:0));}
 function cityDefense(c){return 3+Math.ceil(c.pop/2)+Math.floor((c.army||0)/3)+4*upgrade(c,"walls")+upgrade(c,"lookout")+(c.owner==="player"?state.units.filter(u=>u.owner==="player"&&fighter(u)&&distance(u.x,u.y,c.x,c.y)<=1).reduce((n,u)=>n+Math.ceil(unitDefense(u)/2),0):0);}
@@ -874,8 +886,8 @@ function panelContents(){
   for(const u of state.units.filter(u=>u.owner==="player")){
    const d=unitDef(u.type);
    const nearby=(state.encounters||[]).find(e=>currentlyVisible(e.x,e.y)&&distance(u.x,u.y,e.x,e.y)<=1);
-   output+=item((d?.icon||"🚶")+" "+unitTitle(u)+" at "+u.x+", "+u.y,(u.moved?"Already acted this year":"Ready")+" · ⚔ "+unitAttack(u)+" · 🛡 "+unitDefense(u)+" · ❤️ "+unitHP(u)+" · Vision "+(d?.vision||2),
-     btn(u.moved?"Already acted":"Select to move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,u.moved,"primary"):"")+(nearby?btn("View "+wildTypes[nearby.type].name,"inspect:"+nearby.id):""));
+   output+=item((d?.icon||"🚶")+" "+unitTitle(u)+" at "+u.x+", "+u.y,(u.moved?"Already acted this year":"Ready")+" · ⚔ "+unitAttack(u)+" · 🛡 "+unitDefense(u)+" · ❤️ "+unitHP(u)+"/"+unitMaxHP(u)+" · XP "+(u.xp||0)+" · Vision "+(d?.vision||2),
+     btn(u.moved?"Already acted":"Select to move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,u.moved,"primary"):"")+(unitHP(u)<unitMaxHP(u)?btn("❤️ Rest & heal","rest:"+u.id,u.moved):"")+(nearby?btn("View "+wildTypes[nearby.type].name,"inspect:"+nearby.id):""));
   }
  }
  if(menu==="history")output=state.events.map(e=>"<div class='event'>"+htmlSafe(e)+"</div>").join("");
@@ -912,6 +924,7 @@ function renderUI(){
 }
 function doAction(a){
  if(a==="endYear")return endYear();
+ if(a.startsWith("rest:"))return restUnit(a.slice(5));
  if(a.startsWith("inspect:")){
   const e=(state.encounters||[]).find(e=>e.id===a.slice(8));
   if(e&&currentlyVisible(e.x,e.y)){selected={x:e.x,y:e.y};menu="encounter";renderUI();}
