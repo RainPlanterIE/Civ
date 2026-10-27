@@ -483,7 +483,7 @@ const COURT_SCENES={
  },
  conspiracy:{
   advisor:"Royal Spymaster",icon:"🗝️",type:"DANGER",title:"A Conspiracy Against the Throne",
-  text:"The Spymaster presents intercepted messages: {faction} have become powerful and disloyal. An overthrow may be attempted within three years unless the court restores loyalty or breaks their secret network.",
+  text:"The Spymaster presents intercepted messages: {faction} have become powerful and disloyal. A coup could come within three years. Reduce their Threat below 48 through concessions, investigations or limiting their influence.",
   choices:[
    {id:"negotiate",label:"Offer concessions and provisions",detail:"Quickly improve loyalty, but give the plotters more influence.",effect:{food:-13,legitimacy:4,factions:{target:{loyalty:23,power:5,intrigue:-20}}}},
    {id:"expose",label:"Expose their leaders in public",detail:"Break the network at the risk of alienating their followers.",effect:{legitimacy:2,factions:{target:{power:-16,loyalty:-12,intrigue:-23}}}},
@@ -683,7 +683,7 @@ function courtMarkup(){
  const c=ensureCourt(),cooldown=c.lastCouncilYear===state.year;
  let output='<div class="court-head"><div><strong>👑 Crown legitimacy</strong><span class="court-score">'+c.legitimacy+'/100</span></div><div><strong>State of the realm</strong><span class="court-status">'+courtLevel()+'</span></div></div>';
  output+='<p class="hint">Factions can grow through population, armies, temples and your decisions. A powerful but disloyal faction may plot to overthrow the ruler. Intrigue and legitimacy affect that danger. Council actions are limited to one per year.</p>';
- if(c.plot)output+='<div class="court-warning"><strong>⚠ Conspiracy — '+COURT_GROUPS[c.plot.faction].name+'</strong><span>Possible coup in Year '+c.plot.deadline+' · '+Math.max(0,c.plot.deadline-state.year)+' years to reduce danger.</span></div>';
+ if(c.plot)output+='<div class="court-warning"><strong>⚠ Conspiracy — '+COURT_GROUPS[c.plot.faction].name+'</strong><span>Possible coup in Year '+c.plot.deadline+' · '+Math.max(0,c.plot.deadline-state.year)+' years remaining. Reduce their Threat below 48 to break the plot.</span></div>';
  const sorted=Object.keys(COURT_GROUPS).sort((a,b)=>factionRisk(b)-factionRisk(a));
  for(const id of sorted){
   const meta=COURT_GROUPS[id],f=c.factions[id],risk=factionRisk(id);
