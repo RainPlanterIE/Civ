@@ -38,3 +38,19 @@ The map fills the entire screen. Tap a tile to inspect it; tap your own city til
 
 ## Current prototype boundaries
 This version implements deterministic turn rules and simplified rival city growth. Rivals do not yet build autonomous structures, send their own field armies, or trade. Paths have distinct victory conditions, but their balance and the illustrated map will need testing and refinement on mobile.
+
+## Guided stages within each year
+Each year is broken into five sequential stages:
+1. **Move units** — each ready unit may move one tile, found a settlement, or conduct a military action. If no ready units exist, this step is automatically skipped.
+2. **Assign workers** — work visible resource deposits within a city's influence, using one citizen per tile. The stage automatically skips when no assignable citizens remain (the city must retain one unassigned citizen).
+3. **Construction** — start exactly one city development or unit-training project, civilisation-wide. When a project is underway, this stage is automatically skipped.
+4. **Choose technology** — start exactly one research project. When a project is already being researched, this stage is automatically skipped.
+5. **End Year** — the only action that advances resource gathering, research, construction, population and city borders.
+
+Use **Next** to deliberately pass a stage without taking an action. During a stage, the highlighted stage button opens the relevant controls; the top-right menu still gives access to the full game menu and Society choices.
+
+The top bar shows population as **total(assigned)**, such as **6(4)**. The research progress card replaces the old static city-name panel at the bottom-left: it shows current technology, progress and estimated years until completion, and opens research controls when tapped. The city drawing shows an active construction project's progress bar and estimated years beneath the city. Work remaining falls every year based on unassigned workers, stocked materials and any specialisation bonuses.
+
+A research technology takes its published *research work* to finish, rather than unlocking immediately when chosen. Every city produces base research per year; libraries, academies and science specialisation accelerate research. Research and construction run at the same time, each with only one active project.
+
+Existing version-3 browser saves are preserved and upgraded with empty research projects and an appropriate turn stage.
