@@ -392,11 +392,359 @@ function villageYearlyEffects(){
   }else c.unrest=Math.max(0,(c.unrest||0)-1);
  }
 }
+// The royal court: recurring dilemmas, rival power centres and preventable coups.
+// Keeping court data inside the game save makes each decision persistent.
+const COURT_GROUPS={
+ workers:{name:"Workers & guilds",title:"Guild Speaker",icon:"⚒️",colour:"#e1b57c"},
+ military:{name:"Warriors & generals",title:"War Captain",icon:"🛡️",colour:"#bd8582"},
+ faith:{name:"Priests & faith",title:"High Priestess",icon:"☀️",colour:"#a8a2d7"}
+};
+const COURT_SCENES={
+ founding:{
+  advisor:"Royal Steward",icon:"📜",type:"Council",title:"The Weight of the Crown",
+  text:"{leader}, the settlement of {capital} begins to take shape. Three groups seek your ear: those who work the land, those who bear arms, and those who guide the temples. Each can help you rule; each may seek to rule instead.",
+  choices:[
+   {id:"listen",label:"Hear all three factions",detail:"Seek cooperation without making promises.",effect:{legitimacy:5,factions:{workers:{loyalty:5},military:{loyalty:5},faith:{loyalty:5}}}},
+   {id:"bread",label:"Celebrate with the people",detail:"Open the granaries to win popular goodwill.",effect:{food:-8,legitimacy:7,factions:{workers:{loyalty:13,power:3}}}},
+   {id:"guards",label:"Secure the throne first",detail:"Rely on the guards and risk appearing suspicious.",effect:{food:-5,legitimacy:-3,factions:{military:{loyalty:15,power:7},workers:{loyalty:-5}}}}
+  ]
+ },
+ food:{
+  advisor:"Royal Steward",icon:"🍞",type:"Provisions",title:"A Hungry Winter",
+  text:"In {capital}, stores have fallen low and citizens argue over the last sacks of grain. The Steward warns that hunger may turn frustration into a workers' rebellion.",
+  choices:[
+   {id:"hunt",label:"Commission hunters and fishermen",detail:"Trade scarce timber for food brought from the countryside.",effect:{wood:-4,food:13,legitimacy:3,factions:{workers:{loyalty:7,intrigue:-3}}}},
+   {id:"levy",label:"Take grain from the villages",detail:"Stores recover, but the workers resent the compulsory levy.",effect:{food:10,legitimacy:-7,factions:{workers:{loyalty:-14,intrigue:8,power:3}}}},
+   {id:"ration",label:"Ration the royal household",detail:"A small saving, with a cost among privileged groups.",effect:{food:5,legitimacy:5,factions:{military:{loyalty:-5},faith:{loyalty:-4},workers:{loyalty:4}}}}
+  ]
+ },
+ timber:{
+  advisor:"Master Builder",icon:"🪵",type:"Public Works",title:"The Empty Timber Yard",
+  text:"Builders in {capital} cannot find enough seasoned timber. The court suggests competing solutions, each with political consequences.",
+  choices:[
+   {id:"woodlands",label:"Fund an expedition to gather timber",detail:"Exchange food for a hard-won supply of wood.",effect:{food:-8,wood:9,legitimacy:2,factions:{workers:{loyalty:7,power:4}}}},
+   {id:"requisition",label:"Requisition villagers' supplies",detail:"Gain timber quickly at the expense of popular trust.",effect:{wood:6,legitimacy:-6,factions:{workers:{loyalty:-11,intrigue:7}}}},
+   {id:"conserve",label:"Preserve what remains",detail:"No timber arrives; the public admires the restraint.",effect:{legitimacy:3,factions:{workers:{loyalty:3}}}}
+  ]
+ },
+ guilds:{
+  advisor:"Guild Speaker",icon:"⚒️",type:"Petition",title:"The Builders Demand a Voice",
+  text:"The workshops and fields of {capital} have organised a council. Their speaker requests better provisions and a place in decisions about the city.",
+  choices:[
+   {id:"seats",label:"Give guilds seats on the council",detail:"Loyalty rises, but their political power grows.",effect:{legitimacy:4,factions:{workers:{power:13,loyalty:15,intrigue:-8},military:{loyalty:-4}}}},
+   {id:"wages",label:"Provide food and rest",detail:"A smaller concession with less political influence.",effect:{food:-10,legitimacy:3,factions:{workers:{loyalty:14,intrigue:-7}}}},
+   {id:"deny",label:"Dismiss their petition",detail:"Keep power concentrated but encourage secret meetings.",effect:{legitimacy:-4,factions:{workers:{loyalty:-14,intrigue:12,power:3}}}}
+  ]
+ },
+ army:{
+  advisor:"War Captain",icon:"⚔️",type:"Military",title:"A Captain's Growing Reputation",
+  text:"Soldiers sing of their victories and speak of the War Captain more often than the ruler. He asks for a larger voice in the government.",
+  choices:[
+   {id:"honours",label:"Grant honours and provisions",detail:"Make him an ally, but give the army greater influence.",effect:{food:-10,legitimacy:1,factions:{military:{loyalty:16,power:12,intrigue:-8}}}},
+   {id:"civil",label:"Place the army under civilian oversight",detail:"Lower military influence, but risk an insult to officers.",effect:{legitimacy:4,factions:{military:{power:-14,loyalty:-12,intrigue:6},workers:{loyalty:5}}}},
+   {id:"divide",label:"Divide the officers' commands",detail:"Disperse concentrated power while raising suspicion.",effect:{legitimacy:-3,factions:{military:{power:-11,loyalty:-6,intrigue:5}}}}
+  ]
+ },
+ temple:{
+  advisor:"High Priestess",icon:"🕯️",type:"Faith",title:"The Temples Speak",
+  text:"Pilgrims gather as priests in {capital} seek a larger role in law and ceremony. The High Priestess asks whether her counsel carries the authority of the throne.",
+  choices:[
+   {id:"sponsor",label:"Sponsor the temples",detail:"Gain the clergy's friendship while increasing their influence.",effect:{wood:-8,legitimacy:2,factions:{faith:{loyalty:17,power:13,intrigue:-5}}}},
+   {id:"plural",label:"Protect every tradition",detail:"Strengthen popular support but disappoint powerful priests.",effect:{legitimacy:7,factions:{workers:{loyalty:8},faith:{loyalty:-12,power:-3}}}},
+   {id:"separate",label:"Limit priestly offices",detail:"Preserve royal independence at the cost of religious opposition.",effect:{legitimacy:1,factions:{faith:{power:-13,loyalty:-13,intrigue:9}}}}
+  ]
+ },
+ captives:{
+  advisor:"Royal Steward",icon:"⛓️",type:"Unrest",title:"Anger in the Workshops",
+  text:"Captives taken in a raid labour beside the workers of {capital}. Their condition raises unrest and guild leaders question the ruler's judgement.",
+  choices:[
+   {id:"free",label:"Free the captives",detail:"Relieve unrest and restore trust, losing captive construction labour.",effect:{legitimacy:12,freeCaptives:true,factions:{workers:{loyalty:13,intrigue:-10},faith:{loyalty:3}}}},
+   {id:"reforms",label:"Improve food and conditions",detail:"Spend provisions to calm resistance while keeping captive labour.",effect:{food:-12,unrest:-8,legitimacy:4,factions:{workers:{loyalty:10,intrigue:-6}}}},
+   {id:"enforce",label:"Post guards at the worksites",detail:"Control the workforce by force and strengthen the garrison.",effect:{legitimacy:-8,factions:{military:{power:8,loyalty:6},workers:{loyalty:-13,intrigue:14}}}}
+  ]
+ },
+ rumours:{
+  advisor:"Royal Spymaster",icon:"🕵️",type:"Intelligence",title:"Whispers Behind Closed Doors",
+  text:"The Spymaster hears rumours of secret meetings and gifts passing between courtiers. No single faction has acted yet, but suspicion is spreading.",
+  choices:[
+   {id:"investigate",label:"Commission an inquiry",detail:"Reduce secret plotting at the cost of trust among courtiers.",effect:{food:-6,legitimacy:3,factions:{workers:{intrigue:-10,loyalty:-3},military:{intrigue:-10,loyalty:-3},faith:{intrigue:-10,loyalty:-3}}}},
+   {id:"open",label:"Call a public council",detail:"Diffuse tensions with openness and a communal feast.",effect:{food:-9,legitimacy:9,factions:{workers:{loyalty:6,intrigue:-5},military:{loyalty:6,intrigue:-5},faith:{loyalty:6,intrigue:-5}}}},
+   {id:"ignore",label:"Dismiss the rumours",detail:"Spend nothing but allow secret networks to strengthen.",effect:{legitimacy:-3,factions:{workers:{intrigue:4},military:{intrigue:4},faith:{intrigue:4}}}}
+  ]
+ },
+ merchant:{
+  advisor:"Foreign Envoy",icon:"🐫",type:"Trade",title:"Traders at the City Gates",
+  text:"Merchants have reached {capital} with goods from distant regions. The court debates who should control new routes and the taxes on commerce.",
+  choices:[
+   {id:"guild",label:"Let the guilds manage trade",detail:"Receive timber and empower commercial workers.",effect:{food:-7,wood:8,legitimacy:3,factions:{workers:{power:9,loyalty:7}}}},
+   {id:"royal",label:"Place trade under royal authority",detail:"Gain supplies without surrendering control, at a political cost.",effect:{food:-9,wood:8,legitimacy:-2,factions:{workers:{loyalty:-9,intrigue:5}}}},
+   {id:"decline",label:"Decline their offer",detail:"Keep your resources and avoid competition for trade routes.",effect:{legitimacy:3,factions:{faith:{loyalty:2}}}}
+  ]
+ },
+ conspiracy:{
+  advisor:"Royal Spymaster",icon:"🗝️",type:"DANGER",title:"A Conspiracy Against the Throne",
+  text:"The Spymaster presents intercepted messages: {faction} have become powerful and disloyal. An overthrow may be attempted within three years unless the court restores loyalty or breaks their secret network.",
+  choices:[
+   {id:"negotiate",label:"Offer concessions and provisions",detail:"Quickly improve loyalty, but give the plotters more influence.",effect:{food:-13,legitimacy:4,factions:{target:{loyalty:23,power:5,intrigue:-20}}}},
+   {id:"expose",label:"Expose their leaders in public",detail:"Break the network at the risk of alienating their followers.",effect:{legitimacy:2,factions:{target:{power:-16,loyalty:-12,intrigue:-23}}}},
+   {id:"reconcile",label:"Appeal to the people for unity",detail:"Free but less decisive, increasing popular legitimacy.",effect:{legitimacy:9,factions:{target:{loyalty:7,intrigue:-9},workers:{loyalty:2}}}}
+  ]
+ }
+};
+function defaultCourt(){
+ return {legitimacy:72,factions:{
+  workers:{power:32,loyalty:68,intrigue:5},
+  military:{power:22,loyalty:66,intrigue:4},
+  faith:{power:18,loyalty:67,intrigue:4}
+ },pending:null,plot:null,nextSceneYear:8,lastSceneYear:0,lastCouncilYear:0,history:[]};
+}
+function ensureCourt(){
+ if(!state.court)state.court=defaultCourt();
+ const c=state.court;
+ c.legitimacy??=72;c.factions??={};c.history??=[];
+ c.nextSceneYear??=Math.max(8,state.year+5);
+ c.lastSceneYear??=0;c.lastCouncilYear??=0;
+ for(const [id,base] of Object.entries(defaultCourt().factions)){
+  if(!c.factions[id])c.factions[id]={...base};
+  for(const key of ["power","loyalty","intrigue"])c.factions[id][key]??=base[key];
+ }
+ return c;
+}
+function courtClamp(n){return Math.max(0,Math.min(100,Math.round(n)));}
+function factionRisk(id){
+ const c=ensureCourt(),f=c.factions[id];
+ if(!f)return 0;
+ return courtClamp(f.power*(100-f.loyalty)/100*.94+f.intrigue*.47+Math.max(0,55-c.legitimacy)*.6);
+}
+function courtLeaderInDanger(){
+ const ids=Object.keys(COURT_GROUPS).sort((a,b)=>factionRisk(b)-factionRisk(a));
+ return {id:ids[0],risk:factionRisk(ids[0])};
+}
+function courtLevel(){
+ if(state.overthrown)return "Overthrown";
+ if(ensureCourt().plot)return "Conspiracy";
+ const risk=courtLeaderInDanger().risk;
+ return risk>=50?"High risk":risk>=30?"Uneasy":"Stable";
+}
+function costAvailable(effect){
+ if(!effect)return false;
+ return ["wood","stone","food","metal","ore","animals"].every(k=>(state.resources[k]||0)+((effect.resources||{})[k]||0)>=0)
+   &&(state.research||0)+((effect.resources||{}).research||0)>=0;
+}
+function applyCourtEffect(effect,target){
+ const court=ensureCourt();
+ if(!effect)return;
+ for(const [key,d] of Object.entries(effect.resources||{})){
+  if(key==="research")state.research=Math.max(0,state.research+d);
+  else if(state.resources[key]!==undefined)state.resources[key]=Math.max(0,state.resources[key]+d);
+ }
+ if(effect.wood)state.resources.wood=Math.max(0,state.resources.wood+effect.wood);
+ if(effect.food)state.resources.food=Math.max(0,state.resources.food+effect.food);
+ court.legitimacy=courtClamp(court.legitimacy+(effect.legitimacy||0));
+ for(const [key,changes] of Object.entries(effect.factions||{})){
+  const id=key==="target"?target:key,f=court.factions[id];
+  if(!f)continue;
+  for(const field of ["power","loyalty","intrigue"])if(changes[field]!==undefined)
+   f[field]=courtClamp(f[field]+changes[field]);
+ }
+ if(effect.unrest)for(const city of myCities())city.unrest=Math.max(0,(city.unrest||0)+effect.unrest);
+ if(effect.freeCaptives){
+  for(const city of myCities()){city.captives=0;city.unrest=Math.max(0,(city.unrest||0)-10);}
+ }
+}
+function courtEffectText(effect,target){
+ const parts=[];
+ for(const [key,n] of Object.entries(effect.resources||{}))if(n)parts.push((n>0?"+":"")+n+" "+key);
+ if(effect.wood)parts.push((effect.wood>0?"+":"")+effect.wood+" wood");
+ if(effect.food)parts.push((effect.food>0?"+":"")+effect.food+" food");
+ if(effect.legitimacy)parts.push((effect.legitimacy>0?"+":"")+effect.legitimacy+" legitimacy");
+ for(const [key,changes] of Object.entries(effect.factions||{})){
+  const name=key==="target"?(COURT_GROUPS[target]?.name||"Plotters"):COURT_GROUPS[key]?.name;
+  if(!name)continue;
+  for(const [attribute,amount] of Object.entries(changes))if(amount)parts.push(name+": "+(amount>0?"+":"")+amount+" "+attribute);
+ }
+ if(effect.freeCaptives)parts.push("Release all captives; unrest falls");
+ if(effect.unrest)parts.push("City unrest "+(effect.unrest>0?"+":"")+effect.unrest);
+ return parts.join(" · ")||"No immediate change";
+}
+function presentCourtScene(id,target=null){
+ const c=ensureCourt();
+ if(c.pending||state.overthrown||!COURT_SCENES[id])return false;
+ c.pending={id,target,year:state.year};
+ c.lastSceneYear=state.year;
+ c.nextSceneYear=state.year+7+Math.floor(dice((state.worldSeed||100)%9009,state.year+128)*4);
+ return true;
+}
+function chooseCourtOption(choiceId){
+ const c=ensureCourt(),p=c.pending;if(!p||state.overthrown)return;
+ const scene=COURT_SCENES[p.id],choice=scene?.choices.find(v=>v.id===choiceId);
+ if(!choice)return;
+ if(!costAvailable(choice.effect))return toast("You lack the resources for that decision.");
+ applyCourtEffect(choice.effect,p.target);
+ c.history.unshift({year:state.year,scene:p.id,choice:choice.label,target:p.target||null});
+ c.history=c.history.slice(0,30);
+ c.pending=null;
+ record("Court decision: "+choice.label+".");
+ if(c.plot&&factionRisk(c.plot.faction)<48){
+  record("The conspiracy loses support and its members disperse.");
+  c.plot=null;
+ }
+ save();renderUI();
+}
+function courtCouncilAction(faction,action){
+ if(!myCities().length||state.overthrown||ensureCourt().pending)return;
+ const c=ensureCourt();if(c.lastCouncilYear===state.year)return toast("You have already issued a court order this year.");
+ const f=c.factions[faction];if(!f)return;
+ const actions={
+  reward:{resources:{food:-9},factions:{target:{loyalty:14,power:4,intrigue:-8}},legitimacy:2,label:"Honoured the "+COURT_GROUPS[faction].name},
+  investigate:{resources:{food:-5},factions:{target:{loyalty:-5,intrigue:-18}},legitimacy:1,label:"Investigated the "+COURT_GROUPS[faction].name},
+  restrict:{factions:{target:{power:-14,loyalty:-12,intrigue:7}},legitimacy:-3,label:"Restricted the "+COURT_GROUPS[faction].name}
+ };
+ const selected=actions[action];if(!selected)return;
+ if(!costAvailable(selected))return toast("Not enough supplies for this court order.");
+ applyCourtEffect(selected,faction);
+ c.lastCouncilYear=state.year;
+ record(selected.label+".");
+ if(c.plot&&factionRisk(c.plot.faction)<48){record("The plotters abandon their conspiracy.");c.plot=null;}
+ save();renderUI();
+}
+function chooseRandomCourtScene(){
+ const options=[];
+ const food=state.resources.food,wood=state.resources.wood,pop=citizens(),court=ensureCourt();
+ if(food<pop*4+12)options.push("food","food");
+ if(wood<9)options.push("timber","timber");
+ if(myCities().some(c=>(c.captives||0)>0))options.push("captives","captives");
+ if(court.factions.military.power>38||state.units.filter(u=>u.owner==="player"&&fighter(u)).length>=3)options.push("army","army");
+ if(court.factions.faith.power>35||myCities().some(c=>upgrade(c,"temple")>0))options.push("temple","temple");
+ if(Object.keys(court.factions).some(id=>court.factions[id].intrigue>20))options.push("rumours");
+ if(state.year>=30&&known("commerce"))options.push("merchant");
+ options.push("guilds","guilds","army","temple","rumours");
+ const picked=Math.floor(dice((state.worldSeed||123)%32749+state.year*13,state.year*19+543)*options.length);
+ return options[picked]||"guilds";
+}
+function advanceCourt(){
+ if(!myCities().length||state.overthrown)return;
+ const c=ensureCourt(),workers=c.factions.workers,military=c.factions.military,faith=c.factions.faith;
+ const cities=myCities(),troops=state.units.filter(u=>u.owner==="player"&&!isNaval(u)&&fighter(u)),
+     temples=cities.reduce((n,city)=>n+upgrade(city,"temple"),0),
+     barracks=cities.reduce((n,city)=>n+upgrade(city,"barracks"),0),
+     unrest=cities.reduce((n,city)=>n+(city.unrest||0),0);
+ const targets={
+  workers:Math.min(94,26+citizens()*3+assignedWorkers()*2+unrest*.4),
+  military:Math.min(96,17+troops.reduce((n,u)=>n+u.strength*2.8,0)+barracks*12+state.military*.06),
+  faith:Math.min(96,15+temples*16+state.faith*.12)
+ };
+ for(const [id,f] of Object.entries(c.factions)){
+  // Factions grow through real game activities. They do not instantly become
+  // dangerous; disloyalty and schemes matter as much as raw power.
+  const diff=targets[id]-f.power;
+  f.power=courtClamp(f.power+Math.max(-2,Math.min(3,diff*.19)));
+  if(f.power>=60&&f.loyalty<64)f.intrigue=courtClamp(f.intrigue+2);
+  else if(f.loyalty>=65)f.intrigue=courtClamp(f.intrigue-1);
+  if(f.power>=78&&f.loyalty>35)f.loyalty=courtClamp(f.loyalty-1);
+ }
+ if(state.resources.food===0){
+  c.legitimacy=courtClamp(c.legitimacy-3);
+  workers.loyalty=courtClamp(workers.loyalty-4);
+  workers.intrigue=courtClamp(workers.intrigue+3);
+ }
+ if(unrest>6){workers.loyalty=courtClamp(workers.loyalty-2);workers.intrigue=courtClamp(workers.intrigue+2);}
+ if(c.legitimacy<35&&state.year%3===0)c.legitimacy=courtClamp(c.legitimacy-1);
+ if(c.plot){
+  const risk=factionRisk(c.plot.faction);
+  if(risk<48){
+   record("The conspiracy against the crown collapses.");
+   c.plot=null;
+  }else if(state.year>=c.plot.deadline){
+   const group=COURT_GROUPS[c.plot.faction];
+   state.overthrown={faction:c.plot.faction,year:state.year,risk,
+     message:"The "+group.name+" seize power in "+(firstCity()?.name||"the capital")+" after your council fails to restrain their influence."};
+   record("The throne is overthrown by "+group.name+".");
+   c.pending=null;
+   return;
+  }
+ }
+ const threat=courtLeaderInDanger();
+ if(!c.plot&&threat.risk>=66){
+  c.plot={faction:threat.id,started:state.year,deadline:state.year+3};
+  presentCourtScene("conspiracy",threat.id);
+  record("A conspiracy has been discovered among the "+COURT_GROUPS[threat.id].name+".");
+  return;
+ }
+ if(!c.pending){
+  const urgent=state.year>=5&&state.year-c.lastSceneYear>=4&&state.resources.food===0;
+  if(state.year>=c.nextSceneYear||urgent){
+   const scene=urgent?"food":chooseRandomCourtScene();
+   presentCourtScene(scene);
+  }
+ }
+}
+function courtMarkup(){
+ const c=ensureCourt(),cooldown=c.lastCouncilYear===state.year;
+ let output='<div class="court-head"><div><strong>👑 Crown legitimacy</strong><span class="court-score">'+c.legitimacy+'/100</span></div><div><strong>State of the realm</strong><span class="court-status">'+courtLevel()+'</span></div></div>';
+ output+='<p class="hint">Factions can grow through population, armies, temples and your decisions. A powerful but disloyal faction may plot to overthrow the ruler. Intrigue and legitimacy affect that danger. Council actions are limited to one per year.</p>';
+ if(c.plot)output+='<div class="court-warning"><strong>⚠ Conspiracy — '+COURT_GROUPS[c.plot.faction].name+'</strong><span>Possible coup in Year '+c.plot.deadline+' · '+Math.max(0,c.plot.deadline-state.year)+' years to reduce danger.</span></div>';
+ const sorted=Object.keys(COURT_GROUPS).sort((a,b)=>factionRisk(b)-factionRisk(a));
+ for(const id of sorted){
+  const meta=COURT_GROUPS[id],f=c.factions[id],risk=factionRisk(id);
+  output+='<section class="court-faction"><header><strong>'+meta.icon+' '+meta.name+'</strong><span class="court-faction-risk">'+risk+' threat</span></header>';
+  for(const [label,key] of [["Influence","power"],["Loyalty","loyalty"],["Scheming","intrigue"]]){
+   output+='<div class="court-line"><span>'+label+'</span><span>'+f[key]+'/100</span></div><div class="court-meter"><div class="court-fill '+key+'" style="width:'+f[key]+'%"></div></div>';
+  }
+  output+='<div class="court-orders">'+
+   btn("🍞 Reward (9 food)","council:"+id+":reward",cooldown||state.resources.food<9,"primary")+
+   btn("🕵️ Investigate (5 food)","council:"+id+":investigate",cooldown||state.resources.food<5)+
+   btn("⚖ Limit influence","council:"+id+":restrict",cooldown)+
+   '</div></section>';
+ }
+ output+='<p class="hint">Reward: +14 loyalty, +4 influence, −8 scheming. Investigate: −18 scheming, −5 loyalty. Limit influence: −14 power, −12 loyalty, +7 scheming. Orders cost one action per year.</p>';
+ if(cooldown)output+='<p class="hint"><strong>✓ Council order issued this year.</strong> Next order available after End Year.</p>';
+ if(c.history.length){
+  output+='<h4 class="panel-section-title">Court decisions</h4>';
+  for(const e of c.history.slice(0,5))output+='<div class="court-history">Year '+e.year+': '+htmlSafe(e.choice)+'</div>';
+ }
+ return output;
+}
+function renderCourtScene(){
+ const overlay=get("courtScene");if(!overlay)return;
+ const c=ensureCourt(),p=c.pending,ended=state.overthrown;
+ if(!inGame||(!p&&!ended)){overlay.hidden=true;overlay.innerHTML="";return;}
+ overlay.hidden=false;
+ if(ended){
+  const name=COURT_GROUPS[ended.faction]?.name||"The court";
+  overlay.innerHTML='<div class="council-cinematic court-ended" role="dialog" aria-modal="true" aria-label="End of reign">'+
+   '<div class="cinematic-eyebrow">YEAR '+ended.year+' · THE FALL OF A DYNASTY</div>'+
+   '<div class="advisor-stage"><div class="advisor-portrait">👑</div></div>'+
+   '<h2>Your Reign Has Ended</h2><p class="council-quote">'+htmlSafe(ended.message)+'</p>'+
+   '<p class="council-consequence">You were overthrown by '+htmlSafe(name)+'. Your civilisation still exists, but your ruler has lost control of it.</p>'+
+   '<button id="courtRestart" class="council-choice royal-button">Begin a new reign</button></div>';
+  get("courtRestart")?.addEventListener("click",()=>showMainMenu());
+  return;
+ }
+ const scene=COURT_SCENES[p.id];if(!scene){c.pending=null;overlay.hidden=true;return;}
+ const narrative=scene.text.replaceAll("{leader}",state.leader?.leader||"Ruler")
+  .replaceAll("{capital}",firstCity()?.name||state.leader?.capital||"the capital")
+  .replaceAll("{faction}",COURT_GROUPS[p.target]?.name||"the plotters");
+ overlay.innerHTML='<div class="council-cinematic" role="dialog" aria-modal="true" aria-label="An advisor brings news">'+
+  '<div class="cinematic-eyebrow">YEAR '+p.year+' · A ROYAL AUDIENCE · '+htmlSafe(scene.type)+'</div>'+
+  '<div class="advisor-stage"><div class="advisor-portrait">'+scene.icon+'</div><span class="advisor-name">'+htmlSafe(scene.advisor)+'</span></div>'+
+  '<h2>'+htmlSafe(scene.title)+'</h2><p class="council-quote">'+htmlSafe(narrative)+'</p>'+
+  '<div class="council-decision-heading">How will you respond?</div>'+
+  '<div class="council-choices">'+scene.choices.map(choice=>{
+   const can=costAvailable(choice.effect);
+   return '<button class="council-choice" data-court-choice="'+choice.id+'" '+(can?"":"disabled")+'>'
+    +'<span class="choice-heading">'+htmlSafe(choice.label)+'</span>'
+    +'<span class="choice-story">'+htmlSafe(choice.detail)+'</span>'
+    +'<span class="choice-outcome">'+htmlSafe(courtEffectText(choice.effect,p.target))+'</span>'
+    +(can?"":'<span class="choice-unavailable">Insufficient resources</span>')+'</button>';
+  }).join("")+'</div><div class="cinematic-footer">Your decision is recorded and cannot be undone after the year proceeds.</div></div>';
+ overlay.querySelectorAll("[data-court-choice]").forEach(btn=>btn.addEventListener("click",()=>chooseCourtOption(btn.dataset.courtChoice)));
+}
 function fresh(scenario=CIV_WORLD.scenario()){
  const leader=scenario.player;
  return {version:4,world:"earth",worldSeed:scenario.seed,leader:{...leader},initialRivalCount:12,year:1,
  tech:["foraging","forestry",...(coastTile(leader.x,leader.y,2)?["fishing"]:[])],research:0,knowledge:0,culture:0,faith:0,military:0,
- resources:{food:32,wood:16,stone:14,ore:0,metal:0,animals:0},
+ resources:{food:32,wood:16,stone:14,ore:0,metal:0,animals:0},court:defaultCourt(),overthrown:null,
  cities:scenario.rivals.map((c,i)=>({id:"r"+(i+1),x:c.x,y:c.y,name:c.capital,civId:c.id,civilisation:c.name,leader:c.leader,colour:c.color,pop:7,owner:"rival",army:6,culture:0,faith:0,buildings:{},growth:0,captives:0,unrest:0})),
  units:[{id:"u1",type:"settler",x:leader.x,y:leader.y,moved:false,owner:"player",strength:1,hp:6,xp:0},{id:"u2",type:"clubman",x:leader.x,y:leader.y,moved:false,owner:"player",strength:2,hp:6,xp:0}],
  works:{},builders:{},extracted:{},explored:{},encounters:initialEncounters(scenario),nextEncounterId:1000,
@@ -452,6 +800,7 @@ function readSave(){
  return null;
 }
 state=readSave()||fresh();
+ensureCourt();
 function ensureStartingEscort(){
  if(state.startingEscortGranted)return;
  const u=state.units?.find(u=>u.owner==="player"&&u.type==="settler");
@@ -721,6 +1070,7 @@ function continueGame(){
   return;
  }
  state=saved;
+ ensureCourt();
  ensureStartingEscort();
  if((coastTile(state.leader?.x??-1,state.leader?.y??-1,2)||state.cities.some(c=>c.owner==="player"&&cityHasSea(c)))&&!state.tech.includes("fishing"))state.tech.push("fishing");
  state.knowledge??=state.research||0;
