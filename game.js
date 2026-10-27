@@ -1435,6 +1435,8 @@ function constructionRate(c,kind){
  return 1+labor+captiveBonus+focus+workshopBonus;
 }
 function rebalanceActiveConstruction(){
+ // Older saves placed unit training in the single former construction slot.
+ if(state.project&&unitDef(state.project.kind)&&!state.unitProject){state.unitProject=state.project;state.project=null;}
  const projects=[state.project,state.unitProject];
  for(const p of projects){
  if(!p||p.balanceVersion===2)continue;
