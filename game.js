@@ -99,14 +99,28 @@ function availableFrom(stage){
  return "end";
 }
 function syncStage(){
- if(!STAGES.includes(state.stage)||state.stageYear!==state.year){state.stageYear=state.year;state.stage=availableFrom("move");}
- if(state.stage!=="end"&&!eligible(state.stage))state.stage=availableFrom(STAGES[STAGES.indexOf(state.stage)+1]||"end");
+ // Stages guide the player but never lock actions before End Year.
+ if(!STAGES.includes(state.stage)||state.stageYear!==state.year){
+  state.stageYear=state.year;state.stage=availableFrom("move");
+ }
 }
 function nextStage(){
  syncStage();
- if(state.stage==="end")return endYear();
+ if(state.stage==="end")return;
  state.stage=availableFrom(STAGES[STAGES.indexOf(state.stage)+1]||"end");
  menu="";save();renderUI();
+}
+function focusStage(stage){
+ if(!STAGES.includes(stage))return;
+ syncStage();state.stage=stage;
+ moving=null;
+ menu=stage==="move"?"units":stage==="workers"?"workers":stage==="construction"?"city":stage==="research"?"tech":"";
+ save();renderUI();
+}
+function autoAdvance(stage){
+ // Only skip when the currently highlighted stage has genuinely finished.
+ if(state.stage===stage&&!eligible(stage))
+  state.stage=availableFrom(STAGES[STAGES.indexOf(stage)+1]||"end");
 }
 
 function remaining(x,y){const d=deposit(x,y);return d?Math.max(0,d.max-(state.extracted[pos(x,y)]||0)):0;}
@@ -164,7 +178,7 @@ function availableWorkTiles(c){
 }
 function assignAllWorkers(){
  syncStage();
- if(state.stage!=="workers")return toast("Assign workers during the worker step.");
+
  let count=0;
  for(const c of myCities()){
   const options=availableWorkTiles(c);
@@ -191,7 +205,7 @@ function assignAllWorkers(){
  }
  if(count)record("Assigned "+count+" available worker"+(count===1?"":"s")+" to nearby resources.");
  else toast("There are no available workers or workable resource tiles.");
- syncStage();
+ autoAdvance("workers");
  if(state.stage!=="workers"&&menu==="workers")menu="";
  save();renderUI();
 }
@@ -257,12 +271,12 @@ function continueGame(){
 function toast(msg){get("toast").textContent=msg;get("toast").classList.add("show");toastUntil=Date.now()+2900;}
 function record(msg){state.events.unshift("Year "+state.year+": "+msg);state.events=state.events.slice(0,25);toast(msg);}
 function found(u){
- syncStage();if(state.stage!=="move")return toast("Found your city during the movement step.");
+ syncStage();
  if(!u||u.type!=="settler")return;if(u.moved)return toast("This settler has already acted this year.");
  if(terrain(u.x,u.y)==="water"||state.cities.some(c=>distance(c.x,c.y,u.x,u.y)<=3)){toast("Settle on land at least four tiles from another city.");return;}
  const c={id:"c"+state.nextId++,x:u.x,y:u.y,name:myCities().length?"New Settlement "+state.nextId:"New Haven",pop:3,owner:"player",army:1,culture:0,faith:0,buildings:{}};
  state.cities.push(c);state.units=state.units.filter(a=>a.id!==u.id);moving=null;
- selected={x:c.x,y:c.y};recalcBorders();record(c.name+" was founded. Its people now work the surrounding land.");syncStage();save();menu="";renderUI();
+ selected={x:c.x,y:c.y};recalcBorders();record(c.name+" was founded. Its people now work the surrounding land.");autoAdvance("move");save();menu="";renderUI();
 }
 function workTile(x,y){
  syncStage();
@@ -272,10 +286,10 @@ function workTile(x,y){
  if(!d){toast("There is no accessible resource on that tile.");return;}
  if(!known(d.tech)){toast("Research "+(techs[d.tech]?.name||d.tech)+" to identify and use this resource.");return;}
  if(state.works[key]){delete state.works[key];record("A worker leaves the "+d.type+" tile.");save();renderUI();return;}
- if(state.stage!=="workers")return toast("Assign new workers during the worker step.");
+
  if(freeWorkers(c)<=0){toast("All citizens already have jobs.");return;}
  if(remaining(x,y)<=0&&d.type!=="animals"&&d.type!=="food"){toast("This deposit is exhausted.");return;}
- state.works[key]=c.id;record(c.name+" assigns one worker to "+d.type+".");syncStage();if(state.stage!=="workers"&&(menu==="workers"||menu==="tile"))menu="";save();renderUI();
+ state.works[key]=c.id;record(c.name+" assigns one worker to "+d.type+".");autoAdvance("workers");if(state.stage!=="workers"&&(menu==="workers"||menu==="tile"))menu="";save();renderUI();
 }
 function harvestResources(){
  const gains={food:0,wood:0,stone:0,ore:0,animals:0};
@@ -347,7 +361,7 @@ function pathGrowth(){
  if(state.victory)record(state.victory);
 }
 function endYear(){
- syncStage();if(state.stage!=="end")return toast("Finish or skip "+stageNames[state.stage]+" before ending the year.");
+ syncStage(); // End Year is the only irreversible yearly action.
  state.year++;state.units.forEach(u=>u.moved=false);
  if(myCities().length){
   harvestResources();
@@ -366,7 +380,7 @@ function endYear(){
  recalcBorders();state.stageYear=state.year;state.stage=availableFrom("move");menu="";save();renderUI();toast("Year "+state.year+" · Units can move again.");
 }
 function startConstruction(kind,cityId){
- syncStage();if(state.stage!=="construction")return toast("Choose construction during the construction step.");
+ syncStage();
  const c=getCity(cityId);if(!c||c.owner!=="player")return;
  if(state.project){toast("Only one city construction project can run at a time.");return;}
  const def=kind==="settler"?{name:"Settler",wood:16,stone:5,work:9}:kind==="army"?{name:"Army",wood:18,stone:16,metal:2,work:10}:buildings[kind];
@@ -377,15 +391,14 @@ function startConstruction(kind,cityId){
  for(const r of ["wood","stone","metal"])if(state.resources[r]<(def[r]||0)){toast("Not enough "+r+".");return;}
  for(const r of ["wood","stone","metal"])state.resources[r]-=def[r]||0;
  state.project={city:cityId,kind,left:def.work,total:def.work,rate:constructionRate(c,kind)};
- record(c.name+" begins "+def.name+".");syncStage();save();renderUI();
+ record(c.name+" begins "+def.name+".");autoAdvance("construction");save();renderUI();
 }
 function discover(id){
  syncStage();
- if(state.stage!=="research")return toast("Choose research during the technology step.");
  const t=techs[id];if(!t||known(id)||state.researchProject||(t.need&&!known(t.need)))return;
  state.researchProject={id,total:t.cost,progress:0,rate:researchRate()};
  record("Research begun: "+t.name+".");
- state.stage=availableFrom("end");menu="";save();renderUI();
+ autoAdvance("research");menu="";save();renderUI();
 }
 function choosePath(id){
  if(state.year<100)return toast("Society paths unlock in Year 100.");
@@ -394,7 +407,7 @@ function choosePath(id){
 }
 function activeUnit(){return getUnit(moving)||state.units.find(u=>u.owner==="player"&&!u.moved)||state.units.find(u=>u.owner==="player");}
 function move(x,y){
- syncStage();if(state.stage!=="move")return toast("Move units during the movement step.");
+ syncStage();
  const u=activeUnit();if(!u)return toast("Select a unit first.");
  if(u.moved)return toast("This unit already moved this year.");
  if(!inMap(x,y)||terrain(x,y)==="water")return toast("That tile is impassable.");
@@ -403,7 +416,7 @@ function move(x,y){
  if(occupied&&occupied.owner==="rival")return toast("Attack rival cities from a neighbouring tile.");
  u.x=x;u.y=y;u.moved=true;selected={x,y};moving=null;menu="";
  record((u.type==="army"?"Army":"Settler")+" moves into new terrain.");
- syncStage();
+ autoAdvance("move");
  const nextReady=state.units.find(other=>other.owner==="player"&&!other.moved);
  if(state.stage==="move"&&nextReady){
    moving=nextReady.id;
@@ -412,7 +425,7 @@ function move(x,y){
  save();renderUI();
 }
 function attack(rivalId){
- syncStage();if(state.stage!=="move")return toast("Attack during the movement step.");
+ syncStage();
  const u=activeUnit(),c=getCity(rivalId);
  if(!u||u.type!=="army"||u.moved||state.path!=="war"||!c||c.owner!=="rival")return toast("Select a ready army and a hostile city.");
  if(distance(u.x,u.y,c.x,c.y)>1)return toast("Move an army next to the rival city.");
@@ -420,7 +433,7 @@ function attack(rivalId){
  const defense=c.army+Math.floor(c.pop/6);u.moved=true;
  if(offense>=defense){c.owner="player";c.name+=" · Captured";c.buildings={};c.army=2;u.strength=Math.max(1,u.strength-1);record("You conquer "+c.name+".");}
  else{u.strength--;c.army=Math.max(1,c.army-1);record("Your army is repelled by "+c.name+".");if(u.strength<=0){state.units=state.units.filter(z=>z.id!==u.id);moving=null;}}
- recalcBorders();pathGrowth();syncStage();save();renderUI();
+ recalcBorders();pathGrowth();autoAdvance("move");save();renderUI();
 }
 function htmlSafe(str){return String(str).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function btn(label,action,disabled=false,style="secondary"){return '<button class="'+style+'" data-action="'+action+'" '+(disabled?"disabled":"")+">"+label+"</button>";}
@@ -448,7 +461,7 @@ function panelContents(){
  }
  if(menu==="workers"){
   output="<p class='hint'>Assign every available citizen this year — one resource tile per worker. Total population: "+citizens()+"("+assignedWorkers()+") · Free: "+unassignedWorkers()+". Tap land, assign individually, or use Assign all.</p>";
-  output+=item("Assign all available workers","Automatically fills nearby resource jobs, prioritising food before wood, stone and other resources.",btn("Assign all workers","assignAll",state.stage!=="workers"||!eligible("workers"),"primary"));
+  output+=item("Assign all available workers","Automatically fills nearby resource jobs, prioritising food before wood, stone and other resources.",btn("Assign all workers","assignAll",!eligible("workers"),"primary"));
   let shown=0;
   for(const c of myCities()){
    for(let y=Math.max(0,c.y-influenceRadius(c));y<=Math.min(SIZE-1,c.y+influenceRadius(c));y++)
@@ -456,7 +469,7 @@ function panelContents(){
      if(borders.get(pos(x,y))!==c.id||cityAt(x,y))continue;
      const d=deposit(x,y),working=state.works[pos(x,y)];
      if(!d||!known(d.tech)||(!working&&remaining(x,y)===0)||shown>=14)continue;
-     output+=item(d.icon+" "+d.type+" · "+x+","+y,d.type==="food"||d.type==="animals"?"Renewable when researched.":remaining(x,y)+" units remaining.",btn(working?"Remove worker":"Assign worker","work:"+x+":"+y,!working&&state.stage!=="workers"));
+     output+=item(d.icon+" "+d.type+" · "+x+","+y,d.type==="food"||d.type==="animals"?"Renewable when researched.":remaining(x,y)+" units remaining.",btn(working?"Remove worker":"Assign worker","work:"+x+":"+y,!working&&freeWorkers(c)===0));
      shown++;
     }
   }
@@ -492,7 +505,7 @@ function panelContents(){
   const researching=state.researchProject;
   output="<p class='hint'>"+(researching?"🔬 Research in progress: "+researchLabel():"Choose a technology. Research advances each year; only one technology can be researched at a time.")+"<br>Research production: "+researchRate()+" per year. Science knowledge: "+state.knowledge+".</p>";
   for(const [id,d] of Object.entries(techs)){
-   const locked=known(id)||!!researching||state.stage!=="research"||(d.need&&!known(d.need));
+   const locked=known(id)||!!researching||(d.need&&!known(d.need));
    const active=researching?.id===id;
    output+=item((known(id)?"✓ ":active?"⏳ ":"🔬 ")+d.name,d.desc+(d.need?" · Requires "+techs[d.need].name:"")+" · "+d.cost+" research work",btn(known(id)?"Researched":active?"In progress":"Start research","tech:"+id,locked));
   }
@@ -558,7 +571,7 @@ function doAction(a){
  if(a==="save")return manualSave();
  if(a==="openMainMenu")return showMainMenu();
  if(a==="restart"){if(confirm("Start a new world and replace your save?")){state=fresh();moving=null;menu="";selected=null;recalcBorders();center(15,15);save();renderUI();}return;}
- if(a.startsWith("unit:")){if(state.stage!=="move")return toast("Movement is only available during the movement step.");moving=a.slice(5);menu="";toast("Tap one adjacent tile to move.");renderUI();return;}
+ if(a.startsWith("unit:")){moving=a.slice(5);menu="";toast("Tap one adjacent tile to move.");renderUI();return;}
  if(a.startsWith("found:"))return found(getUnit(a.slice(6)));
  if(a.startsWith("attack:"))return attack(a.slice(7));
  if(a.startsWith("tech:"))return discover(a.slice(5));
