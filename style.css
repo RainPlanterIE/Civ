@@ -192,3 +192,24 @@ button:disabled{opacity:.42;cursor:default}
  .combat-stats span{font-size:11px;padding:6px 8px}
  .encounter-heading strong{font-size:18px}
 }
+
+/* Earth-scale navigation, historical leader identity and construction feedback */
+#gameIdentity{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:0;max-width:48vw}
+#leaderName{font-size:10px;font-weight:700;color:#f0dbab;text-shadow:0 2px 8px #091c16;line-height:1.35;max-width:100%;overflow-wrap:anywhere}
+#worldOverview{z-index:50;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,790px);max-height:86dvh;overflow:auto;padding:14px;background:#142820f9;border:2px solid #c0aa7d}
+#worldOverview[hidden]{display:none}
+#worldMini{width:100%;height:auto;aspect-ratio:2/1;display:block;image-rendering:auto;cursor:crosshair;border:1px solid #829e8c;border-radius:6px;background:#193c4d;touch-action:manipulation}
+#worldOverview p{font-size:12px;line-height:1.5;color:#dde1cf;margin:10px 0}
+#worldOverview .panelhead{top:-14px}
+#worldOverview .secondary{display:block;min-height:44px;min-width:180px}
+#toast{z-index:55;max-width:90vw}
+#panel .option p{overflow-wrap:anywhere}
+#panel .option .buttons button{word-break:normal;white-space:normal;line-height:1.25}
+#panel .option .buttons button.secondary{border-color:#96ac8d}
+@media(max-width:650px){
+ #gameIdentity{max-width:39vw}
+ #logo{font-size:20px}
+ #leaderName{font-size:9px}
+ #worldOverview{width:95vw;padding:10px;max-height:90dvh}
+ #worldOverview p{font-size:11px}
+}
