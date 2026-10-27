@@ -367,7 +367,7 @@ function harvestResources(){
  for(const [key,id] of Object.entries(state.works)){
   const c=getCity(id),[x,y]=decode(key),d=deposit(x,y);
   if(!c||c.owner!=="player"||borders.get(key)!==id||!d||!known(d.tech)){delete state.works[key];continue;}
-  let output=d.type==="wood"?3+upgrade(c,"sawmill"):d.type==="stone"?2+upgrade(c,"stoneworks"):d.type==="ore"?2+upgrade(c,"forge"):d.type==="animals"?1+upgrade(c,"stable"):d.type==="food"?4+upgrade(c,"granary"):4+upgrade(c,"granary");
+  let output=d.type==="wood"?3+upgrade(c,"sawmill")+upgrade(c,"workshop"):d.type==="stone"?2+upgrade(c,"stoneworks")+upgrade(c,"workshop"):d.type==="ore"?2+upgrade(c,"forge"):d.type==="animals"?1+upgrade(c,"stable"):d.type==="food"?4+upgrade(c,"granary")+upgrade(c,"market"):4+upgrade(c,"granary")+2*upgrade(c,"huntingLodge");
   if(known("engineering"))output++;
   if(d.type==="food"&&known("agriculture")){gains.food+=output;continue;}
   if(d.type==="animals"&&known("husbandry")){
@@ -394,10 +394,15 @@ function progressBuilding(){
  const progress=constructionRate(c,p.kind);
  p.left=Math.max(0,p.left-progress);p.rate=progress;
  if(p.left===0){
-  if(p.kind==="settler")state.units.push({id:"u"+state.nextId++,type:"settler",x:c.x,y:c.y,moved:true,owner:"player",strength:1});
-  else if(p.kind==="army")state.units.push({id:"u"+state.nextId++,type:"army",x:c.x,y:c.y,moved:true,owner:"player",strength:3+upgrade(c,"forge")});
-  else c.buildings[p.kind]=(c.buildings[p.kind]||0)+1;
-  record((buildings[p.kind]?.name||p.kind)+" completed at "+c.name+".");state.project=null;
+  if(unitDef(p.kind)){
+   const d=unitDef(p.kind);
+   state.units.push({id:"u"+state.nextId++,type:p.kind,x:c.x,y:c.y,moved:true,owner:"player",strength:d.strength+upgrade(c,"training")+(p.kind==="archer"?upgrade(c,"range"):0)});
+   updateFog();
+  }else{
+   c.buildings[p.kind]=(c.buildings[p.kind]||0)+1;
+   if(p.kind==="lookout")updateFog();
+  }
+  record((buildings[p.kind]?.name||unitDef(p.kind)?.name||p.kind)+" completed at "+c.name+".");state.project=null;
  }
 }
 function changePopulation(){
@@ -440,12 +445,17 @@ function endYear(){
   const scienceGained=researchRate();state.research+=scienceGained;state.knowledge+=scienceGained;
   if(state.researchProject){
    const rp=state.researchProject;rp.progress=Math.min(rp.total,rp.progress+scienceGained);rp.rate=scienceGained;
-   if(rp.progress>=rp.total){if(!known(rp.id))state.tech.push(rp.id);record(techs[rp.id].name+" researched — new resources revealed.");state.researchProject=null;}
+   if(rp.progress>=rp.total){
+    if(!known(rp.id))state.tech.push(rp.id);
+    record(techs[rp.id].name+" discovered! Unlocks: "+bonusText(rp.id)+".");
+    state.researchProject=null;
+    updateFog();
+   }
   }
   state.culture+=myCities().reduce((n,c)=>n+5*upgrade(c,"theatre"),0)+(state.path==="arts"?1:0);
   state.faith+=myCities().reduce((n,c)=>n+5*upgrade(c,"temple"),0)+(state.path==="faith"?1:0);
   state.military+=myCities().reduce((n,c)=>n+2*upgrade(c,"barracks"),0);
-  changePopulation();progressBuilding();pathGrowth();
+  changePopulation();for(const city of myCities())balanceCityLabor(city);progressBuilding();pathGrowth();
   if(state.resources.food===0)record("Food shortages: work more forage or fertile tiles.");
  }
  recalcBorders();state.stageYear=state.year;state.stage=availableFrom("move");menu="";save();renderUI();toast("Year "+state.year+" · Units can move again.");
@@ -454,13 +464,13 @@ function startConstruction(kind,cityId){
  syncStage();
  const c=getCity(cityId);if(!c||c.owner!=="player")return;
  if(state.project){toast("Only one city construction project can run at a time.");return;}
- const def=kind==="settler"?{name:"Settler",wood:16,stone:5,work:9}:kind==="army"?{name:"Army",wood:18,stone:16,metal:2,work:10}:buildings[kind];
+ const def=buildings[kind]||unitDef(kind);
  if(!def)return;
  if(def.need&&!known(def.need)){toast("Discover "+techs[def.need].name+" first.");return;}
  if(def.path&&state.path!==def.path){toast("This development requires a different society path.");return;}
- if(kind==="army"&&state.path!=="war"){toast("An army requires the war path.");return;}
- for(const r of ["wood","stone","metal"])if(state.resources[r]<(def[r]||0)){toast("Not enough "+r+".");return;}
- for(const r of ["wood","stone","metal"])state.resources[r]-=def[r]||0;
+ if(def.requires&&!upgrade(c,def.requires))return toast("Build "+buildings[def.requires].name+" in this city first.");
+ for(const r of ["wood","stone","food","metal"])if(state.resources[r]<(def[r]||0)){toast("Not enough "+r+".");return;}
+ for(const r of ["wood","stone","food","metal"])state.resources[r]-=def[r]||0;
  state.project={city:cityId,kind,left:def.work,total:def.work,rate:constructionRate(c,kind)};
  record(c.name+" begins "+def.name+".");autoAdvance("construction");save();renderUI();
 }
@@ -504,7 +514,7 @@ function move(x,y){
 function attack(rivalId){
  syncStage();
  const u=activeUnit(),c=getCity(rivalId);
- if(!u||u.type!=="army"||u.moved||state.path!=="war"||!c||c.owner!=="rival")return toast("Select a ready army and a hostile city.");
+ if(!fighter(u)||u.moved||state.path!=="war"||!c||c.owner!=="rival")return toast("Select a ready army and a hostile city.");
  if(distance(u.x,u.y,c.x,c.y)>1)return toast("Move an army next to the rival city.");
  const offense=u.strength+Math.floor(state.military/15)+myCities().reduce((n,t)=>n+2*upgrade(t,"barracks"),0);
  const defense=c.army+Math.floor(c.pop/6);u.moved=true;
