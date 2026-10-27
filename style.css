@@ -328,3 +328,38 @@ button:disabled{opacity:.42;cursor:default}
  .court-orders button{min-height:39px;font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){.council-cinematic,.court-badge.court-danger{animation:none}}
+
+
+/* Scarcity economy and narrative court choices — v17 */
+.economy-chip{cursor:pointer;display:inline-flex;gap:3px;align-items:center;justify-content:center;color:#f4e8d3;font-family:inherit;line-height:1.15;min-height:29px}
+.economy-chip:hover,.economy-chip:focus-visible{border-color:#f5d39b;background:#344e39}
+.economy-chip small{font-weight:850;font-size:10px;opacity:.94;margin-left:2px}
+.economic-loss{color:#f4a88c!important}
+.economic-gain{color:#9de1ae!important}
+.economic-even{color:#e0d8aa!important}
+.economic-head{display:flex;justify-content:space-between;gap:8px;align-items:center;background:#334d3e;border:1px solid #9caa88;border-radius:9px;padding:10px;margin:10px 0}
+.economic-head strong{font-size:16px;color:#f6d8a0}
+.economic-head span{font-size:11px;color:#c9d9c6;white-space:nowrap}
+.economic-line{display:grid;grid-template-columns:minmax(70px,.9fr) minmax(100px,1.5fr) auto;gap:8px;align-items:center;background:#243b30;border-bottom:1px solid #667e6655;padding:10px 6px}
+.economic-line strong{font-size:12px;color:#f5e6bb;text-transform:capitalize}
+.economic-line span{font-size:11px;color:#d5e2d1}
+.economic-line b{font-size:13px;white-space:nowrap}
+.economic-explainer{background:#283e33;border:1px solid #627e686f;border-radius:8px;padding:11px;margin-top:11px}
+.economic-explainer strong{font-size:13px;color:#f5d69e}
+.economic-explainer p{font-size:12px;line-height:1.5;color:#dce4d7;margin:6px 0 0}
+.council-background{font:13.5px/1.58 Georgia,serif;color:#f0ebdc;padding:11px 17px 9px;margin:0 14px 9px;background:#142b24a6;border-left:3px solid #c2a676;border-radius:3px 7px 7px 3px}
+.council-testimonies{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 18px 13px}
+.council-testimony{font:italic 12px/1.55 Georgia,serif;color:#e5dcc8;padding:10px 12px;background:#37514285;border-top:1px solid #b6a0759c;border-radius:6px;min-width:0}
+.council-afterword{font:italic 13px/1.6 Georgia,serif;color:#d0dccc;text-align:center;margin:10px 24px 14px}
+.council-aftermath .council-choice{justify-content:center;align-items:center;text-align:center;font-size:15px;font-weight:750;min-height:46px}
+@media(max-width:650px){
+ .economy-chip{padding:4px 5px;font-size:10px;min-height:27px;gap:2px}
+ .economy-chip small{font-size:9px}
+ .economic-line{grid-template-columns:minmax(62px,.85fr) minmax(89px,1.45fr) auto;gap:5px}
+ .economic-line span{font-size:10px}
+ .economic-line strong,.economic-line b{font-size:11px}
+ .council-background{font-size:12px;line-height:1.48;margin:0 9px 8px;padding:8px 10px}
+ .council-testimonies{grid-template-columns:1fr;gap:5px;margin:7px 10px 10px}
+ .council-testimony{font-size:11px;line-height:1.4;padding:7px 9px}
+ .council-afterword{font-size:11px;margin:7px 12px}
+}
