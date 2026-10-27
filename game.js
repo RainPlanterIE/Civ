@@ -1318,9 +1318,11 @@ function chooseRandomCourtScene(opening=false){
  const available=courtEventConditions(),c=ensureCourt(),weights={};
  const add=(id,weight=1)=>{if(available[id])weights[id]=(weights[id]||0)+weight;};
  if(opening){
-  // The first audience is not the same obligatory "founding" script every run.
-  weights.founding=3;weights.rumours=1;
-  add("guilds",3);add("food",3);add("timber",2);
+  // Even an early city has households, labourers and an armed escort.
+  // Opening scenes should vary without requiring late-game structures.
+  weights.founding=3;weights.rumours=2;weights.guilds=2;
+  if(state.units.some(u=>u.owner==="player"&&fighter(u)))weights.army=1;
+  add("guilds",2);add("food",3);add("timber",2);
   add("worksite",2);add("granaryFire",2);add("garrison",2);
  }else{
   add("food",state.resources.food===0?6:3);add("timber",3);
