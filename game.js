@@ -121,7 +121,7 @@ function adjacentUnit(e,ready=false,fighting=false){
 }
 function rewardSupplies(e,multiplier=1){
  const d=wildTypes[e.type],extra=known("hunting")&&["deer","boar","wolf"].includes(e.type)?2:0;
- for(const res of ["food","wood","stone"]){const n=(d[res]||0)*multiplier+(res==="food"?extra:0);if(n)state.resources[res]=(state.resources[res]||0)+n;}
+ for(const res of ["food","wood","stone"]){const n=Math.floor((d[res]||0)*multiplier)+(res==="food"?extra:0);if(n)state.resources[res]=(state.resources[res]||0)+n;}
 }
 function dropUnit(u,msg){
  state.units=state.units.filter(a=>a.id!==u.id);if(moving===u.id)moving=null;record(msg);
@@ -502,6 +502,10 @@ function continueGame(){
  state.researchProject??=null;
  state.builders??={};
  state.explored??={};
+ state.encounters??=initialEncounters();
+ state.nextEncounterId??=1000;
+ for(const c of state.cities){c.growth??=0;c.captives??=0;c.unrest??=0;}
+ for(const u of state.units){u.hp??=6;u.xp??=0;}
  if(state.project&&!state.project.total)state.project.total=state.project.left;
  if(state.researchProject&&!state.researchProject.total)state.researchProject.total=techs[state.researchProject.id]?.cost||state.researchProject.left||1;
  selected=null;moving=null;menu="";recalcBorders();
@@ -578,7 +582,7 @@ function progressBuilding(){
   record((buildings[p.kind]?.name||unitDef(p.kind)?.name||p.kind)+" completed at "+c.name+".");state.project=null;
  }
 }
-function growthGoal(c){return Math.ceil((16+c.pop*3)*(state.path==="arts"?.8:1));}
+function growthGoal(c){return Math.ceil((12+c.pop*2)*(state.path==="arts"?.85:1));}
 function changePopulation(foodGained=0,foodBefore=0){
  for(const c of state.cities){
   c.growth??=0;
