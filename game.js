@@ -802,12 +802,12 @@ function panelContents(){
  if(menu==="workers"){
   const free=unassignedWorkers(),assigned=assignedWorkers();
   output='<div class="worker-counter"><span class="worker-number">'+free+'</span><span><strong>Workers remaining</strong><small>'+assigned+' assigned / '+citizens()+' citizens</small></span></div>';
-  output+='<p class="hint">Assign people to resource tiles or construction. Every builder adds +1 work per year (up to six). Builders are not gathering resources. You can reassign any workers before End Year.</p>';
+  output+='<p class="hint">Assign people to resource tiles or construction. Construction is slower now: a few builders help, but additional builders have diminishing returns. 1 builder adds +1 work/year, 3 add +2, and 5 add +3. Builders cannot gather resources at the same time. Reassign before End Year.</p>';
   output+=item("🌾 Assign all resource workers","Automatically balances food, timber, stone and other visible resources. Keep citizens free if you want them building.",btn("Assign all resource workers","assignAll",!myCities().some(c=>freeWorkers(c)>0&&availableWorkTiles(c).length>0),"primary"));
   let shown=0;
   for(const c of myCities()){
    const builders=builderCount(c),speed=constructionRate(c,state.project?.kind||"house");
-   output+=item("🏗 Builders — "+htmlSafe(c.name),"Builders: "+builders+" · "+cityWork(c)+" resource workers · "+freeWorkers(c)+" unassigned. Construction speed with current materials: "+speed+" work/year. "+
+   output+=item("🏗 Builders — "+htmlSafe(c.name),"Builders: "+builders+" · "+cityWork(c)+" resource workers · "+freeWorkers(c)+" unassigned. Construction speed: "+speed+" work/year. "+
     (state.project&&state.project.city===c.id?estimateWork(state.project.left,speed)+" years left.":"Start a project in the City panel."),
     btn("− Remove builder","builder:"+c.id+":-1",builders===0)+btn("＋ Assign builder","builder:"+c.id+":1",freeWorkers(c)<1,"primary"));
    for(let y=Math.max(0,c.y-influenceRadius(c));y<=Math.min(SIZE-1,c.y+influenceRadius(c));y++)
@@ -829,8 +829,8 @@ function panelContents(){
   const speed=constructionRate(c,state.project?.kind||"house");
   output='<div class="worker-counter"><span class="worker-number">'+freeWorkers(c)+'</span><span><strong>Free citizens in '+htmlSafe(c.name)+'</strong><small>'+cityWork(c)+' on resources · '+builderCount(c)+' building · '+c.pop+' population</small></span></div>';
   output+='<div class="combat-stats"><span>⚔ City attack '+cityAttack(c)+'</span><span>🛡 Defence '+cityDefense(c)+'</span><span>📈 Growth '+Math.floor(c.growth||0)+'/'+growthGoal(c)+'</span></div>';
-  if(c.captives)output+='<p class="hint">Captive labour: '+c.captives+' · +'+Math.min(2,c.captives)+' construction work/year · Unrest '+(c.unrest||0)+' (escape risk and food upkeep). Captives are not citizens.</p>';
-  output+='<p class="hint">All developments are built inside this city tile. Assign builders to speed up construction. Population growth needs sustained food production, reserves and housing, and is much slower now. Only one project can run across your civilisation.</p>';
+  if(c.captives)output+='<p class="hint">Captive labour: '+c.captives+' · +'+(c.captives>0?1:0)+' construction work/year · Unrest '+(c.unrest||0)+' (escape risk and food upkeep). Captives are not citizens.</p>';
+  output+='<p class="hint">All developments are built inside this city tile. Buildings now take several years even with builders. Extra builders help less after the first few, so keep some citizens gathering food and materials. Only one project runs across your civilisation.</p>';
   output+=item("🏗 Current project",projectLabel()+" · Current speed "+speed+" work/year",btn("👷 Assign builders","workers",false,"primary"));
   output+='<h4 class="panel-section-title">Buildings</h4>';
   for(const [id,d] of Object.entries(buildings)){
