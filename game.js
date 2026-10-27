@@ -749,13 +749,10 @@ function endYear(){
 function startConstruction(kind,cityId){
  syncStage();
  const c=getCity(cityId);if(!c||c.owner!=="player")return;
- if(state.project){toast("Only one city construction project can run at a time.");return;}
  const def=buildings[kind]||unitDef(kind);
- if(!def)return;
- if(def.need&&!known(def.need)){toast("Discover "+techs[def.need].name+" first.");return;}
- if(def.path&&state.path!==def.path){toast("This development requires a different society path.");return;}
- if(def.requires&&!upgrade(c,def.requires))return toast("Build "+buildings[def.requires].name+" in this city first.");
- for(const r of ["wood","stone","food","metal"])if(state.resources[r]<(def[r]||0)){toast("Not enough "+r+".");return;}
+ if(!def)return toast("Unrecognised development.");
+ const r=projectRequirements(c,kind);
+ if(!r.ready)return toast(r.missing[0]+". Check the project card for any other requirements.");
  for(const r of ["wood","stone","food","metal"])state.resources[r]-=def[r]||0;
  state.project={city:cityId,kind,left:def.work,total:def.work,rate:constructionRate(c,kind),balanceVersion:2};
  record(c.name+" begins "+def.name+".");autoAdvance("construction");save();renderUI();
@@ -825,7 +822,21 @@ function viewedCity(){
  if(selected){const c=cityAt(selected.x,selected.y)||controller(selected.x,selected.y);if(c&&c!=="contested"&&c.owner==="player")return c;}
  return firstCity();
 }
-function projectLabel(){const p=state.project;if(!p)return "Nothing being built.";return (buildings[p.kind]?.name||p.kind)+" · "+p.left+"/"+p.total+" work · ~"+estimateWork(p.left,constructionRate(getCity(p.city),p.kind))+" years left";}
+function projectLabel(){const p=state.project;if(!p)return "Nothing being built.";return (buildings[p.kind]?.name||unitDef(p.kind)?.name||p.kind)+" · "+p.left+"/"+p.total+" work · ~"+estimateWork(p.left,constructionRate(getCity(p.city),p.kind))+" years left";}
+function projectRequirements(c,id){
+ const def=buildings[id]||unitDef(id);
+ if(!def)return {ready:false,missing:["Unknown development"]};
+ const missing=[];
+ if(state.project)missing.push("Finish "+(buildings[state.project.kind]?.name||unitDef(state.project.kind)?.name||state.project.kind)+" first ("+estimateWork(state.project.left,constructionRate(getCity(state.project.city),state.project.kind))+"y)");
+ if(def.need&&!known(def.need))missing.push("Research "+(techs[def.need]?.name||def.need));
+ if(def.path&&state.path!==def.path)missing.push("Choose "+(paths[def.path]||def.path)+" path");
+ if(def.requires&&!upgrade(c,def.requires))missing.push("Build "+(buildings[def.requires]?.name||def.requires)+" first");
+ for(const r of ["wood","stone","food","metal"]){
+  const deficit=(def[r]||0)-(state.resources[r]||0);
+  if(deficit>0)missing.push("Need "+deficit+" more "+r);
+ }
+ return {ready:missing.length===0,missing,reason:missing.join(" · ")};
+}
 function researchLabel(){const p=state.researchProject;if(!p)return "No technology being researched.";return techs[p.id].name+" · "+p.progress+"/"+p.total+" work · ~"+estimateWork(p.total-p.progress,researchRate())+" years remaining";}
 function panelContents(){
  let output="";
@@ -857,6 +868,7 @@ function panelContents(){
    output+=item("🔬 Technology",researchLabel(),btn("Research","tech"));
    output+=item("♜ Society","Choose science, arts, faith or war from Year 100.",btn("Society","path"));
   }
+  output+=item("🌍 World overview","Navigate Earth and see explored territory from above.",btn("Open world map","worldMap",false,"primary"));
   output+=item("🗺 Explore & hunt","Clubmen can hunt animals, fight roaming warriors, or approach villages to learn, befriend or raid. Tap encounter icons on the visible map.",btn("Explore with units","units",false,"primary"));
   output+=item("🧾 Chronicle","Recent events and discoveries.",btn("Open chronicle","history"));
   output+=item("🏠 Main menu","Play a new game or continue from your save.",btn("Open main menu","openMainMenu"));
@@ -897,19 +909,19 @@ function panelContents(){
   output+=item("🏗 Current project",projectLabel()+" · Current speed "+speed+" work/year",btn("👷 Assign builders","workers",false,"primary"));
   output+='<h4 class="panel-section-title">Buildings</h4>';
   for(const [id,d] of Object.entries(buildings)){
-   const techLocked=d.need&&!known(d.need),pathLocked=d.path&&state.path!==d.path;
-   let cost=d.wood+" wood · "+d.stone+" stone"+(d.metal?" · "+d.metal+" metal":"");
-   let lock=techLocked?"🔒 Research "+techs[d.need].name+" to unlock.":pathLocked?"🔒 Requires "+paths[d.path]+" path.":"";
-   output+=item(d.icon+" "+d.name+" ×"+upgrade(c,id),d.desc+" · "+cost+" · "+d.work+" work. "+lock,
-    btn(techLocked||pathLocked?"Locked":"🏗 Construct","build:"+id+":"+c.id,!!state.project||techLocked||pathLocked,techLocked||pathLocked?"secondary":"primary"));
+   const req=projectRequirements(c,id),cost=["wood","stone","food","metal"].filter(k=>d[k]).map(k=>d[k]+" "+k).join(" · ");
+   const message=req.ready?"Ready to build.":"Not ready: "+req.reason+".";
+   const label=req.ready?"🏗 Construct":req.missing[0].startsWith("Finish ")?"⏳ Finish current project":req.missing[0].startsWith("Need ")?"⚠ "+req.missing[0]:"🔒 View requirements";
+   output+=item(d.icon+" "+d.name+" ×"+upgrade(c,id),d.desc+" · Cost: "+cost+" · "+d.work+" work. "+message,
+     btn(label,"build:"+id+":"+c.id,false,req.ready?"primary":"secondary"));
   }
   output+='<h4 class="panel-section-title">Train units</h4>';
   for(const [id,d] of Object.entries(unitTypes)){
-   const techLocked=d.need&&!known(d.need),pathLocked=d.path&&d.path!==state.path,facilityLocked=d.requires&&!upgrade(c,d.requires);
-   let cost=["wood","stone","food","metal"].filter(k=>d[k]).map(k=>d[k]+" "+k).join(" · ");
-   let lock=techLocked?"🔒 Needs "+techs[d.need].name+".":pathLocked?"🔒 Needs "+paths[d.path]+" path.":facilityLocked?"🔒 Build "+buildings[d.requires].name+" first.":"";
-   output+=item(d.icon+" "+d.name,d.desc+" · Strength "+d.strength+" · "+cost+" · "+d.work+" work. "+lock,
-    btn(techLocked||pathLocked||facilityLocked?"Locked":"Train","build:"+id+":"+c.id,!!state.project||!!techLocked||!!pathLocked||!!facilityLocked,techLocked||pathLocked||facilityLocked?"secondary":"primary"));
+   const req=projectRequirements(c,id),cost=["wood","stone","food","metal"].filter(k=>d[k]).map(k=>d[k]+" "+k).join(" · ");
+   const message=req.ready?"Ready to train.":"Not ready: "+req.reason+".";
+   const label=req.ready?"⚔ Train":req.missing[0].startsWith("Finish ")?"⏳ Finish current project":req.missing[0].startsWith("Need ")?"⚠ "+req.missing[0]:"🔒 View requirements";
+   output+=item(d.icon+" "+d.name,d.desc+" · Strength "+d.strength+" · "+cost+" · "+d.work+" work. "+message,
+     btn(label,"build:"+id+":"+c.id,false,req.ready?"primary":"secondary"));
   }
  }
 
@@ -939,7 +951,7 @@ function panelContents(){
   const c=controller(x,y),d=deposit(x,y),job=state.works[pos(x,y)],capital=cityAt(x,y);
   const label=capital?"City tile":c==="contested"?"Contested border":c?c.owner==="player"?"Your influence":"Rival influence":"Wilderness";
   output="<p class='hint'>Tile "+x+", "+y+" · "+htmlSafe(label)+" · "+terrain(x,y)+"</p>";
-  if(capital)output+=item("🏛 "+htmlSafe(capital.name),"Population "+capital.pop+" · Influence radius "+influenceRadius(capital)+" · ⚔ Attack "+cityAttack(capital)+" · 🛡 Defence "+cityDefense(capital),capital.owner==="player"?btn("Manage city","city"):"");
+  if(capital)output+=item("🏛 "+htmlSafe(capital.name)+" · "+htmlSafe(capital.civilisation||"City"),"Leader: "+htmlSafe(capital.leader||"Unknown")+" · Population "+capital.pop+" · Influence radius "+influenceRadius(capital)+" · ⚔ Attack "+cityAttack(capital)+" · 🛡 Defence "+cityDefense(capital),capital.owner==="player"?btn("Manage city","city"):"");
   else if(d&&known(d.tech)){
    let resource=d.type==="forage"?"wild food":d.type;
    let n=remaining(x,y);
@@ -983,6 +995,7 @@ function renderUI(){
  const total=citizens(),assigned=assignedWorkers();
  get("stats").innerHTML=(firstCity()?'<span class="chip">🌾 <b>'+res.food+'</b></span><span class="chip">🪵 <b>'+res.wood+'</b></span><span class="chip">🪨 <b>'+res.stone+'</b></span><span class="chip">👥 <b>'+total+'('+assigned+')</b></span>':"")+'<span class="chip">Year <b>'+state.year+'</b></span>';
  const head=get("summary"),actions=get("actions"),rp=state.researchProject;
+ get("leaderName").textContent=(state.leader?.leader||"Leader")+" · "+(state.leader?.name||"Civilisation");
  if(!firstCity()){
   head.innerHTML='<div class="progress-heading">🔬 Research</div><div class="progress-caption">Found your first city to begin discovering technologies.</div>';
   head.onclick=null;head.onkeydown=null;head.style.cursor="default";
@@ -1006,6 +1019,7 @@ function renderUI(){
 }
 function doAction(a){
  if(a==="endYear")return endYear();
+ if(a==="worldMap")return showWorldMap();
  if(a.startsWith("rest:"))return restUnit(a.slice(5));
  if(a.startsWith("inspect:")){
   const e=(state.encounters||[]).find(e=>e.id===a.slice(8));
