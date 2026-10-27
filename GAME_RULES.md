@@ -47,7 +47,9 @@ Each year is broken into five sequential stages:
 4. **Choose technology** — start exactly one research project. When a project is already being researched, this stage is automatically skipped.
 5. **End Year** — the only action that advances resource gathering, research, construction, population and city borders.
 
-Use **Next** to deliberately pass a stage without taking an action. During a stage, the highlighted stage button opens the relevant controls; the top-right menu still gives access to the full game menu and Society choices.
+Each year has a **revisitable turn checklist**, not a one-way lock. Use **Next** to skip a suggested step. Tap the current step label in the bottom bar to open **This year**, where you can revisit movement, workers, construction or technology in any order. The research card, city panel and map-unit selection remain usable even after those steps have been skipped. **End Year** is always visible, and only clicking End Year advances production, research, construction and year counters. The top-right menu also offers the turn checklist and Society choices.
+
+A previously skipped action can still be taken **before End Year** as long as its normal constraints hold: each unit moves once per year, each worked tile requires a free citizen, one construction project can be active, and only one technology is researched at a time. Work assignments can be rearranged during the year. The checklist is a navigation aid, not a commitment.
 
 The top bar shows population as **total(assigned)**, such as **6(4)**. The research progress card replaces the old static city-name panel at the bottom-left: it shows current technology, progress and estimated years until completion, and opens research controls when tapped. The city drawing shows an active construction project's progress bar and estimated years beneath the city. Work remaining falls every year based on unassigned workers, stocked materials and any specialisation bonuses.
 
@@ -55,7 +57,7 @@ A research technology takes its published *research work* to finish, rather than
 
 Existing version-3 browser saves are preserved and upgraded with empty research projects and an appropriate turn stage.
 
-A completed action does not consume the entire phase: moving one unit leaves all other unmoved units ready, and assigning one worker leaves all other unassigned citizens ready. A unit cannot move twice in the same year. You may also press **Next** to leave a phase early.
+A completed action does not consume the entire phase: moving one unit leaves all other unmoved units ready, and assigning one worker leaves all other unassigned citizens ready. A unit cannot move twice in the same year. You may press **Next** to skip ahead, and reopen any skipped phase before ending the year.
 
 ## Main menu and saving
 - Opening Civ displays a full-screen **main menu** before gameplay.
