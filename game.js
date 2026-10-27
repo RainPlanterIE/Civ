@@ -273,7 +273,7 @@ function villageYearlyEffects(){
 }
 function fresh(scenario=CIV_WORLD.scenario()){
  const leader=scenario.player;
- return {version:4,world:"earth",worldSeed:scenario.seed,leader:{...leader},year:1,
+ return {version:4,world:"earth",worldSeed:scenario.seed,leader:{...leader},initialRivalCount:12,year:1,
  tech:["foraging","forestry"],research:0,knowledge:0,culture:0,faith:0,military:0,
  resources:{food:32,wood:24,stone:14,ore:0,metal:0,animals:0},
  cities:scenario.rivals.map((c,i)=>({id:"r"+(i+1),x:c.x,y:c.y,name:c.capital,civId:c.id,civilisation:c.name,leader:c.leader,colour:c.color,pop:7,owner:"rival",army:6,culture:0,faith:0,buildings:{},growth:0,captives:0,unrest:0})),
@@ -715,8 +715,9 @@ function pathGrowth(){
  }
  if(state.victory)return;
  if(state.path==="science"&&state.knowledge>=260&&myCities().some(c=>upgrade(c,"academy")))state.victory="Science victory — knowledge reshapes the world.";
- if(state.path==="arts"&&myCities().length>=4)state.victory="Culture victory — neighbouring civilisations join you.";
- if(state.path==="faith"&&state.cities.filter(c=>c.owner==="ally").length>=3)state.victory="Faith victory — all neighbours embrace your beliefs.";
+ const needed=Math.max(4,Math.ceil((state.initialRivalCount||12)*2/3));
+ if(state.path==="arts"&&myCities().length>=needed+1)state.victory="Culture victory — neighbouring civilisations join you.";
+ if(state.path==="faith"&&state.cities.filter(c=>c.owner==="ally").length>=needed)state.victory="Faith victory — most great civilisations share your beliefs.";
  if(state.path==="war"&&state.cities.filter(c=>c.owner==="rival").length===0)state.victory="War victory — the rival cities have fallen.";
  if(state.victory)record(state.victory);
 }
