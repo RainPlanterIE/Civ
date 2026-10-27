@@ -1036,6 +1036,23 @@ function draw(){
   if(state.works[pos(x,y)]){ctx.fillStyle="#ffda74";ctx.beginPath();ctx.arc(p.x+15*z,p.y+7*z,4*z,0,Math.PI*2);ctx.fill();}
   const c=cityAt(x,y);if(c){structure(p.x,p.y,c);drawConstructionProgress(p.x,p.y,c);}
  }
+ for(const e of state.encounters||[]){
+  if(!currentlyVisible(e.x,e.y))continue;
+  const p=screen(e.x,e.y),z=scale,d=wildTypes[e.type];
+  if(p.x< -75||p.x>width+75||p.y< -90||p.y>height+80)continue;
+  ctx.textAlign="center";
+  ctx.font=Math.max(17,23*z)+"px sans-serif";
+  ctx.shadowBlur=5;ctx.shadowColor="#10201c";
+  ctx.fillText(d.icon,p.x,p.y-9*z);
+  ctx.shadowBlur=0;
+  ctx.font="bold "+Math.max(10,11*z)+"px system-ui";
+  ctx.fillStyle=e.status==="friendly"?"#b9e9af":e.type==="village"?"#f1d8a7":"#ffe2ce";
+  ctx.fillText(e.type==="village"?(e.status==="friendly"?"Friendly village":"Village"):d.name,p.x,p.y-27*z);
+  ctx.fillStyle="#2b382e";ctx.fillRect(p.x-15*z,p.y-3*z,30*z,4*z);
+  ctx.fillStyle=e.type==="village"?"#e3bf87":e.type==="raider"?"#cb786a":"#a2be8b";
+  ctx.fillRect(p.x-15*z,p.y-3*z,30*z*Math.max(0,e.hp/d.hp),4*z);
+  ctx.textAlign="left";
+ }
  for(const u of state.units){
   const p=screen(u.x,u.y),z=scale;
   if(!currentlyVisible(u.x,u.y)&&u.owner!=="player")continue;
