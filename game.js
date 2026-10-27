@@ -1403,14 +1403,14 @@ function resourceUpkeep(year=state.year){
  const ships=state.units.filter(u=>u.owner==="player"&&isNaval(u)).length;
  const civilians=state.units.filter(u=>u.owner==="player"&&!fighter(u)&&!isNaval(u)).length;
  const captives=myCities().reduce((n,c)=>n+(c.captives||0),0);
- const project=state.project,projectDef=project&&(buildings[project.kind]||unitDef(project.kind));
+ const project=state.project,training=state.unitProject,buildingDef=project&&projectDef(project.kind);
  const built=myCities().reduce((n,c)=>n+Object.values(c.buildings||{}).reduce((k,v)=>k+v,0),0);
  const mining=Object.keys(state.works).some(key=>["stone","ore"].includes(deposit(...decode(key))?.type));
  const gear=year%4===0?Math.ceil(fighters/3):0;
  const shipRepair=year%3===0?Math.ceil(ships/2):0;
  const civicWood=year%5===0?Math.floor(built/3):0;
- const projectWood=project&&year%2===0?1:0;
- const projectStone=project&&projectDef?.stone>0&&year%4===0?1:0;
+ const projectWood=(project&&year%2===0?1:0)+(training&&year%3===0?1:0);
+ const projectStone=project&&buildingDef?.stone>0&&year%4===0?1:0;
  const civicStone=year%6===0?myCities().reduce((n,c)=>n+Math.floor((upgrade(c,"walls")+upgrade(c,"stoneworks")+upgrade(c,"forge")+upgrade(c,"harbor"))/3),0):0;
  const miningWood=year%5===0&&mining?1:0;
  return {year,upkeep:{
@@ -1460,7 +1460,8 @@ function economyPanel(){
  }
  out+='<div class="economic-explainer"><strong>Who uses the food?</strong><p>'+d.assigned+' assigned citizens: '+Math.ceil(d.assigned/3)+' food · '+d.fighters+' warriors: '+d.fighters+' food · '+d.ships+' ship crews: '+d.ships+' food · '+d.civilians+' explorers/settlers: '+Math.ceil(d.civilians/3)+' food · '+d.captives+' captives: '+d.captives+' food.</p></div>';
  out+='<div class="economic-explainer"><strong>Timber and stone wear and tear</strong><p>Ongoing construction needs 1 wood every two years and 1 stone every four years for stone-built projects. Military equipment uses wood every four years; ships every three. Large numbers of buildings need periodic repairs and mining uses tools.</p></div>';
- if(state.project)out+='<div class="economic-explainer"><strong>🏗 Active project</strong><p>'+htmlSafe(projectLabel())+(state.project.stalledYear===state.year?" · Work stalled this year for lack of supplies.":"")+'</p></div>';
+ if(state.project)out+='<div class="economic-explainer"><strong>🏗 Building</strong><p>'+htmlSafe(projectLabel())+(state.project.stalledYear===state.year?" · Work stalled this year for lack of supplies.":"")+'</p></div>';
+ if(state.unitProject)out+='<div class="economic-explainer"><strong>⚔ Training</strong><p>'+htmlSafe(projectLabel("unitProject"))+(state.unitProject.stalledYear===state.year?" · Training stalled for lack of supplies.":"")+'</p></div>';
  if(latest){
   out+='<div class="economic-explainer"><strong>Last Year '+latest.year+' actual costs</strong>';
   out+='<p>Food: −'+(latest.paid?.food||0)+' · Wood: −'+(latest.paid?.wood||0)+' · Stone: −'+(latest.paid?.stone||0)+'.</p>';
@@ -1492,6 +1493,7 @@ function payUpkeep(){
  // Materials paid to start construction cover the structure itself;
  // yearly wood/stone represent tools, scaffolding and incidental supplies.
  if(state.project&&((plan.details.projectWood>0&&shortages.wood>0)||(plan.details.projectStone>0&&shortages.stone>0)))state.project.stalledYear=state.year;
+ if(state.unitProject&&state.year%3===0&&shortages.wood>0)state.unitProject.stalledYear=state.year;
  return state.economyLast;
 }
 
