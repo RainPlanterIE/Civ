@@ -226,8 +226,12 @@ function adjacentUnit(e,ready=false,fighting=false){
   .sort((a,b)=>unitAttack(b)-unitAttack(a))[0];
 }
 function rewardSupplies(e,multiplier=1){
- const d=wildTypes[e.type],extra=known("hunting")&&e.type!=="raider"&&e.type!=="village"?2:0;
- for(const res of ["food","wood","stone"]){const n=Math.floor((d[res]||0)*multiplier)+(res==="food"?extra:0);if(n)state.resources[res]=(state.resources[res]||0)+n;}
+ const d=wildTypes[e.type],extra=known("hunting")&&e.type!=="raider"&&e.type!=="village"?2:0,earned={food:0,wood:0,stone:0};
+ for(const res of ["food","wood","stone"]){
+  const n=Math.floor((d[res]||0)*multiplier)+(res==="food"?extra:0);
+  if(n){state.resources[res]=(state.resources[res]||0)+n;earned[res]=n;}
+ }
+ return earned;
 }
 function dropUnit(u,msg){
  state.units=state.units.filter(a=>a.id!==u.id);if(moving===u.id)moving=null;record(msg);
@@ -274,7 +278,10 @@ function encounterAction(id,action){
      state.culture=Math.max(0,state.culture-8);
      record("The village is seized. Two captives are taken for forced construction labour; unrest rises and culture falls.");
     }else record("The village is raided for supplies.");
-   }else{rewardSupplies(e);record(unitTitle(ready)+" defeats "+wildTypes[e.type].name+". Supplies recovered.");}
+   }else{
+    const gained=rewardSupplies(e),home=closestCity(ready.x,ready.y),where=home?.name||"your civilisation";
+    record("🏹 "+unitTitle(ready)+" hunts "+wildTypes[e.type].name+": +"+gained.food+" food"+(gained.wood?" and "+gained.wood+" wood":"")+" delivered to "+where+".");
+   }
    ready.xp=(ready.xp||0)+2;
    state.encounters=state.encounters.filter(item=>item.id!==id);
   }else record(unitTitle(ready)+" strikes "+wildTypes[e.type].name+" for "+inflicted+" damage. "+e.hp+" health remains.");
@@ -941,11 +948,11 @@ function viewedCity(){
  return firstCity();
 }
 function projectLabel(){const p=state.project;if(!p)return "Nothing being built.";return (buildings[p.kind]?.name||unitDef(p.kind)?.name||p.kind)+" · "+p.left+"/"+p.total+" work · ~"+estimateWork(p.left,constructionRate(getCity(p.city),p.kind))+" years left";}
-function projectRequirements(c,id){
+function projectRequirements(c,id,ignoreBusy=false){
  const def=buildings[id]||unitDef(id);
  if(!def)return {ready:false,missing:["Unknown development"]};
  const missing=[];
- if(state.project)missing.push("Finish "+(buildings[state.project.kind]?.name||unitDef(state.project.kind)?.name||state.project.kind)+" first ("+estimateWork(state.project.left,constructionRate(getCity(state.project.city),state.project.kind))+"y)");
+ if(state.project&&!ignoreBusy)missing.push("Finish "+(buildings[state.project.kind]?.name||unitDef(state.project.kind)?.name||state.project.kind)+" first ("+estimateWork(state.project.left,constructionRate(getCity(state.project.city),state.project.kind))+"y)");
  if(def.need&&!known(def.need))missing.push("Research "+(techs[def.need]?.name||def.need));
  if(def.path&&state.path!==def.path)missing.push("Choose "+(paths[def.path]||def.path)+" path");
  if(def.requires&&!upgrade(c,def.requires))missing.push("Build "+(buildings[def.requires]?.name||def.requires)+" first");
@@ -1033,20 +1040,37 @@ function panelContents(){
   const tradeDesc="Import timber from other regions: "+timberFood+" food → "+timberWood+" wood. "+(tradeWait?"Caravan next available in "+tradeWait+" years.":shortage?"Need "+(timberFood-state.resources.food)+" more food.":"Caravan available now.")+" More timber may be scarce in desert, mountain or grassland climates.";
   output+=item("🛶 Timber caravan",tradeDesc,btn(tradeWait?"Caravan returning ("+tradeWait+"y)":shortage?"Need more food":"Trade food for wood","tradeWood:"+c.id,false,!tradeWait&&!shortage?"primary":"secondary"));
 
-  output+='<h4 class="panel-section-title">Buildings</h4>';
-  for(const [id,d] of Object.entries(buildings)){
-   const req=projectRequirements(c,id),cost=["wood","stone","food","metal"].filter(k=>d[k]).map(k=>d[k]+" "+k).join(" · ");
-   const message=req.ready?"Ready to build.":"Not ready: "+req.reason+".";
-   const label=req.ready?"🏗 Construct":req.missing[0].startsWith("Finish ")?"⏳ Finish current project":req.missing[0].startsWith("Need ")?"⚠ "+req.missing[0]:"🔒 View requirements";
-   output+=item(d.icon+" "+d.name+" ×"+upgrade(c,id),d.desc+" · Cost: "+cost+" · "+d.work+" work. "+message,
+  // Ready and affordable developments always come first, even while
+  // another building occupies the construction slot.
+  const availableSoon=([id])=>projectRequirements(c,id,true).ready;
+  const sortChoices=list=>list.sort((a,b)=>{
+    const score=([id,d])=>{
+      const r=projectRequirements(c,id,true);
+      if(r.ready)return 0;
+      if((d.need&&!known(d.need))||(d.path&&state.path!==d.path)||d.requires&&!upgrade(c,d.requires)||d.coastal&&!cityHasSea(c))return 2;
+      return 1;
+    };
+    return score(a)-score(b);
+  });
+  const buildingRows=sortChoices(Object.entries(buildings)),unitRows=sortChoices(Object.entries(unitTypes));
+  const readyBuildings=buildingRows.filter(availableSoon).length,readyUnits=unitRows.filter(availableSoon).length;
+  output+='<h4 class="panel-section-title">🏗 Buildings · '+readyBuildings+' affordable</h4>';
+  output+='<p class="hint">'+(state.project?"Construction is busy, but choices you can afford are still sorted first for your next project.":"Available, affordable buildings appear first; material shortages next; research-locked choices last.")+'</p>';
+  for(const [id,d] of buildingRows){
+   const req=projectRequirements(c,id),canBuyLater=projectRequirements(c,id,true).ready,
+     cost=["wood","stone","food","metal"].filter(k=>d[k]).map(k=>d[k]+" "+k).join(" · ");
+   const message=req.ready?"✅ Can construct now.":canBuyLater&&state.project?"✅ Materials and knowledge ready; finish active project first.":"Requires: "+req.reason+".";
+   const label=req.ready?"🏗 Construct":canBuyLater&&state.project?"⏳ Queue after current project":req.missing.find(m=>m.startsWith("Need "))||"🔒 View requirements";
+   output+=item((req.ready?"✅ ":"")+d.icon+" "+d.name+" ×"+upgrade(c,id),d.desc+" · Cost: "+cost+" · "+d.work+" work. "+message,
      btn(label,"build:"+id+":"+c.id,false,req.ready?"primary":"secondary"));
   }
-  output+='<h4 class="panel-section-title">Train units</h4>';
-  for(const [id,d] of Object.entries(unitTypes)){
-   const req=projectRequirements(c,id),cost=["wood","stone","food","metal"].filter(k=>d[k]).map(k=>d[k]+" "+k).join(" · ");
-   const message=req.ready?"Ready to train.":"Not ready: "+req.reason+".";
-   const label=req.ready?"⚔ Train":req.missing[0].startsWith("Finish ")?"⏳ Finish current project":req.missing[0].startsWith("Need ")?"⚠ "+req.missing[0]:"🔒 View requirements";
-   output+=item(d.icon+" "+d.name,d.desc+" · Strength "+d.strength+" · "+cost+" · "+d.work+" work. "+message,
+  output+='<h4 class="panel-section-title">⚔ Train units · '+readyUnits+' affordable</h4>';
+  for(const [id,d] of unitRows){
+   const req=projectRequirements(c,id),canBuyLater=projectRequirements(c,id,true).ready,
+     cost=["wood","stone","food","metal"].filter(k=>d[k]).map(k=>d[k]+" "+k).join(" · ");
+   const message=req.ready?"✅ Can train now.":canBuyLater&&state.project?"✅ Available after current project.":"Requires: "+req.reason+".";
+   const label=req.ready?"Train "+d.name:canBuyLater&&state.project?"⏳ Queue after current project":req.missing.find(m=>m.startsWith("Need "))||"🔒 View requirements";
+   output+=item((req.ready?"✅ ":"")+d.icon+" "+d.name,d.desc+" · Strength "+d.strength+" · "+cost+" · "+d.work+" work. "+message,
      btn(label,"build:"+id+":"+c.id,false,req.ready?"primary":"secondary"));
   }
  }
@@ -1086,13 +1110,34 @@ function panelContents(){
   if(capital&&capital.owner==="rival"&&state.path==="war")output+=item("⚔ Siege", "Move a ready army adjacent to this city to capture it.",btn("Attack city","attack:"+capital.id));
  }
  if(menu==="tech"){
-  const researching=state.researchProject;
-  output="<p class='hint'>"+(researching?"🔬 Research in progress: "+researchLabel():"Choose a technology. Research advances each year; only one technology can be researched at a time.")+"<br>Research production: "+researchRate()+" per year. Science knowledge: "+state.knowledge+".</p>";
-  for(const [id,d] of Object.entries(techs)){
-   const locked=known(id)||!!researching||(d.need&&!known(d.need));
-   const active=researching?.id===id;
-   output+=item((known(id)?"✓ ":active?"⏳ ":"🔬 ")+d.name,d.desc+" · Unlocks: "+bonusText(id)+(d.need?" · Requires "+techs[d.need].name:"")+" · "+d.cost+" research work",btn(known(id)?"Researched":active?"In progress":"Start research","tech:"+id,locked));
+  const researching=state.researchProject,rate=researchRate(),learned=state.tech.length;
+  const ready=Object.entries(techs).filter(([id,d])=>!known(id)&&(!d.need||known(d.need)));
+  output='<div class="tech-intro"><strong>Technology tree</strong><p>Research power: +'+rate+'/year · Discovered '+learned+' · Ready to explore '+ready.length+'. Follow the connections to unlock buildings, units and bonuses.</p></div>';
+  if(researching){
+   const r=techs[researching.id],pct=Math.min(100,Math.round(100*researching.progress/researching.total));
+   output+='<div class="tech-current"><strong>🔬 Currently researching '+r.name+'</strong><div class="meter"><div class="meter-fill research-fill" style="width:'+pct+'%"></div></div><small>'+researching.progress+'/'+researching.total+' work · about '+estimateWork(researching.total-researching.progress,rate)+' years left</small></div>';
+  }else{
+   output+='<div class="tech-next"><strong>Available discoveries</strong><div class="tech-quick-picks">'+ready.map(([id,d])=>btn(d.name+' · '+d.cost+' work','tech:'+id,false,'primary')).join('')+'</div></div>';
   }
+  output+='<div class="tech-tree">';
+  for(const branch of techBranches){
+   output+='<section class="tech-branch"><div class="tech-branch-head"><strong>'+branch.name+'</strong><span>'+branch.desc+'</span></div>';
+   for(const id of branch.ids){
+    const d=techs[id],active=researching?.id===id,done=known(id),prereq=d.need?techs[d.need]:null,
+       needs=!!prereq&&!known(d.need),canStart=!done&&!active&&!researching&&!needs,
+       status=done?'Researched':active?'In progress':needs?'Needs '+prereq.name:researching?'Research slot busy':'Ready now',
+       depth=d.need?1+(techs[d.need]?.need?1:0):0;
+    output+='<div class="tech-node '+(done?'researched':active?'researching':needs?'locked':'available')+'" style="--depth:'+depth+'">';
+    output+='<div class="tech-node-top"><strong>'+(done?'✓ ':active?'⏳ ':needs?'🔒 ':'🔬 ')+d.name+'</strong><span class="tech-status">'+status+'</span></div>';
+    output+='<div class="tech-prereq">'+(prereq?'↳ Requires '+prereq.name:'● Starting technology')+' · '+d.cost+' research work</div>';
+    output+='<div class="tech-bonus">'+bonusText(id)+'</div>';
+    if(active)output+='<div class="meter"><div class="meter-fill research-fill" style="width:'+Math.min(100,Math.round(100*researching.progress/researching.total))+'%"></div></div>';
+    else if(!done)output+=btn(canStart?'Research '+d.name:needs?'Research '+prereq.name+' first':'Finish current research','tech:'+id,!canStart,canStart?'primary':'secondary');
+    output+='</div>';
+   }
+   output+='</section>';
+  }
+  output+='</div>';
  }
  if(menu==="path"){
   output="<p class='hint'>"+(state.year<100?"Available in Year 100 · "+(100-state.year)+" years remaining.":state.path?"Current direction: "+paths[state.path]:"Choose one direction to shape the civilisation.")+"</p>";
