@@ -880,13 +880,178 @@ Object.assign(COURT_AFTERSHOCKS,{
    {text:"The envoys negotiate a common oath that brings the camps together.",effect:{legitimacy:5,factions:{military:{loyalty:7,intrigue:-6}}}}]
  }
 });
+// Alternate historically themed testimony for repeat plays. The roll and
+// factual details are retained in the pending court event for save/reload.
+const COURT_VARIATIONS={
+ founding:[
+  "A dispute over which families provided the first city timber has brought old promises to light. Several elders want guarantees that the crown will remember their contribution.",
+  "Two neighbouring settlements offer envoys, each claiming to have sheltered the first families. They disagree over whose road should carry future trade.",
+  "Young artisans ask whether a new city should follow ancient customs or give its workers a voice in how public stores are used."
+ ],
+ guilds:[
+  "An apprentice has shown the council a set of unpaid tallies. The guilds claim that royal overseers quietly lengthened the working days.",
+  "Masons working on public buildings say private contracts would pay more. The Steward fears that a skilled workforce could leave the city.",
+  "The guild representative arrived with a petition signed by people from the harvest, the quarries and the docks. Not all agree on what they want."
+ ],
+ rumours:[
+  "A messenger was seen leaving the barracks after dark, carrying a sealed package addressed to no one at the palace.",
+  "A distant relative of a royal officer has begun hosting lavish dinners for merchants. Invitations reach every faction except the throne.",
+  "Priests and soldiers have each received anonymous letters promising an end to court favouritism. The messages use the same handwriting."
+ ],
+ food:[
+  "A fisher claims the best catches have been reserved for private households while workers receive less than their allotted shares.",
+  "A poor harvest has reopened arguments over who owns the grain grown outside the walls. Traders say a price ceiling would drive them away.",
+  "A group of families have begun exchanging tools for bread. The Guild Speaker asks whether royal stores are meant for emergencies such as this."
+ ],
+ timber:[
+  "Woodcutters say the best trees have already been taken from the closest groves. The carpenters insist the remaining timber is poor for beams.",
+  "The royal builder has received two competing reports: one says supplies were stolen, the other says the warehouse counted green timber as seasoned wood.",
+  "Village leaders refuse to surrender any more of the beams that protect their houses from winter storms."
+ ],
+ army:[
+  "A popular commander is being toasted by soldiers who no longer mention the crown when they celebrate victories.",
+  "The gate captain has begun recruiting fighters from the nearby markets, claiming that the palace moves too slowly to defend the road.",
+  "An officer reports that some warriors have sworn a private oath to their commander, rather than the institution of the throne."
+ ],
+ temple:[
+  "Several families now ask the priests to witness their contracts. Court officials wonder whether religious authority is replacing royal law.",
+  "Priests have begun collecting gifts intended to rebuild a sanctuary; no one agrees about who should audit the offerings.",
+  "Temple officials ask permission to arbitrate a dispute between powerful households without allowing guild leaders to attend."
+ ],
+ captives:[
+  "The workshops depend on captive labour and the merchants who profit from it are petitioning against any change.",
+  "Several children of captive workers have asked the temple to intervene. The priesthood cannot agree whether the matter belongs in a court.",
+  "An overseer reports unrest at the worksites while a former prisoner offers to organise free labour instead."
+ ],
+ merchant:[
+  "The traders offer new weights and measures that could make the market more reliable, though the guilds suspect that foreign merchants would benefit most.",
+  "An envoy brings unfamiliar tools and insists that tolls be agreed before his caravan enters the city.",
+  "A wealthy guild leader proposes a long-term trade agreement in exchange for control of the city gates after sunset."
+ ],
+ conspiracy:[
+  "A hidden note refers to the location of the royal household at dusk. Its seal resembles one used by a respected noble.",
+  "The Spymaster has found payments to several officers in the same week. Each recipient claims an innocent reason.",
+  "Members of the accused faction have begun demanding written assurances of safety before speaking to the court."
+ ],
+ granaryFire:[
+  "A young watchman says he heard footsteps after the grain merchants left. His testimony conflicts with the foreman's account.",
+  "Workers were seen carrying sacks away from the storehouse before the flames were noticed. They say they were rescuing supplies.",
+  "A charcoal seller believes discarded embers started the fire; the garrison insists this is a convenient explanation."
+ ],
+ worksite:[
+  "The accident occurred while building materials were being moved during a sudden storm. Witnesses dispute whether the overseer ordered the work to continue.",
+  "A skilled mason believes the foundation has shifted. The foreman says the crack is cosmetic and not worth another year of delay.",
+  "Carpenters argue that the wood reserved for scaffolding was diverted to weapons. The captain denies issuing such an order."
+ ],
+ garrison:[
+  "An officer claims that veterans are being replaced by recruits more loyal to the captain. The younger soldiers call the allegation an insult.",
+  "A patrol returns with an empty supply cart, then refuses to surrender its weapons until the barracks receives provisions.",
+  "Soldiers from different villages have begun gathering around competing officers, and neither side will accept the other's orders."
+ ],
+ sacredGround:[
+  "A merchant offers to pay for a new gate if the royal court moves the shrine. The priestess says accepting the money would set a dangerous precedent.",
+  "Children from the market have been playing on the steps of the shrine. An argument over access has grown into an argument over royal authority.",
+  "A dispute over a sacred well has delayed the delivery of construction stone. Both sides have summoned witnesses."
+ ],
+ grainEdict:[
+  "A merchant blames bad roads for the shortage, but families claim grain carts are entering the houses of the wealthy after nightfall.",
+  "The sellers insist that importing grain costs more than the palace understands. The Guild Speaker asks how a worker is meant to pay.",
+  "A group of citizens demand that public grain be sold by an agreed measure. The treasurer fears the crown will lose supplies."
+ ],
+ ironDebate:[
+  "One official proposes stamping every iron tool with the royal seal. Smiths insist that a seal will not make poor metal stronger.",
+  "A guild of metalworkers offers to provide weapons at a fixed price, in return for freedom from new inspectors.",
+  "Soldiers complain that private merchants receive better tools than border patrols. The smiths say the army has not paid its bills."
+ ],
+ scribes:[
+  "A clerk finds two ledgers listing different owners for the same fields. Each bears what appears to be a royal seal.",
+  "The archive holds several disputed treaties, and a military officer has demanded the originals before the scribes can make copies.",
+  "An ageing archivist admits that some older records were copied from memory after damp destroyed the original pages."
+ ],
+ veteranLand:[
+  "A veteran presents a scarred shield as evidence that the crown promised his family a field. A farmer claims the very same field.",
+  "Former soldiers are building houses outside the walls, on ground previously used for grazing by poorer households.",
+  "An officer proposes settling discharged warriors along the frontier; the Steward questions who would supply their first harvest."
+ ],
+ pilgrims:[
+  "One procession plans to travel through the market at dawn while the other announces prayers at exactly the same hour.",
+  "Farmers say festival crowds have interrupted harvesting. Temple officials argue that seasonal rituals are needed for the community.",
+  "A young priest announces a new procession that older religious leaders refuse to recognise."
+ ],
+ caravanLoss:[
+  "One trader claims the missing carts were seen near a fort; another says they never left the previous market.",
+  "The customs office insists that the caravan paid its toll, but no one can find the stamped record.",
+  "A messenger arrives with a damaged wheel and a story of an ambush; the army questions whether the account is complete."
+ ],
+ succession:[
+  "The question begins when a royal relative asks whether appointment or inheritance determines the right to rule.",
+  "A commander has offered to protect the next ruler in return for a formal position on the succession council.",
+  "Several clerks have been ordered to trace the ancestry of competing claimants, a task that has begun to frighten the court."
+ ],
+ kurultai:[
+  "A rider brings word that several respected commanders will only attend a gathering held on neutral steppe.",
+  "A powerful clan has sent gifts to the palace but says it will not swear another oath until the assembly meets.",
+  "An older commander recalls promises made at a previous great council. Younger warriors say those promises bind no one."
+ ]
+};
+const COURT_CULTURE_TONE={
+ roman:"The senator families are listening for any sign that the ruler favours one estate over another.",
+ mongol:"The camps beyond the palace are watching how the Khan deals with commanders, promises and personal loyalty.",
+ han:"Court clerks expect a formal account of what happened; an official's reputation can be damaged by a poorly chosen ruling.",
+ greek:"Citizens disagree about who should speak at the assembly and how the city ought to account for shared obligations.",
+ egypt:"Royal stewards and temple officials disagree about who holds responsibility for keeping the Nile settlements supplied.",
+ norse:"Household leaders expect a decision they can defend at the next gathering of their followers.",
+ mali:"Merchants and royal officials alike worry about how the decision will affect the trust of distant trading partners.",
+ inca:"Regional administrators await an instruction they can carry along the mountain roads without misunderstanding.",
+ persian:"Provincial governors have sent differing reports, and each expects the royal household to hear their account.",
+ babylonian:"Scribes dispute which tablet should be accepted as proof when testimony conflicts.",
+ maurya:"Officials from the capital and the provinces disagree over whose reports the ruler should trust.",
+ aztec:"Tribute collectors and noble households press competing interpretations of the realm's obligations.",
+ maya:"Representatives of powerful city households insist that their old agreements have not been honoured.",
+ khmer:"The temple administration and the royal workforce each claim authority over the disputed supplies.",
+ japan:"Military households and court officials have different ideas about which promise deserves precedence.",
+ aksum:"Traders travelling between upland settlements and the coast bring conflicting stories.",
+ iceni:"Clan elders disagree about whether the crown's decision should follow custom or respond to the present danger.",
+ ottoman:"Court officials and army officers are disputing how the decree should be carried out across the provinces.",
+ carthage:"Merchant families and military officers each argue that the city's security depends on their advice.",
+ zulu:"Senior commanders and household elders want the royal decision to recognise their service to the community.",
+ chola:"Overseas traders, temple stewards and local assemblies are pressing different claims upon the court."
+};
+function courtFacts(sceneId){
+ const food=Math.floor(state.resources.food||0),wood=Math.floor(state.resources.wood||0),
+  soldiers=state.units.filter(u=>u.owner==="player"&&fighter(u)).length,
+  c=firstCity(),cityName=c?.name||"the capital",growth=c?.pop||0;
+ const balance=myCities().length?economyForecast(state.year+1).net:{food:0,wood:0};
+ if(["food","grainEdict","granaryFire","pilgrims"].includes(sceneId))
+  return "The steward reports "+food+" food in stores, with a projected "+(balance.food>=0?"+":"")+balance.food+" food next year.";
+ if(["timber","worksite","caravanLoss"].includes(sceneId))
+  return "The builders count "+wood+" wood in reserve. "+(state.project?"A construction project is already underway.":"The construction yard is quiet for now.");
+ if(["army","garrison","veteranLand","kurultai","succession"].includes(sceneId))
+  return "The crown commands "+soldiers+" warrior"+(soldiers===1?"":"s")+", whose duties range from guarding the capital to distant expeditions.";
+ if(["temple","sacredGround","captives"].includes(sceneId))
+  return cityName+" has "+growth+" citizens, and each household has its own account of the problem.";
+ return "";
+}
 function courtStory(sceneId,p){
- const scene=COURT_SCENES[sceneId],story=COURT_STORIES[sceneId];
- const resolve=text=>String(text||"").replaceAll("{leader}",state.leader?.leader||"Ruler")
-  .replaceAll("{capital}",firstCity()?.name||state.leader?.capital||"the capital")
-  .replaceAll("{faction}",COURT_GROUPS[p?.target]?.name||"the plotters");
- return {opening:resolve(scene?.text),background:resolve(story?.context||""),
-   counsel:(story?.counsel||[]).map(resolve),choices:story?.choices||{}};
+ const scene=COURT_SCENES[sceneId],story=COURT_STORIES[sceneId],version=(p?.variant??0);
+ const tokens={
+  "{leader}":state.leader?.leader||"Ruler",
+  "{capital}":firstCity()?.name||state.leader?.capital||"the capital",
+  "{faction}":COURT_GROUPS[p?.target]?.name||"the plotters"
+ };
+ const resolve=value=>{
+  let text=String(value||"");
+  for(const [token,replacement] of Object.entries(tokens))text=text.replaceAll(token,replacement);
+  return text;
+ };
+ const variants=COURT_VARIATIONS[sceneId]||[];
+ const variant=variants.length?variants[version%variants.length]:"";
+ const cultural=COURT_CULTURE_TONE[state.leader?.id]||"Representatives from the provinces await the court's judgement.";
+ const facts=courtFacts(sceneId);
+ return {opening:resolve(scene?.text),
+  background:resolve([story?.context||"",variant,cultural,facts].filter(Boolean).join(" ")),
+  counsel:(story?.counsel||[]).map(resolve),
+  choices:story?.choices||{}};
 }
 function aftershockRoll(sceneId,optionId){
  // Deterministic across saves, different for each world, year and decision.
