@@ -68,7 +68,17 @@ const wildTypes={
  boar:{name:"Wild boar",icon:"🐗",hp:5,attack:3,defense:2,food:10,description:"Dangerous wild game; may injure a hunter."},
  wolf:{name:"Wolf",icon:"🐺",hp:5,attack:4,defense:2,food:4,description:"A dangerous predator that may attack nearby units."},
  raider:{name:"Rival warrior",icon:"⚔️",hp:6,attack:4,defense:3,food:4,wood:5,description:"An armed wanderer who can raid travellers and cities."},
- village:{name:"Independent village",icon:"🏘️",hp:8,attack:3,defense:4,food:8,wood:8,stone:3,description:"An independent community. Trade, learn, befriend or raid it."}
+ camel:{name:"Wild camel",icon:"🐪",hp:5,attack:2,defense:2,food:7,description:"A desert animal found in dry environments."},
+ kangaroo:{name:"Kangaroo",icon:"🦘",hp:4,attack:2,defense:2,food:7,description:"Native to Australia."},
+ llama:{name:"Llama",icon:"🦙",hp:4,attack:1,defense:2,food:7,description:"An Andean animal native to the South American highlands."},
+ jaguar:{name:"Jaguar",icon:"🐆",hp:6,attack:4,defense:3,food:5,description:"Dangerous predator of tropical American forests."},
+ bison:{name:"Bison",icon:"🦬",hp:7,attack:4,defense:3,food:14,description:"Large grazing animals of North American grasslands."},
+ zebra:{name:"Zebra",icon:"🦓",hp:5,attack:2,defense:2,food:10,description:"Grazing animal from African savannas."},
+ lion:{name:"Lion",icon:"🦁",hp:7,attack:5,defense:3,food:7,description:"Savanna predator capable of attacking travellers."},
+ elephant:{name:"Elephant",icon:"🐘",hp:12,attack:6,defense:5,food:18,description:"Large elephant requiring several strikes to hunt."},
+ tiger:{name:"Tiger",icon:"🐅",hp:8,attack:5,defense:4,food:7,description:"Dangerous predator of Asian forests."},
+ bear:{name:"Bear",icon:"🐻",hp:9,attack:5,defense:4,food:10,description:"Powerful predator of cool forests."},
+  village:{name:"Independent village",icon:"🏘️",hp:8,attack:3,defense:4,food:8,wood:8,stone:3,description:"An independent community. Trade, learn, befriend or raid it."}
 };
 function makeEncounter(type,x,y,id){
  const d=wildTypes[type];
@@ -129,7 +139,7 @@ function adjacentUnit(e,ready=false,fighting=false){
   .sort((a,b)=>unitAttack(b)-unitAttack(a))[0];
 }
 function rewardSupplies(e,multiplier=1){
- const d=wildTypes[e.type],extra=known("hunting")&&["deer","boar","wolf"].includes(e.type)?2:0;
+ const d=wildTypes[e.type],extra=known("hunting")&&e.type!=="raider"&&e.type!=="village"?2:0;
  for(const res of ["food","wood","stone"]){const n=Math.floor((d[res]||0)*multiplier)+(res==="food"?extra:0);if(n)state.resources[res]=(state.resources[res]||0)+n;}
 }
 function dropUnit(u,msg){
@@ -207,7 +217,7 @@ function spawnEncounters(){
 function roamEnemies(){
  // Each year, hostile warriors and predators may approach the player's units.
  for(const e of state.encounters||[]){
-  if(!["raider","wolf","boar"].includes(e.type))continue;
+  if(!["raider","wolf","boar","jaguar","lion","tiger","bear"].includes(e.type))continue;
   const victim=state.units.filter(u=>u.owner==="player"&&distance(u.x,u.y,e.x,e.y)<=1).sort((a,b)=>unitHP(a)-unitHP(b))[0];
   if(victim&&eventRng(e.x*7+e.y*11)>(e.type==="raider"?.32:.72)){
    const damage=Math.max(1,e.attack-unitDefense(victim)+Math.floor(eventRng(e.x*11)*2));
