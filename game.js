@@ -1042,9 +1042,9 @@ function showMainMenu(){
  const stored=storedGame();
  const screen=get("startScreen");
  get("continueGame").disabled=!stored;
- get("backToGame").hidden=!inGame;
+ get("backToGame").hidden=!inGame||!!state.overthrown;
  get("menuStatus").textContent=stored
-  ?(stored.legacyMigrated?"Earlier valley save detected — Continue moves its progress to Earth. The original is kept. ":"Earth save available · ")+
+  ?(stored.overthrown?"Your reign ended in Year "+stored.overthrown.year+". Start a new game or view the outcome. · ":stored.legacyMigrated?"Earlier valley save detected — Continue moves its progress to Earth. The original is kept. ":"Earth save available · ")+
      "Year "+stored.year+" · "+(stored.leader?.leader||"Historical leader")+" · "+(stored.leader?.name||"Civilisation")
   :"No Earth save yet — Play assigns a random historical leader.";
  screen.classList.remove("hidden");
@@ -1390,7 +1390,7 @@ function panelContents(){
  if(menu==="actions"){
   output="<p class='hint'>Everything is managed through one city tile and the land it influences.</p>";
   output+=item("📋 This year's actions","Return to skipped stages before ending the year.",btn("Review turn","turnMenu"));
-  if(firstCity())output+=item("👑 Royal court & intrigue","Crown legitimacy "+ensureCourt().legitimacy+"/100 · "+courtLevel()+". Manage competing guilds, generals and priests before their influence becomes a threat.",btn("Enter royal court","court",false,"primary"));
+  if(firstCity())output+=item("👑 Royal court & intrigue","Crown legitimacy "+ensureCourt().legitimacy+"/100 · "+courtLevel()+". "+(ensureCourt().plot?"⚠ A "+COURT_GROUPS[ensureCourt().plot.faction].name+" conspiracy threatens your reign in Year "+ensureCourt().plot.deadline+". ":"")+"Manage competing guilds, generals and priests before their influence becomes a threat.",btn("Enter royal court","court",false,"primary"));
   if(firstCity()){
    output+=item("🏛 City","Construct developments inside a city tile; one project at a time.",btn("🏗 Construct","city",false,"primary"));
    output+=item("🌿 Workers","Population: "+citizens()+"("+assignedWorkers()+") assigned. "+unassignedWorkers()+" still available for resources or construction.",btn("👥 Assign workers","workers",false,"primary"));
@@ -1594,7 +1594,7 @@ function renderUI(){
  const head=get("summary"),actions=get("actions"),rp=state.researchProject,court=ensureCourt();
  const courtBadge=get("courtBadge");
  courtBadge.hidden=!firstCity();
- courtBadge.innerHTML='👑 Court <b>'+court.legitimacy+'</b>'+(court.plot?' ⚠':'');
+ courtBadge.innerHTML='👑 Court <b>'+court.legitimacy+'</b>'+(court.plot||courtLevel()==="High risk"?' ⚠':'');
  courtBadge.classList.toggle("court-danger",!!court.plot||courtLevel()==="High risk");
  get("leaderName").textContent=(state.leader?.leader||"Leader")+" · "+(state.leader?.name||"Civilisation");
  if(!firstCity()){
