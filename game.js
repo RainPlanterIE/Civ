@@ -403,6 +403,7 @@ function villageYearlyEffects(){
 }
 // The royal court: recurring dilemmas, rival power centres and preventable coups.
 // Keeping court data inside the game save makes each decision persistent.
+let focusedCourtFaction=null;
 const COURT_GROUPS={
  workers:{name:"Workers & guilds",title:"Guild Speaker",icon:"⚒️",colour:"#e1b57c"},
  military:{name:"Warriors & generals",title:"War Captain",icon:"🛡️",colour:"#bd8582"},
@@ -880,10 +881,10 @@ function courtMarkup(){
  let output=courtPreview(courtInterior())+'<div class="court-head"><div><strong>👑 Crown legitimacy</strong><span class="court-score">'+c.legitimacy+'/100</span></div><div><strong>State of the realm</strong><span class="court-status">'+courtLevel()+'</span></div></div>';
  output+='<p class="hint">Factions can grow through population, armies, temples and your decisions. A powerful but disloyal faction may plot to overthrow the ruler. Intrigue and legitimacy affect that danger. Council actions are limited to one per year.</p>';
  if(c.plot)output+='<div class="court-warning"><strong>⚠ Conspiracy — '+COURT_GROUPS[c.plot.faction].name+'</strong><span>Possible coup in Year '+c.plot.deadline+' · '+Math.max(0,c.plot.deadline-state.year)+' years remaining. Reduce their Threat below 48 to break the plot.</span></div>';
- const sorted=Object.keys(COURT_GROUPS).sort((a,b)=>factionRisk(b)-factionRisk(a));
+ const sorted=Object.keys(COURT_GROUPS).sort((a,b)=>(a===focusedCourtFaction?-1:0)-(b===focusedCourtFaction?-1:0)||factionRisk(b)-factionRisk(a));
  for(const id of sorted){
   const meta=COURT_GROUPS[id],f=c.factions[id],risk=factionRisk(id);
-  output+='<section class="court-faction"><header><strong>'+meta.icon+' '+meta.name+'</strong><span class="court-faction-risk">'+risk+' threat</span></header>';
+  output+='<section class="court-faction '+(id===focusedCourtFaction?'court-faction-selected':'')+'"><header><strong>'+meta.icon+' '+meta.name+'</strong><span class="court-faction-risk">'+risk+' threat</span></header>';
   for(const [label,key] of [["Influence","power"],["Loyalty","loyalty"],["Scheming","intrigue"]]){
    output+='<div class="court-line"><span>'+label+'</span><span>'+f[key]+'/100</span></div><div class="court-meter"><div class="court-fill '+key+'" style="width:'+f[key]+'%"></div></div>';
   }
@@ -1789,21 +1790,24 @@ function panelContents(){
   }
  }
  if(menu==="actions"){
-  output="<p class='hint'>Everything is managed through one city tile and the land it influences.</p>";
-  output+=item("📋 This year's actions","Return to skipped stages before ending the year.",btn("Review turn","turnMenu"));
-  if(firstCity())output+=item("📊 Resource economy","See what your workers produce and what armies, construction and maintenance will consume next year.",btn("See yearly balance","economy",false,"primary"));
-  if(firstCity())output+=item("👑 Royal court & intrigue","Crown legitimacy "+ensureCourt().legitimacy+"/100 · "+courtLevel()+". "+(ensureCourt().plot?"⚠ A "+COURT_GROUPS[ensureCourt().plot.faction].name+" conspiracy threatens your reign in Year "+ensureCourt().plot.deadline+". ":"")+"Manage competing guilds, generals and priests before their influence becomes a threat.",btn("Enter royal court","court",false,"primary"));
-  if(firstCity()){
-   output+=item("🏛 City","Construct developments inside a city tile; one project at a time.",btn("🏗 Construct","city",false,"primary"));
-   output+=item("🌿 Workers","Population: "+citizens()+"("+assignedWorkers()+") assigned. "+unassignedWorkers()+" still available for resources or construction.",btn("👥 Assign workers","workers",false,"primary"));
-   output+=item("🔬 Technology",researchLabel(),btn("Research","tech"));
-   output+=item("♜ Society","Choose science, arts, faith or war from Year 100.",btn("Society","path"));
-  }
-  output+=item("🌍 World overview","Navigate Earth and see explored territory from above.",btn("Open world map","worldMap",false,"primary"));
-  output+=item("🗺 Explore & hunt","Clubmen can hunt animals, fight roaming warriors, or approach villages to learn, befriend or raid. Tap encounter icons on the visible map.",btn("Explore with units","units",false,"primary"));
-  output+=item("🧾 Chronicle","Recent events and discoveries.",btn("Open chronicle","history"));
-  output+=item("🏠 Main menu","Play a new game or continue from your save.",btn("Open main menu","openMainMenu"));
-  output+=item("💾 Save game","Save the current turn on this device.",btn("Save now","save"));
+  const links=[
+   ["📋 This year","turnMenu"],
+   ["🏗 Buildings","buildings"],
+   ["⚔ Train units","training"],
+   ["👥 Workers","workers"],
+   ["🔬 Technology","tech"],
+   ["📊 Resources","economy"],
+   ["👑 Court","court"],
+   ["🗺 World map","worldMap"],
+   ["🚶 Units","units"],
+   ["♜ Society","path"],
+   ["📜 Chronicle","history"],
+   ["🏠 Main menu","openMainMenu"],
+   ["💾 Save","save"]
+  ];
+  output='<div class="compact-menu">'+links.filter(([label,action])=>firstCity()||["turnMenu","units","worldMap","openMainMenu","save"].includes(action)).map(([label,action])=>
+   '<button class="compact-menu-link" data-action="'+action+'">'+label+' <span>›</span></button>').join("")+'</div>';
+  if(firstCity())output+='<p class="hint">Building and training progress together. Revisit any action before End Year.</p>';
  }
  if(menu==="court")output=courtMarkup();
  if(menu==="economy")output=economyPanel();
@@ -2014,6 +2018,14 @@ function renderUI(){
  courtBadge.hidden=!firstCity();
  courtBadge.innerHTML='👑 Court <b>'+court.legitimacy+'</b>'+(court.plot||courtLevel()==="High risk"?' ⚠':'');
  courtBadge.classList.toggle("court-danger",!!court.plot||courtLevel()==="High risk");
+ const factionMini=get("courtFactions");
+ factionMini.hidden=!firstCity();
+ if(firstCity())factionMini.innerHTML=Object.entries(COURT_GROUPS).map(([id,info])=>{
+  const f=court.factions[id],risk=factionRisk(id);
+  const bars=[["power","Influence"],["loyalty","Loyalty"],["intrigue","Scheming"]].map(([key,label])=>
+   '<span class="court-mini-meter '+key+'" title="'+info.name+' · '+label+': '+f[key]+'/100" aria-label="'+label+' '+f[key]+' out of 100"><i style="width:'+f[key]+'%"></i></span>').join("");
+  return '<button class="court-mini-row '+(risk>=50?'court-mini-risk':'')+'" data-action="courtFocus:'+id+'" aria-label="'+info.name+': influence '+f.power+', loyalty '+f.loyalty+', scheming '+f.intrigue+'"><span class="court-mini-name">'+info.icon+' '+(id==="workers"?"Workers":id==="military"?"Warriors":"Priests")+'</span><span class="court-mini-bars">'+bars+'</span></button>';
+ }).join("");
  get("leaderName").textContent=(state.leader?.leader||"Leader")+" · "+(state.leader?.name||"Civilisation");
  if(!firstCity()){
   head.innerHTML='<div class="progress-heading">🔬 Research</div><div class="progress-caption">Found your first city to begin discovering technologies.</div>';
@@ -2042,6 +2054,7 @@ function doAction(a){
  if(ensureCourt().pending)return toast("Choose a response in the royal advisor audience first.");
  if(a==="endYear")return endYear();
  if(a==="court"){menu="court";renderUI();return;}
+ if(a.startsWith("courtFocus:")){focusedCourtFaction=a.slice(11);menu="court";renderUI();return;}
  if(a==="economy"){menu="economy";renderUI();return;}
  if(a.startsWith("inspectDevelopment:")){const [,type,kind,city]=a.split(":");inspectedDevelopment={type,kind,city};menu="development";renderUI();return;}
  if(a.startsWith("council:")){
