@@ -280,11 +280,11 @@ function encounterAction(id,action){
   e.learned=true;ready.moved=true;grantVillageKnowledge(6);record("Your envoy learns local traditions: +6 research."); 
  }else if(action==="befriend"){
   if(e.type!=="village"||e.status!=="neutral")return toast("This village cannot form another pact.");
-  e.status="friendly";ready.moved=true;rewardSupplies(e,.5);e.lastGift=state.year;
-  state.culture+=4;record("You befriend a village: +4 culture and gifts of food and timber.");
+  e.status="friendly";ready.moved=true;rewardSupplies(e,.25);e.lastGift=state.year;
+  state.culture+=4;record("You befriend a village: +4 culture and a small gift of supplies.");
  }else if(action==="trade"){
   if(e.type!=="village"||e.status!=="friendly"||state.year-e.lastGift<5)return toast("The village has no supplies ready to trade yet.");
-  ready.moved=true;e.lastGift=state.year;rewardSupplies(e,.65);record("Friendly villagers exchange food and wood with your travellers.");
+  ready.moved=true;e.lastGift=state.year;rewardSupplies(e,.3);record("Friendly villagers exchange food and wood with your travellers.");
  }else if(action==="fight"||action==="raid"){
   if(action==="raid"&&e.type!=="village")return;
   if(action==="fight"&&e.type==="village")return toast("Choose raid if you wish to attack a village.");
@@ -298,7 +298,7 @@ function encounterAction(id,action){
   if(e.hp<=0){
    if(e.type==="village"){
     e.status="raided";e.hp=0;
-    rewardSupplies(e,1);
+    rewardSupplies(e,.6);
     const c=closestCity(e.x,e.y);
     if(c){
      c.captives=(c.captives||0)+2;
@@ -378,7 +378,7 @@ function villageYearlyEffects(){
  for(const e of state.encounters||[]){
   if(e.type!=="village"||e.status!=="friendly")continue;
   if(state.year-e.lastGift>=6&&myCities().some(c=>distance(c.x,c.y,e.x,e.y)<=10)){
-   rewardSupplies(e,.4);e.lastGift=state.year;
+   rewardSupplies(e,.2);e.lastGift=state.year;
    record("A friendly village sends a small gift of supplies.");
   }
  }
@@ -406,25 +406,25 @@ const COURT_SCENES={
   text:"{leader}, the settlement of {capital} begins to take shape. Three groups seek your ear: those who work the land, those who bear arms, and those who guide the temples. Each can help you rule; each may seek to rule instead.",
   choices:[
    {id:"listen",label:"Hear all three factions",detail:"Seek cooperation without making promises.",effect:{legitimacy:5,factions:{workers:{loyalty:5},military:{loyalty:5},faith:{loyalty:5}}}},
-   {id:"bread",label:"Celebrate with the people",detail:"Open the granaries to win popular goodwill.",effect:{food:-8,legitimacy:7,factions:{workers:{loyalty:13,power:3}}}},
-   {id:"guards",label:"Secure the throne first",detail:"Rely on the guards and risk appearing suspicious.",effect:{food:-5,legitimacy:-3,factions:{military:{loyalty:15,power:7},workers:{loyalty:-5}}}}
+   {id:"bread",label:"Celebrate with the people",detail:"Open the granaries to win popular goodwill.",effect:{food:-5,legitimacy:7,factions:{workers:{loyalty:13,power:3}}}},
+   {id:"guards",label:"Secure the throne first",detail:"Rely on the guards and risk appearing suspicious.",effect:{food:-3,legitimacy:-3,factions:{military:{loyalty:15,power:7},workers:{loyalty:-5}}}}
   ]
  },
  food:{
   advisor:"Royal Steward",icon:"🍞",type:"Provisions",title:"A Hungry Winter",
   text:"In {capital}, stores have fallen low and citizens argue over the last sacks of grain. The Steward warns that hunger may turn frustration into a workers' rebellion.",
   choices:[
-   {id:"hunt",label:"Commission hunters and fishermen",detail:"Trade scarce timber for food brought from the countryside.",effect:{wood:-4,food:13,legitimacy:3,factions:{workers:{loyalty:7,intrigue:-3}}}},
-   {id:"levy",label:"Take grain from the villages",detail:"Stores recover, but the workers resent the compulsory levy.",effect:{food:10,legitimacy:-7,factions:{workers:{loyalty:-14,intrigue:8,power:3}}}},
-   {id:"ration",label:"Ration the royal household",detail:"A small saving, with a cost among privileged groups.",effect:{food:5,legitimacy:5,factions:{military:{loyalty:-5},faith:{loyalty:-4},workers:{loyalty:4}}}}
+   {id:"hunt",label:"Commission hunters and fishermen",detail:"Trade scarce timber for food brought from the countryside.",effect:{wood:-3,food:5,legitimacy:3,factions:{workers:{loyalty:7,intrigue:-3}}}},
+   {id:"levy",label:"Take grain from the villages",detail:"Stores recover, but the workers resent the compulsory levy.",effect:{food:4,legitimacy:-7,factions:{workers:{loyalty:-14,intrigue:8,power:3}}}},
+   {id:"ration",label:"Ration the royal household",detail:"A small saving, with a cost among privileged groups.",effect:{food:2,legitimacy:5,factions:{military:{loyalty:-5},faith:{loyalty:-4},workers:{loyalty:4}}}}
   ]
  },
  timber:{
   advisor:"Master Builder",icon:"🪵",type:"Public Works",title:"The Empty Timber Yard",
   text:"Builders in {capital} cannot find enough seasoned timber. The court suggests competing solutions, each with political consequences.",
   choices:[
-   {id:"woodlands",label:"Fund an expedition to gather timber",detail:"Exchange food for a hard-won supply of wood.",effect:{food:-8,wood:9,legitimacy:2,factions:{workers:{loyalty:7,power:4}}}},
-   {id:"requisition",label:"Requisition villagers' supplies",detail:"Gain timber quickly at the expense of popular trust.",effect:{wood:6,legitimacy:-6,factions:{workers:{loyalty:-11,intrigue:7}}}},
+   {id:"woodlands",label:"Fund an expedition to gather timber",detail:"Exchange food for a hard-won supply of wood.",effect:{food:-4,wood:4,legitimacy:2,factions:{workers:{loyalty:7,power:4}}}},
+   {id:"requisition",label:"Requisition villagers' supplies",detail:"Gain timber quickly at the expense of popular trust.",effect:{wood:3,legitimacy:-6,factions:{workers:{loyalty:-11,intrigue:7}}}},
    {id:"conserve",label:"Preserve what remains",detail:"No timber arrives; the public admires the restraint.",effect:{legitimacy:3,factions:{workers:{loyalty:3}}}}
   ]
  },
@@ -433,7 +433,7 @@ const COURT_SCENES={
   text:"The workshops and fields of {capital} have organised a council. Their speaker requests better provisions and a place in decisions about the city.",
   choices:[
    {id:"seats",label:"Give guilds seats on the council",detail:"Loyalty rises, but their political power grows.",effect:{legitimacy:4,factions:{workers:{power:13,loyalty:15,intrigue:-8},military:{loyalty:-4}}}},
-   {id:"wages",label:"Provide food and rest",detail:"A smaller concession with less political influence.",effect:{food:-10,legitimacy:3,factions:{workers:{loyalty:14,intrigue:-7}}}},
+   {id:"wages",label:"Provide food and rest",detail:"A smaller concession with less political influence.",effect:{food:-4,legitimacy:3,factions:{workers:{loyalty:14,intrigue:-7}}}},
    {id:"deny",label:"Dismiss their petition",detail:"Keep power concentrated but encourage secret meetings.",effect:{legitimacy:-4,factions:{workers:{loyalty:-14,intrigue:12,power:3}}}}
   ]
  },
@@ -441,7 +441,7 @@ const COURT_SCENES={
   advisor:"War Captain",icon:"⚔️",type:"Military",title:"A Captain's Growing Reputation",
   text:"Soldiers sing of their victories and speak of the War Captain more often than the ruler. He asks for a larger voice in the government.",
   choices:[
-   {id:"honours",label:"Grant honours and provisions",detail:"Make him an ally, but give the army greater influence.",effect:{food:-10,legitimacy:1,factions:{military:{loyalty:16,power:12,intrigue:-8}}}},
+   {id:"honours",label:"Grant honours and provisions",detail:"Make him an ally, but give the army greater influence.",effect:{food:-4,legitimacy:1,factions:{military:{loyalty:16,power:12,intrigue:-8}}}},
    {id:"civil",label:"Place the army under civilian oversight",detail:"Lower military influence, but risk an insult to officers.",effect:{legitimacy:4,factions:{military:{power:-14,loyalty:-12,intrigue:6},workers:{loyalty:5}}}},
    {id:"divide",label:"Divide the officers' commands",detail:"Disperse concentrated power while raising suspicion.",effect:{legitimacy:-3,factions:{military:{power:-11,loyalty:-6,intrigue:5}}}}
   ]
@@ -450,7 +450,7 @@ const COURT_SCENES={
   advisor:"High Priestess",icon:"🕯️",type:"Faith",title:"The Temples Speak",
   text:"Pilgrims gather as priests in {capital} seek a larger role in law and ceremony. The High Priestess asks whether her counsel carries the authority of the throne.",
   choices:[
-   {id:"sponsor",label:"Sponsor the temples",detail:"Gain the clergy's friendship while increasing their influence.",effect:{wood:-8,legitimacy:2,factions:{faith:{loyalty:17,power:13,intrigue:-5}}}},
+   {id:"sponsor",label:"Sponsor the temples",detail:"Gain the clergy's friendship while increasing their influence.",effect:{wood:-4,legitimacy:2,factions:{faith:{loyalty:17,power:13,intrigue:-5}}}},
    {id:"plural",label:"Protect every tradition",detail:"Strengthen popular support but disappoint powerful priests.",effect:{legitimacy:7,factions:{workers:{loyalty:8},faith:{loyalty:-12,power:-3}}}},
    {id:"separate",label:"Limit priestly offices",detail:"Preserve royal independence at the cost of religious opposition.",effect:{legitimacy:1,factions:{faith:{power:-13,loyalty:-13,intrigue:9}}}}
   ]
@@ -460,7 +460,7 @@ const COURT_SCENES={
   text:"Captives taken in a raid labour beside the workers of {capital}. Their condition raises unrest and guild leaders question the ruler's judgement.",
   choices:[
    {id:"free",label:"Free the captives",detail:"Relieve unrest and restore trust, losing captive construction labour.",effect:{legitimacy:12,freeCaptives:true,factions:{workers:{loyalty:13,intrigue:-10},faith:{loyalty:3}}}},
-   {id:"reforms",label:"Improve food and conditions",detail:"Spend provisions to calm resistance while keeping captive labour.",effect:{food:-12,unrest:-8,legitimacy:4,factions:{workers:{loyalty:10,intrigue:-6}}}},
+   {id:"reforms",label:"Improve food and conditions",detail:"Spend provisions to calm resistance while keeping captive labour.",effect:{food:-5,unrest:-8,legitimacy:4,factions:{workers:{loyalty:10,intrigue:-6}}}},
    {id:"enforce",label:"Post guards at the worksites",detail:"Control the workforce by force and strengthen the garrison.",effect:{legitimacy:-8,factions:{military:{power:8,loyalty:6},workers:{loyalty:-13,intrigue:14}}}}
   ]
  },
@@ -468,8 +468,8 @@ const COURT_SCENES={
   advisor:"Royal Spymaster",icon:"🕵️",type:"Intelligence",title:"Whispers Behind Closed Doors",
   text:"The Spymaster hears rumours of secret meetings and gifts passing between courtiers. No single faction has acted yet, but suspicion is spreading.",
   choices:[
-   {id:"investigate",label:"Commission an inquiry",detail:"Reduce secret plotting at the cost of trust among courtiers.",effect:{food:-6,legitimacy:3,factions:{workers:{intrigue:-10,loyalty:-3},military:{intrigue:-10,loyalty:-3},faith:{intrigue:-10,loyalty:-3}}}},
-   {id:"open",label:"Call a public council",detail:"Diffuse tensions with openness and a communal feast.",effect:{food:-9,legitimacy:9,factions:{workers:{loyalty:6,intrigue:-5},military:{loyalty:6,intrigue:-5},faith:{loyalty:6,intrigue:-5}}}},
+   {id:"investigate",label:"Commission an inquiry",detail:"Reduce secret plotting at the cost of trust among courtiers.",effect:{food:-3,legitimacy:3,factions:{workers:{intrigue:-10,loyalty:-3},military:{intrigue:-10,loyalty:-3},faith:{intrigue:-10,loyalty:-3}}}},
+   {id:"open",label:"Call a public council",detail:"Diffuse tensions with openness and a communal feast.",effect:{food:-4,legitimacy:9,factions:{workers:{loyalty:6,intrigue:-5},military:{loyalty:6,intrigue:-5},faith:{loyalty:6,intrigue:-5}}}},
    {id:"ignore",label:"Dismiss the rumours",detail:"Spend nothing but allow secret networks to strengthen.",effect:{legitimacy:-3,factions:{workers:{intrigue:4},military:{intrigue:4},faith:{intrigue:4}}}}
   ]
  },
@@ -477,8 +477,8 @@ const COURT_SCENES={
   advisor:"Foreign Envoy",icon:"🐫",type:"Trade",title:"Traders at the City Gates",
   text:"Merchants have reached {capital} with goods from distant regions. The court debates who should control new routes and the taxes on commerce.",
   choices:[
-   {id:"guild",label:"Let the guilds manage trade",detail:"Receive timber and empower commercial workers.",effect:{food:-7,wood:8,legitimacy:3,factions:{workers:{power:9,loyalty:7}}}},
-   {id:"royal",label:"Place trade under royal authority",detail:"Gain supplies without surrendering control, at a political cost.",effect:{food:-9,wood:8,legitimacy:-2,factions:{workers:{loyalty:-9,intrigue:5}}}},
+   {id:"guild",label:"Let the guilds manage trade",detail:"Receive timber and empower commercial workers.",effect:{food:-4,wood:4,legitimacy:3,factions:{workers:{power:9,loyalty:7}}}},
+   {id:"royal",label:"Place trade under royal authority",detail:"Gain supplies without surrendering control, at a political cost.",effect:{food:-5,wood:4,legitimacy:-2,factions:{workers:{loyalty:-9,intrigue:5}}}},
    {id:"decline",label:"Decline their offer",detail:"Keep your resources and avoid competition for trade routes.",effect:{legitimacy:3,factions:{faith:{loyalty:2}}}}
   ]
  },
@@ -486,7 +486,7 @@ const COURT_SCENES={
   advisor:"Royal Spymaster",icon:"🗝️",type:"DANGER",title:"A Conspiracy Against the Throne",
   text:"The Spymaster presents intercepted messages: {faction} have become powerful and disloyal. A coup could come within three years. Reduce their Threat below 48 through concessions, investigations or limiting their influence.",
   choices:[
-   {id:"negotiate",label:"Offer concessions and provisions",detail:"Quickly improve loyalty, but give the plotters more influence.",effect:{food:-13,legitimacy:4,factions:{target:{loyalty:23,power:5,intrigue:-20}}}},
+   {id:"negotiate",label:"Offer concessions and provisions",detail:"Quickly improve loyalty, but give the plotters more influence.",effect:{food:-6,legitimacy:4,factions:{target:{loyalty:23,power:5,intrigue:-20}}}},
    {id:"expose",label:"Expose their leaders in public",detail:"Break the network at the risk of alienating their followers.",effect:{legitimacy:2,factions:{target:{power:-16,loyalty:-12,intrigue:-23}}}},
    {id:"reconcile",label:"Appeal to the people for unity",detail:"Free but less decisive, increasing popular legitimacy.",effect:{legitimacy:9,factions:{target:{loyalty:7,intrigue:-9},workers:{loyalty:2}}}}
   ]
@@ -642,7 +642,7 @@ function aftershockRoll(sceneId,optionId){
  const seed=Number(state.worldSeed)||421,year=state.year;
  const roll=dice((seed%99791)+year*13+Math.abs(hash%100003),year*97+Math.abs(hash%53123));
  const variant=dice((seed%65537)+Math.abs(hash%16381),year*47+791)>0.43?0:1;
- return {trigger:roll<.76,variant,delay:2+Math.floor(dice((seed%19991)+year*29,Math.abs(hash%8719)+37)*4)};
+ return {trigger:roll<.6,variant,delay:2+Math.floor(dice((seed%19991)+year*29,Math.abs(hash%8719)+37)*4)};
 }
 function scheduleCourtAftershock(sceneId,choiceId,target){
  const options=COURT_AFTERSHOCKS[sceneId]?.[choiceId];
@@ -783,8 +783,8 @@ function courtCouncilAction(faction,action){
  const c=ensureCourt();if(c.lastCouncilYear===state.year)return toast("You have already issued a court order this year.");
  const f=c.factions[faction];if(!f)return;
  const actions={
-  reward:{resources:{food:-9},factions:{target:{loyalty:14,power:4,intrigue:-8}},legitimacy:2,label:"Honoured the "+COURT_GROUPS[faction].name},
-  investigate:{resources:{food:-5},factions:{target:{loyalty:-5,intrigue:-18}},legitimacy:1,label:"Investigated the "+COURT_GROUPS[faction].name},
+  reward:{resources:{food:-4},factions:{target:{loyalty:14,power:4,intrigue:-8}},legitimacy:2,label:"Honoured the "+COURT_GROUPS[faction].name},
+  investigate:{resources:{food:-2},factions:{target:{loyalty:-5,intrigue:-18}},legitimacy:1,label:"Investigated the "+COURT_GROUPS[faction].name},
   restrict:{factions:{target:{power:-14,loyalty:-12,intrigue:7}},legitimacy:-3,label:"Restricted the "+COURT_GROUPS[faction].name}
  };
  const selected=actions[action];if(!selected)return;
@@ -880,8 +880,8 @@ function courtMarkup(){
    output+='<div class="court-line"><span>'+label+'</span><span>'+f[key]+'/100</span></div><div class="court-meter"><div class="court-fill '+key+'" style="width:'+f[key]+'%"></div></div>';
   }
   output+='<div class="court-orders">'+
-   btn("🍞 Reward (9 food)","council:"+id+":reward",cooldown||state.resources.food<9,"primary")+
-   btn("🕵️ Investigate (5 food)","council:"+id+":investigate",cooldown||state.resources.food<5)+
+   btn("🍞 Reward (4 food)","council:"+id+":reward",cooldown||state.resources.food<4,"primary")+
+   btn("🕵️ Investigate (2 food)","council:"+id+":investigate",cooldown||state.resources.food<2)+
    btn("⚖ Limit influence","council:"+id+":restrict",cooldown)+
    '</div></section>';
  }
