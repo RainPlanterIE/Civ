@@ -20,33 +20,33 @@ const techs={
  masonry:{name:"Masonry",cost:27,need:"geology",desc:"Unlock stone Walls for city defence."}
 };
 const buildings={
- house:{name:"Housing",icon:"🏘",wood:12,stone:0,work:5,desc:"Increases population capacity by four."},
- granary:{name:"Granary",icon:"🌾",wood:14,stone:5,work:7,desc:"Gives +1 food on each worked food tile."},
- sawmill:{name:"Sawmill",icon:"🪵",wood:16,stone:5,work:7,desc:"Gives +1 wood on each worked forest tile."},
- stoneworks:{name:"Stoneworks",icon:"🪨",wood:14,stone:12,work:8,need:"geology",desc:"Gives +1 stone from a worked quarry."},
- library:{name:"Library",icon:"📚",wood:20,stone:12,work:9,need:"writing",desc:"Produces three research per year."},
- stable:{name:"Stables",icon:"🐎",wood:16,stone:8,work:8,need:"husbandry",desc:"Improves livestock and pasture output."},
- forge:{name:"Forge",icon:"🔥",wood:20,stone:20,work:10,need:"metalworking",desc:"Smelts ore into metal and boosts extraction."},
- academy:{name:"Academy",icon:"🔬",wood:30,stone:25,work:12,path:"science",desc:"Research faster and expand the science sphere."},
- theatre:{name:"Theatre",icon:"🎭",wood:26,stone:20,work:12,path:"arts",desc:"Creates cultural influence on neighbouring cities."},
- temple:{name:"Temple",icon:"⛪",wood:25,stone:22,work:12,path:"faith",desc:"Spreads your faith and can convert nearby cities."},
- barracks:{name:"Barracks",icon:"🛡",wood:24,stone:22,work:10,path:"war",desc:"Improves attacks and defence."},
- huntingLodge:{name:"Hunting Lodge",icon:"🏕️",wood:10,stone:0,work:6,need:"hunting",desc:"+2 food from worked wild-food tiles."},
- lookout:{name:"Lookout Tower",icon:"🔭",wood:14,stone:6,work:7,need:"scouting",desc:"+2 city vision range and +1 defence."},
- workshop:{name:"Workshop",icon:"🛠️",wood:18,stone:8,work:9,need:"toolmaking",desc:"+1 wood and stone output; +1 building work each year."},
- range:{name:"Archery Range",icon:"🏹",wood:19,stone:7,work:8,need:"archery",desc:"Unlocks Archer training and improves ranged troops."},
- training:{name:"Training Grounds",icon:"🛡️",wood:19,stone:12,work:9,need:"drill",desc:"Unlocks Spearmen and improves fighters."},
- walls:{name:"City Walls",icon:"🏰",wood:9,stone:27,work:11,need:"masonry",desc:"+4 city defence against sieges."},
- market:{name:"Market",icon:"🏪",wood:20,stone:12,work:9,need:"writing",desc:"+1 food yield from farms and extra city prosperity."}
+ house:{name:"Housing",icon:"🏘",wood:12,stone:0,work:18,desc:"Increases population capacity by four."},
+ granary:{name:"Granary",icon:"🌾",wood:14,stone:5,work:22,desc:"Gives +1 food on each worked food tile."},
+ sawmill:{name:"Sawmill",icon:"🪵",wood:16,stone:5,work:22,desc:"Gives +1 wood on each worked forest tile."},
+ stoneworks:{name:"Stoneworks",icon:"🪨",wood:14,stone:12,work:24,need:"geology",desc:"Gives +1 stone from a worked quarry."},
+ library:{name:"Library",icon:"📚",wood:20,stone:12,work:27,need:"writing",desc:"Produces three research per year."},
+ stable:{name:"Stables",icon:"🐎",wood:16,stone:8,work:23,need:"husbandry",desc:"Improves livestock and pasture output."},
+ forge:{name:"Forge",icon:"🔥",wood:20,stone:20,work:32,need:"metalworking",desc:"Smelts ore into metal and boosts extraction."},
+ academy:{name:"Academy",icon:"🔬",wood:30,stone:25,work:44,path:"science",desc:"Research faster and expand the science sphere."},
+ theatre:{name:"Theatre",icon:"🎭",wood:26,stone:20,work:40,path:"arts",desc:"Creates cultural influence on neighbouring cities."},
+ temple:{name:"Temple",icon:"⛪",wood:25,stone:22,work:40,path:"faith",desc:"Spreads your faith and can convert nearby cities."},
+ barracks:{name:"Barracks",icon:"🛡",wood:24,stone:22,work:34,path:"war",desc:"Improves attacks and defence."},
+ huntingLodge:{name:"Hunting Lodge",icon:"🏕️",wood:10,stone:0,work:18,need:"hunting",desc:"+2 food from worked wild-food tiles."},
+ lookout:{name:"Lookout Tower",icon:"🔭",wood:14,stone:6,work:22,need:"scouting",desc:"+2 city vision range and +1 defence."},
+ workshop:{name:"Workshop",icon:"🛠️",wood:18,stone:8,work:28,need:"toolmaking",desc:"+1 wood and stone output; +1 building work each year."},
+ range:{name:"Archery Range",icon:"🏹",wood:19,stone:7,work:28,need:"archery",desc:"Unlocks Archer training and improves ranged troops."},
+ training:{name:"Training Grounds",icon:"🛡️",wood:19,stone:12,work:30,need:"drill",desc:"Unlocks Spearmen and improves fighters."},
+ walls:{name:"City Walls",icon:"🏰",wood:9,stone:27,work:36,need:"masonry",desc:"+4 city defence against sieges."},
+ market:{name:"Market",icon:"🏪",wood:20,stone:12,work:26,need:"writing",desc:"+1 food yield from farms and extra city prosperity."}
 };
 const unitTypes={
- settler:{name:"Settler",icon:"🧭",wood:16,stone:5,food:0,work:9,strength:1,vision:2,desc:"Establish another city."},
- clubman:{name:"Clubman",icon:"🪓",wood:8,stone:0,food:3,work:4,strength:2,vision:2,desc:"Basic club-wielding fighter; available from the beginning."},
- scout:{name:"Scout",icon:"👣",wood:8,stone:0,food:4,work:5,strength:1,vision:4,need:"scouting",desc:"Explores further; can move two tiles in a year."},
- spearman:{name:"Spearman",icon:"🔱",wood:12,stone:5,food:4,work:7,strength:4,vision:2,need:"drill",requires:"training",desc:"Stronger defensive infantry."},
- archer:{name:"Archer",icon:"🏹",wood:15,stone:0,food:4,work:7,strength:3,vision:3,need:"archery",requires:"range",desc:"Ranged fighter with improved sight."},
- swordsman:{name:"Swordsman",icon:"⚔️",wood:13,stone:0,metal:3,food:5,work:9,strength:6,vision:2,need:"metalworking",requires:"forge",desc:"Advanced metal-armed infantry."},
- army:{name:"Warband",icon:"⚔️",wood:18,stone:16,metal:2,work:10,strength:4,vision:2,path:"war",desc:"Established warband used to conquer city centres."}
+ settler:{name:"Settler",icon:"🧭",wood:16,stone:5,food:0,work:18,strength:1,vision:2,desc:"Establish another city."},
+ clubman:{name:"Clubman",icon:"🪓",wood:8,stone:0,food:3,work:8,strength:2,vision:2,desc:"Basic club-wielding fighter; available from the beginning."},
+ scout:{name:"Scout",icon:"👣",wood:8,stone:0,food:4,work:11,strength:1,vision:4,need:"scouting",desc:"Explores further; can move two tiles in a year."},
+ spearman:{name:"Spearman",icon:"🔱",wood:12,stone:5,food:4,work:16,strength:4,vision:2,need:"drill",requires:"training",desc:"Stronger defensive infantry."},
+ archer:{name:"Archer",icon:"🏹",wood:15,stone:0,food:4,work:16,strength:3,vision:3,need:"archery",requires:"range",desc:"Ranged fighter with improved sight."},
+ swordsman:{name:"Swordsman",icon:"⚔️",wood:13,stone:0,metal:3,food:5,work:22,strength:6,vision:2,need:"metalworking",requires:"forge",desc:"Advanced metal-armed infantry."},
+ army:{name:"Warband",icon:"⚔️",wood:18,stone:16,metal:2,work:27,strength:4,vision:2,path:"war",desc:"Established warband used to conquer city centres."}
 };
 const unitDef=id=>unitTypes[id];
 const fighter=u=>u&&["clubman","spearman","archer","swordsman","army"].includes(u.type);
@@ -279,7 +279,7 @@ state.nextEncounterId??=1000;
 for(const c of state.cities){c.growth??=0;c.captives??=0;c.unrest??=0;}
 for(const u of state.units){u.hp??=6;u.xp??=0;}
 
-if(state.project&&!state.project.total)state.project.total=state.project.left;
+rebalanceActiveConstruction();
 if(state.researchProject&&!state.researchProject.total)state.researchProject.total=techs[state.researchProject.id]?.cost||state.researchProject.left||1;
 let borders=new Map(),visible=new Set();
 function currentlyVisible(x,y){return visible.has(pos(x,y));}
@@ -316,9 +316,26 @@ function builderCount(c){return Math.max(0,Math.floor(state.builders?.[c?.id]||0
 function researchRate(){return Math.max(1,myCities().length+myCities().reduce((n,c)=>n+3*upgrade(c,"library")+6*upgrade(c,"academy"),0)+(state.path==="science"?2:0));}
 function constructionRate(c,kind){
  if(!c)return 1;
- const labor=Math.min(6,builderCount(c)),materials=state.resources.wood>=12&&state.resources.stone>=7?1:0;
- const focus=state.path==="science"||state.path&&buildings[kind]?.path===state.path?1:0;
- return 1+labor+Math.min(2,c.captives||0)+materials+focus+upgrade(c,"workshop");
+ // Builders speed up construction with diminishing returns.
+ // Building materials are paid upfront, not an additional annual speed bonus.
+ const builders=Math.min(6,builderCount(c));
+ const labor=Math.ceil(builders/2);
+ const captiveBonus=(c.captives||0)>0?1:0;
+ const focus=(state.path==="science"||(state.path&&buildings[kind]?.path===state.path))?1:0;
+ const workshopBonus=upgrade(c,"workshop")>0?1:0;
+ return 1+labor+captiveBonus+focus+workshopBonus;
+}
+function rebalanceActiveConstruction(){
+ const p=state.project;
+ if(!p||p.balanceVersion===2)return;
+ const newTotal=(buildings[p.kind]||unitDef(p.kind))?.work;
+ const oldTotal=Math.max(1,Number(p.total)||Number(p.left)||1);
+ if(newTotal&&newTotal>oldTotal&&p.left>0){
+  // Preserve the completion percentage of projects from older saves.
+  p.total=newTotal;
+  p.left=Math.max(1,Math.ceil(newTotal*Math.max(0,Math.min(1,p.left/oldTotal))));
+ }else p.total=oldTotal;
+ p.balanceVersion=2;
 }
 function estimateWork(left,rate){return Math.max(1,Math.ceil(left/Math.max(1,rate)));}
 function eligible(stage){
@@ -520,7 +537,7 @@ function continueGame(){
  state.nextEncounterId??=1000;
  for(const c of state.cities){c.growth??=0;c.captives??=0;c.unrest??=0;}
  for(const u of state.units){u.hp??=6;u.xp??=0;}
- if(state.project&&!state.project.total)state.project.total=state.project.left;
+ rebalanceActiveConstruction();
  if(state.researchProject&&!state.researchProject.total)state.researchProject.total=techs[state.researchProject.id]?.cost||state.researchProject.left||1;
  selected=null;moving=null;menu="";recalcBorders();
  const unit=state.units.find(u=>u.owner==="player"&&u.type==="settler")||state.units.find(u=>u.owner==="player");
@@ -677,7 +694,7 @@ function startConstruction(kind,cityId){
  if(def.requires&&!upgrade(c,def.requires))return toast("Build "+buildings[def.requires].name+" in this city first.");
  for(const r of ["wood","stone","food","metal"])if(state.resources[r]<(def[r]||0)){toast("Not enough "+r+".");return;}
  for(const r of ["wood","stone","food","metal"])state.resources[r]-=def[r]||0;
- state.project={city:cityId,kind,left:def.work,total:def.work,rate:constructionRate(c,kind)};
+ state.project={city:cityId,kind,left:def.work,total:def.work,rate:constructionRate(c,kind),balanceVersion:2};
  record(c.name+" begins "+def.name+".");autoAdvance("construction");save();renderUI();
 }
 function discover(id){
