@@ -775,7 +775,7 @@ function panelContents(){
    output+=item("🔬 Technology",researchLabel(),btn("Research","tech"));
    output+=item("♜ Society","Choose science, arts, faith or war from Year 100.",btn("Society","path"));
   }
-  output+=item("🚶 Units","One movement per unit per year.",btn("Manage units","units"));
+  output+=item("🗺 Explore & hunt","Clubmen can hunt animals, fight roaming warriors, or approach villages to learn, befriend or raid. Tap encounter icons on the visible map.",btn("Explore with units","units",false,"primary"));
   output+=item("🧾 Chronicle","Recent events and discoveries.",btn("Open chronicle","history"));
   output+=item("🏠 Main menu","Play a new game or continue from your save.",btn("Open main menu","openMainMenu"));
   output+=item("💾 Save game","Save the current turn on this device.",btn("Save now","save"));
@@ -811,7 +811,7 @@ function panelContents(){
   output='<div class="worker-counter"><span class="worker-number">'+freeWorkers(c)+'</span><span><strong>Free citizens in '+htmlSafe(c.name)+'</strong><small>'+cityWork(c)+' on resources · '+builderCount(c)+' building · '+c.pop+' population</small></span></div>';
   output+='<div class="combat-stats"><span>⚔ City attack '+cityAttack(c)+'</span><span>🛡 Defence '+cityDefense(c)+'</span><span>📈 Growth '+Math.floor(c.growth||0)+'/'+growthGoal(c)+'</span></div>';
   if(c.captives)output+='<p class="hint">Captive labour: '+c.captives+' · +'+Math.min(2,c.captives)+' construction work/year · Unrest '+(c.unrest||0)+' (escape risk and food upkeep). Captives are not citizens.</p>';
-  output+='<p class="hint">All developments are built inside this city tile. Assign builders to speed up construction. Only one project can be underway across your civilisation.</p>';
+  output+='<p class="hint">All developments are built inside this city tile. Assign builders to speed up construction. Population growth needs sustained food production, reserves and housing, and is much slower now. Only one project can run across your civilisation.</p>';
   output+=item("🏗 Current project",projectLabel()+" · Current speed "+speed+" work/year",btn("👷 Assign builders","workers",false,"primary"));
   output+='<h4 class="panel-section-title">Buildings</h4>';
   for(const [id,d] of Object.entries(buildings)){
@@ -882,7 +882,7 @@ function panelContents(){
  }
  if(menu==="units"){
   const ready=state.units.filter(u=>u.owner==="player"&&!u.moved).length,total=state.units.filter(u=>u.owner==="player").length;
-  output="<p class='hint'>"+ready+" of "+total+" units ready. You can move <b>every unit</b> once before advancing the year. Tap a ready unit on the map (or select it below), then tap an adjacent tile. Repeat for every unit. The stage ends when all have acted or you press Next.</p>";
+  output="<p class='hint'>"+ready+" of "+total+" units ready. You can act with every unit once per year. Explore fog, tap animals, rival warriors or village icons to interact, or rest injured units to heal. You may return to these actions before End Year.</p>";
   for(const u of state.units.filter(u=>u.owner==="player")){
    const d=unitDef(u.type);
    const nearby=(state.encounters||[]).find(e=>currentlyVisible(e.x,e.y)&&distance(u.x,u.y,e.x,e.y)<=1);
