@@ -928,12 +928,13 @@ function acknowledgeCourtAftershock(){
  if(c.pending?.id!=="aftermath")return;
  c.pending=null;save();renderUI();
 }
-function defaultCourt(){
+function defaultCourt(seed=null){
+ const openingYear=seed==null?23:22+(Math.abs(Math.floor(seed))%8);
  return {legitimacy:72,factions:{
   workers:{power:32,loyalty:68,intrigue:5},
   military:{power:22,loyalty:66,intrigue:4},
   faith:{power:18,loyalty:67,intrigue:4}
- },pending:null,plot:null,nextSceneYear:23,lastSceneYear:0,lastCouncilYear:0,history:[]};
+ },pending:null,plot:null,nextSceneYear:openingYear,lastSceneYear:0,lastCouncilYear:0,history:[]};
 }
 function ensureCourt(){
  if(!state.court)state.court=defaultCourt();
@@ -1029,9 +1030,9 @@ function courtEffectText(effect,target){
 function presentCourtScene(id,target=null){
  const c=ensureCourt();
  if(c.pending||state.overthrown||!COURT_SCENES[id])return false;
- c.pending={id,target,year:state.year};
+ c.pending={id,target,year:state.year,variant:Math.floor(courtRoll(courtHash(id)+53)*3)};
  c.lastSceneYear=state.year;
- c.nextSceneYear=state.year+11+Math.floor(dice((state.worldSeed||100)%9009,state.year+128)*7);
+ c.nextSceneYear=state.year+11+Math.floor(courtRoll(courtHash(id)+97)*7);
  return true;
 }
 function chooseCourtOption(choiceId){
@@ -1131,22 +1132,51 @@ function courtChoices(id){
  const base=COURT_SCENES[id]?.choices||[];
  return [...base,...(COURT_TECH_CHOICES[id]||[]).filter(option=>known(option.needTech))];
 }
-function chooseRandomCourtScene(){
- const possible=courtEventConditions(),c=ensureCourt();
- const weighted=[];
- const push=(id,weight=1)=>{if(possible[id])for(let n=0;n<weight;n++)weighted.push(id);};
- push("food",state.resources.food===0?6:4);
- push("timber",3);push("captives",3);push("granaryFire",3);
- push("worksite",3);push("garrison",3);push("sacredGround",2);
- push("grainEdict",3);push("ironDebate",3);push("scribes",3);
- push("veteranLand",2);push("pilgrims",3);push("caravanLoss",3);
- push("succession",2);push("kurultai",5);
- push("army",2);push("temple",2);push("guilds",2);push("rumours",2);push("merchant",2);
- const recent=c.history.slice(0,4).map(e=>e.scene);
- const options=weighted.filter(id=>!recent.includes(id));
- const choices=options.length?options:weighted.length?weighted:["guilds","rumours"];
- const n=Math.floor(dice((state.worldSeed||123)%32749+state.year*13,state.year*19+543)*choices.length);
- return choices[n]||"guilds";
+function courtHash(text){
+ let hash=2166136261;
+ for(const ch of String(text||"")){hash^=ch.charCodeAt(0);hash=Math.imul(hash,16777619);}
+ return hash>>>0;
+}
+function courtRoll(salt=0){
+ // This is repeatable after saving but different between worlds and leaders.
+ const c=ensureCourt();
+ let x=(Number(state.worldSeed)||421)>>>0;
+ x^=Math.imul((state.year||1),2246822519);
+ x^=Math.imul((c.history?.length||0)+1,3266489917);
+ x^=courtHash(state.leader?.id||"unknown");
+ x^=Math.imul(salt+1,668265263);
+ x^=x>>>16;x=Math.imul(x,2246822507);x^=x>>>13;x=Math.imul(x,3266489909);x^=x>>>16;
+ return (x>>>0)/4294967296;
+}
+function chooseRandomCourtScene(opening=false){
+ const available=courtEventConditions(),c=ensureCourt(),weights={};
+ const add=(id,weight=1)=>{if(available[id])weights[id]=(weights[id]||0)+weight;};
+ if(opening){
+  // The first audience is not the same obligatory "founding" script every run.
+  weights.founding=3;weights.rumours=1;
+  add("guilds",3);add("food",3);add("timber",2);
+  add("worksite",2);add("granaryFire",2);add("garrison",2);
+ }else{
+  add("food",state.resources.food===0?6:3);add("timber",3);
+  add("captives",3);add("granaryFire",4);add("worksite",4);
+  add("garrison",3);add("sacredGround",3);add("grainEdict",3);
+  add("ironDebate",4);add("scribes",4);add("veteranLand",3);
+  add("pilgrims",3);add("caravanLoss",3);add("succession",3);
+  add("kurultai",5);add("army",2);add("temple",2);add("guilds",2);
+  add("rumours",2);add("merchant",2);
+ }
+ const recent=new Set((c.history||[]).filter(h=>!String(h.choice||"").startsWith("Aftermath:")).slice(0,5).map(h=>h.scene));
+ let candidates=Object.entries(weights).filter(([id])=>!recent.has(id));
+ if(!candidates.length)candidates=Object.entries(weights);
+ if(!candidates.length)return "founding";
+ const previouslySeen=new Set((c.history||[]).map(h=>h.scene));
+ const total=candidates.reduce((sum,[id,weight])=>sum+weight*(previouslySeen.has(id)?1:2),0);
+ let remaining=courtRoll(opening?147:283)*total;
+ for(const [id,weight] of candidates){
+  remaining-=weight*(previouslySeen.has(id)?1:2);
+  if(remaining<0)return id;
+ }
+ return candidates[candidates.length-1][0];
 }
 
 function advanceCourt(){
@@ -1202,7 +1232,7 @@ function advanceCourt(){
  if(!c.pending){
   const urgent=state.year>=18&&state.year-c.lastSceneYear>=6&&state.resources.food===0;
   if(state.year>=c.nextSceneYear||urgent){
-   const scene=urgent?"food":c.lastSceneYear===0?"founding":chooseRandomCourtScene();
+   const scene=urgent?"food":chooseRandomCourtScene(c.lastSceneYear===0);
    presentCourtScene(scene);
   }
  }
@@ -1327,7 +1357,7 @@ function fresh(scenario=CIV_WORLD.scenario()){
  const leader=scenario.player;
  return {version:4,world:"earth",worldSeed:scenario.seed,leader:{...leader},initialRivalCount:12,year:1,
  tech:["foraging","forestry",...(coastTile(leader.x,leader.y,2)?["fishing"]:[])],research:0,knowledge:0,culture:0,faith:0,military:0,
- resources:{food:18,wood:16,stone:8,ore:0,metal:0,animals:0},court:defaultCourt(),overthrown:null,
+ resources:{food:18,wood:16,stone:8,ore:0,metal:0,animals:0},court:defaultCourt(scenario.seed),overthrown:null,
  cities:scenario.rivals.map((c,i)=>({id:"r"+(i+1),x:c.x,y:c.y,name:c.capital,civId:c.id,civilisation:c.name,leader:c.leader,colour:c.color,pop:7,owner:"rival",army:6,culture:0,faith:0,buildings:{},growth:0,captives:0,unrest:0})),
  units:[{id:"u1",type:"settler",x:leader.x,y:leader.y,moved:false,owner:"player",strength:1,hp:6,xp:0},{id:"u2",type:"clubman",x:leader.x,y:leader.y,moved:false,owner:"player",strength:2,hp:6,xp:0}],
  works:{},builders:{},extracted:{},explored:{},encounters:initialEncounters(scenario),nextEncounterId:1000,
