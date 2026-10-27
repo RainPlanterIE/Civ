@@ -421,3 +421,87 @@ button:disabled{opacity:.42;cursor:default}
  .court-preview-label strong{font-size:16px}
  .court-preview-label span{font-size:11px}
 }
+
+
+/* v19: uncluttered city production, royal faction preview, and spacious map HUD */
+.compact-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-top:12px}
+.compact-menu-link{min-height:53px;border:1px solid #7c977c;border-radius:10px;background:#2b4639;color:#f9ead0;text-align:left;padding:11px 9px;font-weight:750;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.compact-menu-link span{font-size:20px;color:#f2d194}
+.compact-menu-link:hover,.compact-menu-link:focus-visible{background:#3a5744;border-color:#e1bc80}
+.compact-city-head{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-top:13px;flex-wrap:wrap}
+.compact-city-head strong{font:700 19px Georgia,serif;color:#f6d9a3}
+.compact-city-head span{font-size:12px;color:#cddfd1}
+.city-short-stats{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.city-short-stats span{padding:5px 7px;border-radius:7px;border:1px solid #8196777c;background:#2c463a;color:#eadcc5;font-size:11px}
+.production-slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0 9px}
+.production-slot{display:flex;flex-direction:column;gap:7px;min-width:0;border:1px solid #a29671;background:#2c4338;border-radius:11px;padding:12px 9px}
+.production-slot strong{color:#ffe0a5;font:650 16px Georgia,serif}
+.production-slot span{color:#d7e0d0;font-size:11px;line-height:1.45;min-height:50px;overflow-wrap:anywhere}
+.production-slot button{min-height:38px;white-space:normal}
+.compact-city-links,.project-switch{display:flex;gap:7px;margin:12px 0;flex-wrap:wrap}
+.compact-city-links button,.project-switch button{flex:1;min-width:0;padding:9px 6px;font-size:12px;white-space:normal}
+.project-switch button:disabled{opacity:1;background:#d8bb82;color:#1e3025;border-color:#f9e3b7}
+.queue-status{display:flex;flex-direction:column;gap:4px;background:#263c32;border:1px solid #87947a;border-radius:9px;padding:11px 12px;margin-bottom:10px}
+.queue-status strong{color:#f8d7a0;font-size:13px}
+.queue-status span{color:#d3dfd4;font-size:12px}
+.compact-options{display:flex;flex-direction:column;gap:6px;padding-bottom:12px}
+.development-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto 12px;align-items:center;gap:6px;min-height:48px;border:1px solid #7d917a;border-radius:8px;background:#2a4236;color:#f3ebd9;padding:9px 9px;text-align:left;width:100%;cursor:pointer}
+.development-row:hover,.development-row:focus-visible{background:#37543d;border-color:#e9c48c}
+.development-row.development-locked{background:#26372e;border-color:#5a7864}
+.development-icon{font-size:20px}
+.development-name{font-size:13px;font-weight:750}
+.development-row small{font-size:10px;color:#c7d8bd;white-space:nowrap;max-width:112px}
+.development-ready small{color:#b6e3b9}
+.development-chevron{font-weight:800;font-size:22px;color:#e5c48b}
+.development-detail{margin-top:12px;padding:14px 12px 20px;background:#2a4136;border:1px solid #b6a173;border-radius:12px}
+.detail-back{margin-top:12px}
+.detail-back button{padding:8px 10px;font-size:12px}
+.development-detail-title{display:flex;gap:10px;align-items:center;color:#ffe1ae}
+.development-detail-title span{font-size:34px}
+.development-detail-title strong{font:700 22px Georgia,serif}
+.development-detail p{font-size:13px;color:#e4eadd;line-height:1.65;margin:13px 0}
+.detail-facts{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 15px}
+.detail-facts span{padding:7px 9px;border:1px solid #8b9d7e;border-radius:7px;background:#1c3329;color:#ffebc8;font-size:12px}
+.detail-requirements{background:#3a342e;border:1px solid #b89473;border-radius:9px;padding:10px 12px;margin:13px 0;color:#f9e3c7}
+.detail-requirements strong{font-size:13px}
+.detail-requirements ul{padding-left:17px;margin:6px 0 0}
+.detail-requirements li{margin-top:4px;font-size:12px;line-height:1.4}
+.detail-ready{color:#bde9bb!important}
+.development-detail button.primary{display:block;width:100%;min-height:48px;font-size:14px}
+.repair-alert{background:#4d392f;border:1px solid #d6a47c;border-radius:8px;color:#fff0d6;font-size:12px;line-height:1.5;padding:10px;margin:10px 0}
+.compact-trade{border-top:1px solid #718671;padding:11px 2px;font-size:12px;color:#d7e1d2;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.compact-trade button{min-width:70px}
+.court-badge{min-height:36px;min-width:150px;justify-content:center;background:linear-gradient(115deg,#5d5134,#304634);color:#ffe3ae;border:1.5px solid #e0c288;box-shadow:0 4px 14px #0d1e18b0;font-size:13px;letter-spacing:.02em}
+.court-badge b{font-size:17px}
+.court-faction-mini{display:flex;flex-direction:column;gap:3px;margin-top:4px;min-width:185px;width:min(230px,100%);pointer-events:auto}
+.court-faction-mini[hidden]{display:none!important}
+.court-mini-row{display:flex;justify-content:space-between;align-items:center;gap:7px;min-height:27px;padding:4px 6px;background:#1b3028e8;border:1px solid #8c9a778f;color:#f5e3c9;border-radius:6px;cursor:pointer;backdrop-filter:blur(5px)}
+.court-mini-row:hover,.court-mini-row:focus-visible{border-color:#f1cf94;background:#314c38}
+.court-mini-row.court-mini-risk{border-color:#d68f72}
+.court-mini-name{min-width:76px;font-size:11px;font-weight:700;white-space:nowrap;text-align:left}
+.court-mini-bars{display:flex;gap:3px;align-items:center;flex:1}
+.court-mini-meter{flex:1;display:block;min-width:13px;height:8px;border-radius:2px;background:#405344;overflow:hidden;border:1px solid #70867344}
+.court-mini-meter i{display:block;height:100%;border-radius:2px;background:#debb83}
+.court-mini-meter.loyalty i{background:#79d1a0}
+.court-mini-meter.intrigue i{background:#e3817b}
+.court-faction-selected{border:2px solid #f7d49d;background:#37513b;box-shadow:0 0 12px #d7aa5c42}
+@media(max-width:650px){
+ #gameIdentity{max-width:43vw;min-width:138px}
+ #stats{max-width:58%;gap:3px}
+ .court-badge{min-width:122px;min-height:32px;padding:4px 7px;font-size:11px}
+ .court-badge b{font-size:14px}
+ .court-faction-mini{min-width:130px;width:100%;gap:2px}
+ .court-mini-row{min-height:23px;padding:3px 4px;gap:4px}
+ .court-mini-name{min-width:64px;font-size:9px}
+ .court-mini-bars{gap:2px}
+ .court-mini-meter{height:7px;min-width:9px}
+ .compact-menu{gap:6px}
+ .compact-menu-link{min-height:48px;padding:8px;font-size:11px}
+ .production-slots{gap:6px}
+ .production-slot{padding:9px 7px}
+ .production-slot strong{font-size:13px}
+ .development-row{min-height:45px;grid-template-columns:25px minmax(0,1fr) auto 10px;gap:5px;padding:8px 6px}
+ .development-name{font-size:12px}
+ .development-row small{font-size:9px;max-width:96px}
+ .development-detail-title strong{font-size:20px}
+}
