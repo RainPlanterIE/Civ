@@ -901,6 +901,46 @@ function courtMarkup(){
  }
  return output;
 }
+const COURT_INTERIORS={
+ roman:{title:"The Roman Senate",image:"./assets/courts/roman.webp",accent:"#b56c51"},
+ egypt:{title:"The Pharaoh's Audience Hall",image:"./assets/courts/egypt.webp",accent:"#c49a65"},
+ greek:{title:"The Athenian Assembly",image:"./assets/courts/greek.webp",accent:"#bfa16b"},
+ persian:{title:"The Persian Apadana",image:"./assets/courts/persian.webp",accent:"#76a5a5"},
+ babylonian:{title:"The Babylonian Throne Room",image:"./assets/courts/babylonian.webp",accent:"#5d92a9"},
+ mongol:{title:"The Great Khan's Yurt",image:"./assets/courts/mongol.webp",accent:"#c39a66"},
+ han:{title:"The Han Imperial Palace",image:"./assets/courts/han.webp",accent:"#bc7267"},
+ maurya:{title:"The Mauryan Audience Hall",image:"./assets/courts/maurya.webp",accent:"#b9925b"},
+ aztec:{title:"The Aztec Palace",image:"./assets/courts/aztec.webp",accent:"#91b9a0"},
+ inca:{title:"The Inca Royal Court",image:"./assets/courts/inca.webp",accent:"#b8a36b"},
+ maya:{title:"The Maya Palace",image:"./assets/courts/maya.webp",accent:"#8dbf9b"},
+ norse:{title:"The Norse Great Hall",image:"./assets/courts/norse.webp",accent:"#b49c75"},
+ mali:{title:"The Court of the Mansa",image:"./assets/courts/mali.webp",accent:"#c99b60"},
+ khmer:{title:"The Khmer Audience Hall",image:"./assets/courts/khmer.webp",accent:"#8d9e74"},
+ japan:{title:"The Japanese Audience Chamber",image:"./assets/courts/japan.webp",accent:"#c2aaa1"},
+ aksum:{title:"The Aksumite Royal Hall",image:"./assets/courts/aksum.webp",accent:"#c79e73"},
+ iceni:{title:"The Iceni Council Hall",image:"./assets/courts/iceni.webp",accent:"#a1aa79"},
+ ottoman:{title:"The Imperial Divan",image:"./assets/courts/ottoman.webp",accent:"#9aabc6"},
+ carthage:{title:"The Council of Carthage",image:"./assets/courts/carthage.webp",accent:"#a8a1c6"},
+ zulu:{title:"The Zulu Royal Gathering",image:"./assets/courts/zulu.webp",accent:"#c39c70"},
+ chola:{title:"The Chola Royal Court",image:"./assets/courts/chola.webp",accent:"#bf9361"}
+};
+
+function courtInterior(){
+ const civ=state?.leader?.id||myCities()[0]?.civId||"greek";
+ return COURT_INTERIORS[civ]||COURT_INTERIORS.greek;
+}
+function courtHero(theme,icon,name){
+ const background="background-image:linear-gradient(180deg,rgba(14,24,19,.05) 4%,rgba(14,24,19,.04) 48%,rgba(14,24,19,.76) 100%),url("+theme.image+");border-bottom-color:"+theme.accent;
+ return '<div class="council-room-hero" style="'+background+'">'+
+  '<div class="council-room-label">'+htmlSafe(theme.title)+'</div>'+
+  '<div class="advisor-stage"><div class="advisor-portrait">'+icon+'</div><span class="advisor-name">'+htmlSafe(name)+'</span></div></div>';
+}
+function courtPreview(theme){
+ const civ=state?.leader?.name||myCities()[0]?.civilisation||"Your civilisation";
+ const background="background-image:linear-gradient(180deg,rgba(14,24,19,.15),rgba(14,24,19,.79)),url("+theme.image+")";
+ return '<div class="court-preview" style="'+background+'"><div class="court-preview-label"><strong>'+
+  htmlSafe(theme.title)+'</strong><span>'+htmlSafe(civ)+' · Your royal court</span></div></div>';
+}
 function renderCourtScene(){
  const overlay=get("courtScene");if(!overlay)return;
  const c=ensureCourt(),p=c.pending,ended=state.overthrown;
