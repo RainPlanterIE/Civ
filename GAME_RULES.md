@@ -340,3 +340,60 @@ The first eight core illustrations were created as original painterly environmen
 The illustration appears prominently behind **each Royal Advisor cutscene**, with a smaller label showing the court setting and with the advisor's name kept readable. The Royal Court management panel also displays the matching court illustration as a preview immediately after founding a city. The same interior is used in **delayed-consequence** and **overthrow/end-of-reign scenes**, giving political events a continuous sense of place.
 
 Images are optimised WebP files (960 × 540 pixels, typically tens of KB each). The game loads the selected room on demand rather than all 21 backgrounds together. The mobile image stage is compact enough to leave adequate space for decisions and dialogue. Existing v4 Earth saves automatically use their leader's room without any save migration.
+
+
+## Court dilemmas, independent training, compact menus and improved map (v19)
+
+### Two production queues
+Each civilisation now has **two simultaneous production queues**:
+- **Building construction** (stored in state.project), which uses assigned builders and building improvements.
+- **Unit training** (stored in state.unitProject), which advances with a base training rate and improvements from training structures, archery ranges or shipyards.
+
+**A building and a unit can be produced in the same year**. They pay their resource construction/training costs independently, and both advance on End Year. The annual upkeep forecast accounts for each queue: buildings use upkeep wood periodically and stone for stone-consuming projects; military training uses some wood for tools and equipment every third year. If resources are insufficient for a due cost, only the affected queue can stall.
+
+The previous game used a single state.project for both buildings and troops. On Continue, an old save containing unit training in the old project slot is **migrated to state.unitProject** without resetting the unit's completed work. Save format version stays 4.
+
+### Compact construction interface
+City management is now a short overview with separate **Buildings** and **Train units** buttons and an at-a-glance summary of both queues. Selecting Buildings shows a compact row for each option with its name, icon and basic availability state—**no long explanation in the list**. Tapping a row opens a dedicated detail panel containing description, bonuses, cost, work, prerequisites and a **Construct** action. Unit training uses the same pattern with a **Train** action. Eligible and affordable choices appear before choices requiring materials, research or buildings. Switching between the two queues does not lose an active project. The global Actions menu is now a concise two-column menu of shortcuts rather than long explanatory cards.
+
+### Political conflict now damages real infrastructure and units
+Factions no longer act only through numerical loyalty scores. Depending on court decisions and future aftermaths, they can:
+- Damage an existing **Granary, Temple, Library, Sawmill** or another developed structure in one of your cities.
+- Injure actual warriors, reducing their **HP** until they spend actions resting and healing.
+- Stall building construction for additional years, or interrupt troop training.
+- Erode stored food/wood, loyalty, legitimacy and public order.
+
+A city records damaged building counts in **damagedBuildings**. An injured building's bonuses and defensive contributions are **suspended** until repaired. In Buildings, a **Repair [building]** option appears. It has a separate, smaller material cost and takes multiple years in the building queue. Once repaired, the damaged building is restored and its bonuses resume. If no eligible building or soldier exists, an incident instead causes an alternative in-world penalty rather than inventing a target.
+
+### More involved, historically inspired court cases
+The starting court audience is deferred to approximately **Year 23** for new games; ordinary subsequent audiences occur roughly **11–17 years apart**. Serious shortages and conspiracies may still create earlier urgent audiences. Older saved games with unplayed Year 8 audiences have their first event deferred; already pending or completed events remain valid.
+
+The political catalogue now includes **22+ distinct scenarios**. In addition to the previous general arguments over supplies, guilds, faith and military power, new developments include:
+- **Smoke from the Granary:** contested evidence of fire or sabotage, with potential actual damage to the granary.
+- **The Cracked Scaffolding:** a live construction project, competing safety and military priorities, and consequences for work progress.
+- **A Mutiny at the Barracks:** requires a substantial military presence; mishandling can injure warriors.
+- **The Temple on Contested Ground:** only appears when a temple exists; disputes over land, roads and religious jurisdiction.
+- **A Crowd at the Grain Market:** scarcity and granaries create a dilemma inspired by Roman grain distributions and public unrest.
+- **Who Controls the Iron?:** appears after Metalworking research; inspired by the Han government's salt-and-iron monopoly debates in 81 BCE.
+- **The Missing Royal Records:** requires writing or a library; archival corruption, evidence and rival institutions.
+- **Land Promised to Veterans:** a later-stage dilemma requiring multiple troops.
+- **Two Competing Festivals:** worship and harvest competing once temples exist.
+- **A Caravan Missing on the Road:** appears after Trade Routes.
+- **Who Speaks When the Throne Is Empty?:** Year 70+ disputes over political succession.
+- **A Summons to the Great Assembly:** late-game Mongol-specific consultative assembly and succession dispute inspired by historical quriltai politics.
+
+The event picker checks **real game resources, ongoing construction, army size, existing buildings, technologies and civilisation identity** rather than simply producing an arbitrary event every few years. It avoids recent repetitions where alternatives exist. Some technologies grant an **additional fourth political response** in appropriate scenarios, such as Agriculture providing a response to famine, Writing enabling charters and oaths, Scouting improving espionage, and Engineering providing expert technical assessments.
+
+Court decisions do not reveal numerical changes before selection. Every scenario has at least one choice available even with no supplies. Later consequences have different effects depending on which option was chosen; these can damage buildings or units well after the original debate. Event history, damage, projects and delayed consequences remain saved.
+
+Historical inspiration references:
+- Peter Garnsey, *Famine and Food Supply in the Graeco-Roman World*, Cambridge University Press, Chapter 13, Food and politics: https://www.cambridge.org/core/books/abs/famine-and-food-supply-in-the-graecoroman-world/food-and-politics/7798F9B82148377A7CE351AC32B04FD7
+- Columbia University, Asia for Educators, *A Record of the Debate on Salt and Iron*: https://afe.easia.columbia.edu/main_pop/ps/ps_china-debate-salt-iron.htm
+- Michael Hope, *Power, Politics, and Tradition in the Mongol Empire and the Ilkhanate of Iran*, chapter on succession (1227–59), Oxford University Press: https://academic.oup.com/book/9091/chapter-abstract/308450266
+
+These are **game scenarios inspired by historical political problems**, not literal reproductions of specific episodes for every civilisation.
+
+### Court quick status and map clarity
+The top-left **👑 Court** badge is larger. Under it are three clickable faction rows (Workers, Warriors, Priests), each with three unlabeled, color-coded mini-bars: influence in gold, loyalty in green, intrigue in red. Hover titles and accessible descriptions show exact labels/values; tapping a row opens the full Court with that faction highlighted. The main Court page still shows detailed numerical ratings.
+
+Isometric map tiles are now approximately 14% larger and have subtle visible diamond outlines. Forest/jungle decorations are smaller and sparser (a single icon on some tiles instead of two large trees on most). **Terrain and actual resource availability are unchanged**: the improvement is a visual de-cluttering pass, especially for laptop screens. City overlays show two progress bars if building construction and unit training happen simultaneously.
