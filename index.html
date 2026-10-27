@@ -12,7 +12,7 @@
 <canvas id="world" aria-label="Interactive isometric civilisation game world"></canvas>
 <div id="overlay">
   <div id="top">
-    <div id="gameIdentity"><div id="logo">CIV</div><div id="leaderName" aria-live="polite"></div></div>
+    <div id="gameIdentity"><div id="logo">CIV</div><div id="leaderName" aria-live="polite"></div><button id="courtBadge" class="court-badge" aria-label="Open royal court" title="Royal legitimacy and intrigue" hidden>👑 Court</button></div>
     <div id="stats" aria-live="polite"></div>
   </div>
   <div id="tools">
@@ -35,11 +35,12 @@
   </div>
   <section id="panel" class="panel" aria-label="Game controls"></section>
 </div>
+<div id="courtScene" class="court-scene-overlay" hidden aria-live="assertive"></div>
 <div id="startScreen" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
   <div class="main-menu">
     <div class="menu-eyebrow">A WORLD TO SHAPE</div>
     <h1 id="menuTitle">CIV</h1>
-    <p class="menu-subtitle">From one settler to a civilisation.</p>
+    <p class="menu-subtitle">Lead a civilisation — and keep your crown.</p>
     <div class="menu-rule"></div>
     <button id="playGame" class="menu-choice primary"><span>▶</span> Play <small>Begin as a random historical leader</small></button>
     <button id="continueGame" class="menu-choice secondary"><span>↪</span> Continue <small>Return to your saved world</small></button>
