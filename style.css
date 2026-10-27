@@ -255,3 +255,76 @@ button:disabled{opacity:.42;cursor:default}
 .tech-node.busy{border-left-color:#a8a57c;background:#33473b}
 .tech-node.busy .tech-status{background:#636b48;color:#f6e8be}
 .tech-quick-picks:empty::after{content:"No new discoveries are currently available";font-size:12px;color:#c9d7c8}
+
+
+/* Court, conspiracies and advisor cut-scenes (v16) */
+.court-badge{display:inline-flex;align-items:center;gap:4px;margin:3px 0 0;padding:3px 7px;border:1px solid #ab9b70;border-radius:8px;background:#233b30ef;color:#f4deb4;font-size:10px;font-weight:650;line-height:1.4;cursor:pointer}
+.court-badge b{font-size:11px;color:#fbde91}
+.court-badge.court-danger{border-color:#e8a07e;background:#58342c;color:#fff0c9;animation:courtPulse 2.5s ease-in-out infinite}
+.court-badge[hidden]{display:none!important}
+.court-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:9px;margin:11px 0 12px}
+.court-head>div{display:flex;flex:1;min-width:110px;flex-direction:column;gap:3px;border:1px solid #8e9e81;border-radius:9px;background:#30483b;padding:11px 12px}
+.court-head strong{color:#cedbc3;font-size:12px}
+.court-score{font:700 28px Georgia,serif;color:#efd39c}
+.court-status{font-size:20px;font-weight:800;color:#f3dda5}
+.court-warning{background:#553a31;border:2px solid #d89b7d;border-radius:10px;padding:12px;margin:10px 0;display:flex;flex-direction:column;gap:6px}
+.court-warning strong{color:#ffe3bc;font-size:15px}
+.court-warning span{font-size:12px;color:#ffe9dc}
+.court-faction{background:#243d33;border:1px solid #8b9f8b;border-radius:10px;padding:12px;margin:12px 0}
+.court-faction header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px;margin-bottom:9px}
+.court-faction header strong{color:#ffe8b2;font-size:15px}
+.court-faction-risk{font-size:11px;color:#fff0cd;border:1px solid #987e68;border-radius:7px;padding:4px 7px}
+.court-line{display:flex;justify-content:space-between;font-size:12px;color:#e3e9dc;margin-top:7px}
+.court-meter{height:8px;border-radius:12px;background:#192e26;border:1px solid #71857755;overflow:hidden;margin-top:4px}
+.court-fill{height:100%;border-radius:12px;background:#a3c17f}
+.court-fill.loyalty{background:#79bb9a}
+.court-fill.intrigue{background:#d58073}
+.court-orders{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:12px}
+.court-orders button{min-height:45px;font-size:11px;padding:7px 5px;white-space:normal;line-height:1.25;font-weight:750}
+.court-orders button:disabled{opacity:.45}
+.court-history{padding:8px 0;border-bottom:1px solid #6b8a7355;font-size:12px;color:#e2e7d7}
+.court-scene-overlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:14px;overflow-y:auto;background:radial-gradient(ellipse at 52% 15%,#514532e8 0%,#1b2a24f5 52%,#0d1714fd 100%);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+.court-scene-overlay[hidden]{display:none!important}
+.council-cinematic{width:min(96vw,660px);max-height:calc(100dvh - 26px);overflow:auto;margin:auto;border:2px solid #ae9064;border-radius:16px;background:linear-gradient(170deg,#35453a 0%,#26362e 48%,#1b3029 100%);box-shadow:0 14px 80px #050b08b8,0 0 0 1px #edd4a540;animation:councilAppear .37s ease-out both;overscroll-behavior:contain}
+.cinematic-eyebrow{font-size:10px;font-weight:850;letter-spacing:.15em;color:#edd0a4;text-align:center;padding:14px 10px 8px;background:#1b2c24b3;text-transform:uppercase}
+.advisor-stage{min-height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:radial-gradient(ellipse at 50% 75%,#94734668,transparent 68%),linear-gradient(90deg,#213629,#3f503a,#213629);border-bottom:1px solid #bba16c6b}
+.advisor-portrait{height:78px;min-width:80px;display:flex;align-items:center;justify-content:center;font-size:55px;filter:drop-shadow(0 5px 8px #111c19ad)}
+.advisor-name{font:600 14px Georgia,serif;color:#f8ddb0;padding-bottom:8px}
+.council-cinematic h2{font:700 clamp(22px,4vw,31px) Georgia,serif;color:#ffdfa7;text-align:center;padding:11px 18px 3px;margin:0}
+.council-quote{font:15px/1.6 Georgia,serif;color:#f5eedb;text-align:center;margin:0 20px 12px;padding:0 4px}
+.council-decision-heading{font-size:12px;text-transform:uppercase;letter-spacing:.11em;color:#edcc90;font-weight:800;text-align:center;border-top:1px solid #93836270;padding:12px 0 6px}
+.council-choices{display:grid;grid-template-columns:1fr;gap:8px;padding:6px 14px 14px}
+.council-choice{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;background:#344c3d;border:1.5px solid #ab9f7a;border-radius:11px;min-height:72px;padding:12px 14px;color:#f9ecd0;white-space:normal;cursor:pointer;transition:background .15s,border-color .15s}
+.council-choice:hover:not(:disabled),.council-choice:focus-visible{background:#455e47;border-color:#f4d9a2;outline:2px solid #dbbc7e}
+.council-choice:disabled{opacity:.45;cursor:not-allowed}
+.choice-heading{font-size:15px;font-weight:850;color:#f8dea9}
+.choice-story{font-size:12px;line-height:1.4;color:#e6e8d8}
+.choice-outcome{font-size:11px;line-height:1.45;color:#c2e2c2;overflow-wrap:anywhere}
+.choice-unavailable{font-size:11px;color:#ffbc9e}
+.cinematic-footer{border-top:1px solid #86785f80;padding:12px;text-align:center;font-size:10px;color:#b8c7b8}
+.court-ended .advisor-portrait{font-size:65px}
+.court-ended .council-quote{padding:12px 6px}
+.council-consequence{color:#ffccac;font:14px/1.6 Georgia,serif;text-align:center;margin:12px 22px}
+.court-ended .royal-button{display:block;margin:16px auto 22px;min-width:230px;align-items:center;text-align:center;font-size:15px;background:#785340}
+@keyframes councilAppear{from{opacity:0;transform:translateY(18px) scale(.975)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes courtPulse{0%,100%{box-shadow:0 0 0 #e9b27f00}50%{box-shadow:0 0 13px #e9b27f65}}
+@media(max-width:650px){
+ .court-badge{font-size:10px;margin-top:2px}
+ .court-scene-overlay{padding:5px}
+ .council-cinematic{max-height:calc(100dvh - 10px);width:98vw;border-radius:11px}
+ .cinematic-eyebrow{font-size:9px;padding:10px 6px 6px}
+ .advisor-stage{min-height:88px}
+ .advisor-portrait{font-size:44px;height:55px}
+ .council-cinematic h2{font-size:23px;padding:8px 9px 4px}
+ .council-quote{font-size:13px;line-height:1.5;margin:0 12px 8px}
+ .council-decision-heading{padding:8px 0 5px}
+ .council-choices{gap:6px;padding:5px 8px 10px}
+ .council-choice{min-height:65px;padding:9px 10px;gap:3px}
+ .choice-heading{font-size:13px}
+ .choice-story{font-size:11px}
+ .choice-outcome{font-size:10px}
+ .cinematic-footer{padding:8px;font-size:9px}
+ .court-orders{grid-template-columns:1fr}
+ .court-orders button{min-height:39px;font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){.council-cinematic,.court-badge.court-danger{animation:none}}
