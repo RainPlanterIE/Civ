@@ -646,7 +646,7 @@ Object.assign(COURT_SCENES,{
   choices:[
    {id:"escort",label:"Send soldiers to guard the road",detail:"Restore confidence at the risk of drawing troops away from other duties.",effect:{food:-3,wood:2,harmWarriors:1,legitimacy:4,factions:{military:{loyalty:8,power:5}}}},
    {id:"audit",label:"Investigate the customs officials",detail:"Pursue missing goods through paperwork and witnesses. The merchants may resent the delay.",effect:{wood:-2,legitimacy:5,factions:{workers:{loyalty:4,intrigue:-5}}}},
-   {id:"pass",label:"Leave the merchants to settle it",detail:"Conserve public resources, but some traders may stop using your city.",effect:{wood:-3,legitimacy:-4,factions:{workers:{loyalty:-9,intrigue:8}}}}
+   {id:"pass",label:"Leave the merchants to settle it",detail:"Conserve public resources, but some traders may stop using your city.",effect:{legitimacy:-4,factions:{workers:{loyalty:-9,intrigue:8}}}}
   ]
  },
  succession:{
@@ -817,13 +817,14 @@ function defaultCourt(){
   workers:{power:32,loyalty:68,intrigue:5},
   military:{power:22,loyalty:66,intrigue:4},
   faith:{power:18,loyalty:67,intrigue:4}
- },pending:null,plot:null,nextSceneYear:8,lastSceneYear:0,lastCouncilYear:0,history:[]};
+ },pending:null,plot:null,nextSceneYear:23,lastSceneYear:0,lastCouncilYear:0,history:[]};
 }
 function ensureCourt(){
  if(!state.court)state.court=defaultCourt();
  const c=state.court;
  c.legitimacy??=72;c.factions??={};c.history??=[];
- c.nextSceneYear??=Math.max(8,state.year+5);
+ c.nextSceneYear??=Math.max(22,state.year+9);
+ if(c.lastSceneYear===0&&c.nextSceneYear<20)c.nextSceneYear=Math.max(22,state.year+5);
  c.lastSceneYear??=0;c.lastCouncilYear??=0;
  c.aftershocks??=[];
  for(const [id,base] of Object.entries(defaultCourt().factions)){
@@ -914,12 +915,12 @@ function presentCourtScene(id,target=null){
  if(c.pending||state.overthrown||!COURT_SCENES[id])return false;
  c.pending={id,target,year:state.year};
  c.lastSceneYear=state.year;
- c.nextSceneYear=state.year+7+Math.floor(dice((state.worldSeed||100)%9009,state.year+128)*4);
+ c.nextSceneYear=state.year+11+Math.floor(dice((state.worldSeed||100)%9009,state.year+128)*7);
  return true;
 }
 function chooseCourtOption(choiceId){
  const c=ensureCourt(),p=c.pending;if(!p||state.overthrown)return;
- const scene=COURT_SCENES[p.id],choice=scene?.choices.find(v=>v.id===choiceId);
+ const scene=COURT_SCENES[p.id],choice=courtChoices(p.id).find(v=>v.id===choiceId);
  if(!choice)return;
  if(!costAvailable(choice.effect))return toast("You lack the resources for that decision.");
  const consequences=applyCourtEffect(choice.effect,p.target);
@@ -952,20 +953,86 @@ function courtCouncilAction(faction,action){
  if(c.plot&&factionRisk(c.plot.faction)<48){record("The plotters abandon their conspiracy.");c.plot=null;}
  save();renderUI();
 }
-function chooseRandomCourtScene(){
- const options=[];
- const food=state.resources.food,wood=state.resources.wood,pop=citizens(),court=ensureCourt();
- if(food<pop*4+12)options.push("food","food");
- if(wood<9)options.push("timber","timber");
- if(myCities().some(c=>(c.captives||0)>0))options.push("captives","captives");
- if(court.factions.military.power>38||state.units.filter(u=>u.owner==="player"&&fighter(u)).length>=3)options.push("army","army");
- if(court.factions.faith.power>35||myCities().some(c=>upgrade(c,"temple")>0))options.push("temple","temple");
- if(Object.keys(court.factions).some(id=>court.factions[id].intrigue>20))options.push("rumours");
- if(state.year>=30&&known("commerce"))options.push("merchant");
- options.push("guilds","guilds","army","temple","rumours");
- const picked=Math.floor(dice((state.worldSeed||123)%32749+state.year*13,state.year*19+543)*options.length);
- return options[picked]||"guilds";
+function courtEventConditions(){
+ const cities=myCities(),c=ensureCourt();
+ const army=state.units.filter(u=>u.owner==="player"&&fighter(u));
+ const built=k=>cities.some(city=>upgrade(city,k)>0);
+ const project=!!state.project,train=!!state.unitProject;
+ const food=state.resources.food,wood=state.resources.wood,pop=citizens();
+ const status={
+  food:food<Math.max(12,pop*3),timber:wood<8,
+  captives:cities.some(city=>(city.captives||0)>0),
+  army:army.length>=2||c.factions.military.power>45,
+  guilds:assignedWorkers()>0,
+  temple:built("temple")||c.factions.faith.power>=38,
+  rumours:Object.keys(c.factions).some(id=>c.factions[id].intrigue>18),
+  merchant:known("commerce")&&state.year>=35,
+  granaryFire:built("granary"),
+  worksite:project&&state.year>=20,
+  garrison:army.length>=2,
+  sacredGround:built("temple")&&state.year>=35,
+  grainEdict:(built("granary")||state.leader?.id==="roman")&&food<Math.max(25,pop*6)&&state.year>=32,
+  ironDebate:known("metalworking")&&state.year>=45,
+  scribes:(built("library")||known("writing"))&&state.year>=34,
+  veteranLand:army.length>=3&&state.year>=52,
+  pilgrims:built("temple")&&state.year>=42,
+  caravanLoss:known("commerce")&&state.year>=45,
+  succession:state.year>=70,
+  kurultai:state.leader?.id==="mongol"&&state.year>=45
+ };
+ return status;
 }
+const COURT_TECH_CHOICES={
+ food:[
+  {id:"harvest",label:"Issue an agricultural improvement decree",needTech:"agriculture",detail:"Redirect available labour to irrigation and shared seed reserves. The builders will have fewer hands for other work.",effect:{wood:-2,food:4,legitimacy:5,factions:{workers:{loyalty:7,power:5}}}}
+ ],
+ timber:[
+  {id:"forestry",label:"Organise managed wood-cutting",needTech:"forestry",detail:"Set boundaries around woodlands and encourage replanting. Early supplies may remain scarce.",effect:{wood:3,legitimacy:3,factions:{workers:{loyalty:4,power:4}}}}
+ ],
+ garrison:[
+  {id:"oath",label:"Establish a written military oath",needTech:"writing",detail:"Clarify what the army owes the crown and what the crown owes its fighters, though written contracts cannot force loyalty.",effect:{wood:-2,legitimacy:5,factions:{military:{loyalty:8,intrigue:-6,power:3}}}}
+ ],
+ guilds:[
+  {id:"charter",label:"Grant a regulated guild charter",needTech:"commerce",detail:"Write enforceable terms for wages, taxes and public works. The guilds may use that charter to secure a stronger political voice.",effect:{legitimacy:6,factions:{workers:{loyalty:9,power:9,intrigue:-6}}}}
+ ],
+ ironDebate:[
+  {id:"quality",label:"Set public quality standards",needTech:"engineering",detail:"Standardise metal tools and armour without claiming full ownership of the forges.",effect:{wood:-2,metal:1,legitimacy:6,factions:{workers:{loyalty:8},military:{loyalty:6}}}}
+ ],
+ rumours:[
+  {id:"agents",label:"Send trained scouts to gather testimony",needTech:"scouting",detail:"Seek stronger evidence before anyone is accused. Covert investigation could alarm the court.",effect:{food:-2,legitimacy:3,factions:{workers:{intrigue:-7},military:{intrigue:-7},faith:{intrigue:-7}}}}
+ ],
+ worksite:[
+  {id:"engineering",label:"Commission an engineering assessment",needTech:"engineering",detail:"Ask learned builders to study the failure rather than accept political accusations.",effect:{wood:-2,stone:-1,legitimacy:7,factions:{workers:{loyalty:10,intrigue:-7}}}}
+ ],
+ sacredGround:[
+  {id:"register",label:"Record sacred boundaries in law",needTech:"writing",detail:"Have scribes agree formal limits with temple and market officials. Future arguments may still arise.",effect:{wood:-2,legitimacy:7,factions:{faith:{loyalty:7},workers:{loyalty:7}}}}
+ ],
+ succession:[
+  {id:"writtenLaw",label:"Issue a written law of succession",needTech:"writing",detail:"Create a formal tradition backed by witnesses. Powerful families might reinterpret it later.",effect:{legitimacy:9,factions:{faith:{loyalty:5},workers:{loyalty:5},military:{loyalty:5}}}}
+ ]
+};
+function courtChoices(id){
+ const base=COURT_SCENES[id]?.choices||[];
+ return [...base,...(COURT_TECH_CHOICES[id]||[]).filter(option=>known(option.needTech))];
+}
+function chooseRandomCourtScene(){
+ const possible=courtEventConditions(),c=ensureCourt();
+ const weighted=[];
+ const push=(id,weight=1)=>{if(possible[id])for(let n=0;n<weight;n++)weighted.push(id);};
+ push("food",state.resources.food===0?6:4);
+ push("timber",3);push("captives",3);push("granaryFire",3);
+ push("worksite",3);push("garrison",3);push("sacredGround",2);
+ push("grainEdict",3);push("ironDebate",3);push("scribes",3);
+ push("veteranLand",2);push("pilgrims",3);push("caravanLoss",3);
+ push("succession",2);push("kurultai",5);
+ push("army",2);push("temple",2);push("guilds",2);push("rumours",2);push("merchant",2);
+ const recent=c.history.slice(0,4).map(e=>e.scene);
+ const options=weighted.filter(id=>!recent.includes(id));
+ const choices=options.length?options:weighted.length?weighted:["guilds","rumours"];
+ const n=Math.floor(dice((state.worldSeed||123)%32749+state.year*13,state.year*19+543)*choices.length);
+ return choices[n]||"guilds";
+}
+
 function advanceCourt(){
  if(!myCities().length||state.overthrown)return;
  const c=ensureCourt(),workers=c.factions.workers,military=c.factions.military,faith=c.factions.faith;
@@ -1017,7 +1084,7 @@ function advanceCourt(){
  }
  if(!c.pending&&resolveCourtAftershock())return;
  if(!c.pending){
-  const urgent=state.year>=5&&state.year-c.lastSceneYear>=4&&state.resources.food===0;
+  const urgent=state.year>=18&&state.year-c.lastSceneYear>=6&&state.resources.food===0;
   if(state.year>=c.nextSceneYear||urgent){
    const scene=urgent?"food":c.lastSceneYear===0?"founding":chooseRandomCourtScene();
    presentCourtScene(scene);
@@ -1131,7 +1198,7 @@ function renderCourtScene(){
   '<div class="council-background">'+htmlSafe(narrative.background)+'</div>'+
   '<div class="council-testimonies">'+narrative.counsel.map(line=>'<div class="council-testimony">'+htmlSafe(line)+'</div>').join("")+'</div>'+
   '<div class="council-decision-heading">What will you do?</div>'+
-  '<div class="council-choices">'+scene.choices.map(choice=>{
+  '<div class="council-choices">'+courtChoices(p.id).map(choice=>{
    const can=costAvailable(choice.effect);
    return '<button class="council-choice" data-court-choice="'+choice.id+'" '+(can?"":"disabled")+'>'
     +'<span class="choice-heading">'+htmlSafe(choice.label)+'</span>'
