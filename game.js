@@ -687,6 +687,8 @@ function move(x,y){
   if(terrain(midX,midY)==="water")return toast("The route crosses impassable water.");
   const midway=cityAt(midX,midY);if(midway&&midway.owner==="rival")return toast("You cannot pass through a rival city.");
  }
+ const e=encounterAt(x,y);
+ if(e&&currentlyVisible(x,y)){selected={x,y};menu="encounter";renderUI();return toast("Encounter: "+wildTypes[e.type].name+". Choose how to approach it.");}
  const occupied=cityAt(x,y);
  if(occupied&&occupied.owner==="rival")return toast("Attack rival cities from a neighbouring tile.");
  u.x=x;u.y=y;u.moved=true;selected={x,y};moving=null;menu="";updateFog();
@@ -791,6 +793,8 @@ function panelContents(){
   if(!c)return "<p class='hint'>Found a city first.</p>";
   const speed=constructionRate(c,state.project?.kind||"house");
   output='<div class="worker-counter"><span class="worker-number">'+freeWorkers(c)+'</span><span><strong>Free citizens in '+htmlSafe(c.name)+'</strong><small>'+cityWork(c)+' on resources · '+builderCount(c)+' building · '+c.pop+' population</small></span></div>';
+  output+='<div class="combat-stats"><span>⚔ City attack '+cityAttack(c)+'</span><span>🛡 Defence '+cityDefense(c)+'</span><span>📈 Growth '+Math.floor(c.growth||0)+'/'+growthGoal(c)+'</span></div>';
+  if(c.captives)output+='<p class="hint">Captive labour: '+c.captives+' · +'+Math.min(2,c.captives)+' construction work/year · Unrest '+(c.unrest||0)+' (escape risk and food upkeep). Captives are not citizens.</p>';
   output+='<p class="hint">All developments are built inside this city tile. Assign builders to speed up construction. Only one project can be underway across your civilisation.</p>';
   output+=item("🏗 Current project",projectLabel()+" · Current speed "+speed+" work/year",btn("👷 Assign builders","workers",false,"primary"));
   output+='<h4 class="panel-section-title">Buildings</h4>';
@@ -809,6 +813,27 @@ function panelContents(){
    output+=item(d.icon+" "+d.name,d.desc+" · Strength "+d.strength+" · "+cost+" · "+d.work+" work. "+lock,
     btn(techLocked||pathLocked||facilityLocked?"Locked":"Train","build:"+id+":"+c.id,!!state.project||!!techLocked||!!pathLocked||!!facilityLocked,techLocked||pathLocked||facilityLocked?"secondary":"primary"));
   }
+ }
+
+ if(menu==="encounter"){
+  if(!selected)return "<p class='hint'>Select an encounter on the map.</p>";
+  const e=encounterAt(selected.x,selected.y);
+  if(!e||!currentlyVisible(e.x,e.y))return "<p class='hint'>The encounter is no longer visible.</p>";
+  const d=wildTypes[e.type];
+  const readyAny=adjacentUnit(e,true,false),readyFighter=adjacentUnit(e,true,true),close=adjacentUnit(e,false,false);
+  const status=e.status==="friendly"?"Friendly":e.type==="village"?"Independent village":e.type==="raider"?"Hostile warrior":"Wildlife";
+  output='<div class="encounter-heading"><span class="encounter-icon">'+d.icon+'</span><div><strong>'+d.name+'</strong><small>Location '+e.x+', '+e.y+' · '+status+'</small></div></div>';
+  output+='<div class="combat-stats"><span>⚔ Attack '+e.attack+'</span><span>🛡 Defence '+e.defense+'</span><span>❤️ '+e.hp+' HP</span></div>';
+  output+='<p class="hint">'+d.description+' '+(readyFighter?'Nearby fighter: '+unitTitle(readyFighter)+' · ⚔ '+unitAttack(readyFighter)+' · 🛡 '+unitDefense(readyFighter)+' · ❤️ '+unitHP(readyFighter)+' HP.':readyAny?'A friendly unit is adjacent. A fighter is needed to attack.':close?'An adjacent unit has already acted. End Year to act again.':'Move one of your units within one tile to interact.')+'</p>';
+  if(e.type==="village"){
+   output+=item("🤝 Befriend village","Receive food and wood now, +4 culture, and occasional supplies later.",btn("Befriend village","encounter:"+e.id+":befriend",!readyAny||e.status!=="neutral","primary"));
+   output+=item("📜 Learn from villagers",e.learned?"Already learned their traditions.":"Gain 6 research points by learning their traditions.",btn(e.learned?"Knowledge learned":"Learn traditions","encounter:"+e.id+":learn",!readyAny||e.learned));
+   if(e.status==="friendly")output+=item("🧺 Trade goods","Friendly villages can exchange supplies every five years.",btn("Trade supplies","encounter:"+e.id+":trade",!readyAny||state.year-e.lastGift<5));
+   output+=item("⚔ Raid and enslave","Fight the defenders. Victory yields supplies and two captives for construction in your nearest city, but increases unrest and reduces culture. Captives aren't citizens.",btn("Attack village","encounter:"+e.id+":raid",!readyFighter));
+  }else{
+   output+=item(e.type==="raider"?"⚔ Rival warrior":"🏹 Wild animal",e.type==="raider"?"Stop a roaming threat and recover supplies.":"Hunting yields food. Hunting knowledge improves food rewards.",btn(e.type==="raider"?"Attack warrior":"Hunt animal","encounter:"+e.id+":fight",!readyFighter,"primary"));
+  }
+  if(!close)output+=item("🧭 Approach","Select a unit from the Units panel and move to a neighbouring tile. Each encounter action uses that unit's action for this year.",btn("Select units","units"));
  }
  if(menu==="tile"){
   if(!selected)return "";
@@ -844,7 +869,9 @@ function panelContents(){
   output="<p class='hint'>"+ready+" of "+total+" units ready. You can move <b>every unit</b> once before advancing the year. Tap a ready unit on the map (or select it below), then tap an adjacent tile. Repeat for every unit. The stage ends when all have acted or you press Next.</p>";
   for(const u of state.units.filter(u=>u.owner==="player")){
    const d=unitDef(u.type);
-   output+=item((d?.icon||"🚶")+" "+unitTitle(u)+" at "+u.x+", "+u.y,u.moved?"Already moved this year":"Ready · Strength "+u.strength+" · Vision "+(d?.vision||2),btn(u.moved?"Already moved":"Select to move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,u.moved,"primary"):""));
+   const nearby=(state.encounters||[]).find(e=>currentlyVisible(e.x,e.y)&&distance(u.x,u.y,e.x,e.y)<=1);
+   output+=item((d?.icon||"🚶")+" "+unitTitle(u)+" at "+u.x+", "+u.y,(u.moved?"Already acted this year":"Ready")+" · ⚔ "+unitAttack(u)+" · 🛡 "+unitDefense(u)+" · ❤️ "+unitHP(u)+" · Vision "+(d?.vision||2),
+     btn(u.moved?"Already acted":"Select to move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,u.moved,"primary"):"")+(nearby?btn("View "+wildTypes[nearby.type].name,"inspect:"+nearby.id):""));
   }
  }
  if(menu==="history")output=state.events.map(e=>"<div class='event'>"+htmlSafe(e)+"</div>").join("");
@@ -875,12 +902,22 @@ function renderUI(){
  const stageAction=state.stage==="end"?"":btn(state.stage==="move"?"🚶 Move units":state.stage==="workers"?"👥 Assign workers":state.stage==="construction"?"🏗 Construct":"🔬 Choose tech","stageAction",false,"secondary stage-cta");
  actions.innerHTML='<button class="stage-label" data-action="turnMenu" title="Revisit any turn step">☰ '+stepLabel+' ▾</button><div class="stage-buttons">'+stageAction+nextButton+endButton+'</div>';
  const panel=get("panel");panel.classList.toggle("open",!!menu);
- panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game",turn:"This year"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
+ panel.innerHTML=menu?'<div class="panelhead"><strong>'+({actions:"Actions",city:"City",tile:"Map tile",tech:"Research",path:"Society",units:"Units",workers:"Workers",history:"Chronicle",main:"Game",turn:"This year",encounter:"Encounter"}[menu]||"Civ")+'</strong><button id="closePanel" aria-label="Close panel">×</button></div>'+panelContents():"";
  panel.querySelector("#closePanel")?.addEventListener("click",()=>{menu="";renderUI();});
  document.querySelectorAll("[data-action]").forEach(b=>b.addEventListener("click",()=>doAction(b.dataset.action)));
 }
 function doAction(a){
  if(a==="endYear")return endYear();
+ if(a.startsWith("inspect:")){
+  const e=(state.encounters||[]).find(e=>e.id===a.slice(8));
+  if(e&&currentlyVisible(e.x,e.y)){selected={x:e.x,y:e.y};menu="encounter";renderUI();}
+  return;
+ }
+ if(a.startsWith("encounter:")){
+  const rest=a.slice(10),last=rest.lastIndexOf(":");
+  if(last<0)return;
+  return encounterAction(rest.slice(0,last),rest.slice(last+1));
+ }
  if(a==="turnMenu"){menu=menu==="turn"?"":"turn";renderUI();return;}
  if(a.startsWith("focus:"))return focusStage(a.slice(6));
  if(a==="actions"||a==="main"){menu=menu===a?"":a;renderUI();return;}
@@ -1056,6 +1093,7 @@ canvas.addEventListener("pointerup",e=>{
  if(!pointer)return;const p=pointer;pointer=null;if(p.moved)return;
  const spot=hit(e.clientX,e.clientY);if(!spot)return;
  selected=spot;
+ if(currentlyVisible(spot.x,spot.y)&&encounterAt(spot.x,spot.y)){menu="encounter";renderUI();return;}
  {
   const standing=state.units.find(u=>u.owner==="player"&&u.x===spot.x&&u.y===spot.y);
   if(standing){
