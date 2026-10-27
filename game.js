@@ -859,7 +859,7 @@ function panelContents(){
   const c=controller(x,y),d=deposit(x,y),job=state.works[pos(x,y)],capital=cityAt(x,y);
   const label=capital?"City tile":c==="contested"?"Contested border":c?c.owner==="player"?"Your influence":"Rival influence":"Wilderness";
   output="<p class='hint'>Tile "+x+", "+y+" · "+htmlSafe(label)+" · "+terrain(x,y)+"</p>";
-  if(capital)output+=item("🏛 "+htmlSafe(capital.name),"Population "+capital.pop+" · Influence radius "+influenceRadius(capital),capital.owner==="player"?btn("Manage city","city"):"");
+  if(capital)output+=item("🏛 "+htmlSafe(capital.name),"Population "+capital.pop+" · Influence radius "+influenceRadius(capital)+" · ⚔ Attack "+cityAttack(capital)+" · 🛡 Defence "+cityDefense(capital),capital.owner==="player"?btn("Manage city","city"):"");
   else if(d&&known(d.tech)){
    let resource=d.type==="forage"?"wild food":d.type;
    let n=remaining(x,y);
