@@ -274,6 +274,7 @@ state.builders??={};
 state.explored??={};
 state.researchProject??=null;
 state.encounters??=initialEncounters();
+state.encounters=state.encounters.filter(e=>wildTypes[e.type]&&inMap(e.x,e.y)&&!state.cities.some(c=>c.x===e.x&&c.y===e.y)&&!state.units.some(u=>u.x===e.x&&u.y===e.y));
 state.nextEncounterId??=1000;
 for(const c of state.cities){c.growth??=0;c.captives??=0;c.unrest??=0;}
 for(const u of state.units){u.hp??=6;u.xp??=0;}
@@ -515,6 +516,7 @@ function continueGame(){
  state.builders??={};
  state.explored??={};
  state.encounters??=initialEncounters();
+ state.encounters=state.encounters.filter(e=>wildTypes[e.type]&&inMap(e.x,e.y)&&!state.cities.some(c=>c.x===e.x&&c.y===e.y)&&!state.units.some(u=>u.x===e.x&&u.y===e.y));
  state.nextEncounterId??=1000;
  for(const c of state.cities){c.growth??=0;c.captives??=0;c.unrest??=0;}
  for(const u of state.units){u.hp??=6;u.xp??=0;}
