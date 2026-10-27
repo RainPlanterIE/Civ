@@ -177,3 +177,18 @@ button:disabled{opacity:.42;cursor:default}
  .stage-buttons .stage-cta{font-size:13px}
  #panel .option .buttons button{font-size:13px}
 }
+
+/* Discoverable encounters, combat numbers and diplomacy choices */
+.encounter-heading{display:flex;align-items:center;gap:14px;border:1px solid #957e58;background:#3b4b39;border-radius:12px;padding:14px;margin:9px 0}
+.encounter-icon{font-size:38px;min-width:43px;line-height:1;text-align:center}
+.encounter-heading strong{font:600 20px Georgia,serif;color:#f4d597;display:block}
+.encounter-heading small{font-size:12px;color:#d2d7c5;display:block;margin-top:5px}
+.combat-stats{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:11px 0}
+.combat-stats span{background:#3e5543;border:1px solid #8ca07d;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;color:#f6ead7}
+#panel .option .buttons button{min-height:48px}
+#panel .option .buttons button:disabled{opacity:.53}
+@media(max-width:650px){
+ .encounter-icon{font-size:34px}
+ .combat-stats span{font-size:11px;padding:6px 8px}
+ .encounter-heading strong{font-size:18px}
+}
