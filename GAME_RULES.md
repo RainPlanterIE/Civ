@@ -25,7 +25,7 @@ New population requires adequate stored food and spare housing capacity. Housing
 ## Society directions (Year 100 onward)
 The player can choose **one defining path** from Year 100 onward.
 
-- **Science:** expands borders by +1 tile at 35 accumulated research and another at 130; construction is faster. A science victory requires 260 research and an Academy.
+- **Science:** expands borders by +1 tile at 35 lifetime knowledge and another at 130; construction is faster. A science victory requires 260 lifetime knowledge and an Academy.
 - **Arts:** expands borders through culture (+1 radius at 55 culture, another at 150), accelerates population growth, and exerts cultural pressure on rival cities within nine tiles. Pressure reaching 85 absorbs a neighbouring city. Absorbing the three rival cities wins.
 - **Faith:** faith increases border radius (+1 at 100 faith). A neighbouring rival city within ten tiles can convert after accumulating 75 religious pressure, becoming an allied city. Three allied cities give a faith victory.
 - **War:** the player can train armies after choosing war. An army must move adjacent to an opposing city and overcome its defensive strength to capture its centre and influence. Capturing all rival centres wins.
