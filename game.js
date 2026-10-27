@@ -155,7 +155,7 @@ function toast(msg){get("toast").textContent=msg;get("toast").classList.add("sho
 function record(msg){state.events.unshift("Year "+state.year+": "+msg);state.events=state.events.slice(0,25);toast(msg);}
 function found(u){
  syncStage();if(state.stage!=="move")return toast("Found your city during the movement step.");
- if(!u||u.type!=="settler")return;
+ if(!u||u.type!=="settler")return;if(u.moved)return toast("This settler has already acted this year.");
  if(terrain(u.x,u.y)==="water"||state.cities.some(c=>distance(c.x,c.y,u.x,u.y)<=3)){toast("Settle on land at least four tiles from another city.");return;}
  const c={id:"c"+state.nextId++,x:u.x,y:u.y,name:myCities().length?"New Settlement "+state.nextId:"New Haven",pop:3,owner:"player",army:1,culture:0,faith:0,buildings:{}};
  state.cities.push(c);state.units=state.units.filter(a=>a.id!==u.id);moving=null;
@@ -331,6 +331,7 @@ function panelContents(){
   }
   output+=item("🚶 Units","One movement per unit per year.",btn("Manage units","units"));
   output+=item("🧾 Chronicle","Recent events and discoveries.",btn("Open chronicle","history"));
+  output+=item("⚙ Game menu","Save your progress or start a new world.",btn("Game options","main"));
  }
  if(menu==="workers"){
   output="<p class='hint'>Work one resource tile per citizen. Total population: "+citizens()+"("+assignedWorkers()+") · Free: "+unassignedWorkers()+". Tap land within your influence border, or assign a visible tile below.</p>";
@@ -391,7 +392,7 @@ function panelContents(){
  if(menu==="units"){
   output="<p class='hint'>Select a unit, close the panel, then tap one adjacent tile. Each unit moves only once per year.</p>";
   for(const u of state.units.filter(u=>u.owner==="player")){
-   output+=item((u.type==="army"?"⚔ Army":"🚶 Settler")+" at "+u.x+", "+u.y,u.moved?"Already moved this year":u.type==="army"?"Ready · Strength "+u.strength:"Ready to move",btn("Move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,false,"primary"):""));
+   output+=item((u.type==="army"?"⚔ Army":"🚶 Settler")+" at "+u.x+", "+u.y,u.moved?"Already moved this year":u.type==="army"?"Ready · Strength "+u.strength:"Ready to move",btn("Move","unit:"+u.id,u.moved)+(u.type==="settler"?btn("Found city","found:"+u.id,u.moved,"primary"):""));
   }
  }
  if(menu==="history")output=state.events.map(e=>"<div class='event'>"+htmlSafe(e)+"</div>").join("");
@@ -561,7 +562,7 @@ canvas.addEventListener("touchmove",e=>{if(e.touches.length===2){const a=e.touch
 canvas.addEventListener("touchend",()=>twoFinger=0);
 get("zoomIn").onclick=()=>scale=Math.min(2.3,scale+.18);
 get("zoomOut").onclick=()=>scale=Math.max(.55,scale-.18);
-get("menu").onclick=()=>{menu=menu==="main"?"":"main";renderUI();};
+get("menu").onclick=()=>{menu=menu==="actions"?"":"actions";renderUI();};
 window.addEventListener("resize",resize);
 function loop(){
  if(toastUntil&&Date.now()>toastUntil){get("toast").classList.remove("show");toastUntil=0;}
